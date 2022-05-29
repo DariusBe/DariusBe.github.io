@@ -1,3 +1,16 @@
 body {
     background-color: rgb(47, 47, 93);
 }
+.lel div {
+    display: flex;
+    flex-direction: row;
+    background-color: rgb(102, 102, 181);
+    margin: 15px 15px;
+}
+
+.lel a {
+    background-color: yellow;
+    padding: 5px;
+    margin: 15px;
+    width: 15%;
+}
