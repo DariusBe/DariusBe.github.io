@@ -38,7 +38,6 @@ html, body {
 }
 .topbar #okButton:hover {
     background-color: #F2CB18;
-    outline: 2px solid white;
 }
 
 /*main*/
