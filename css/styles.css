@@ -1,19 +1,12 @@
 body {
     background-color: rgb(47, 47, 93);
 }
-.lel div {
+.topbar {
     display: flex;
-    flex-direction: row;
-    background-color: rgb(102, 102, 181);
-    margin: 15px 15px;
-    border-radius: 30px;
-}
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(0,0,0, .1);
 
-.lel a {
-    background-color: yellow;
-    padding: 5px 5px;
-    margin: 15px;
-    width: 15%;
-    text-align: center;
-    border-radius: 30px;
+    border-radius: 10px;
+    padding-bottom: 35px;
 }
