@@ -2,7 +2,7 @@ html, body {
 
     background-color: rgb(47, 47, 93);
     background-image: url("/img/wide.png");
-    background-position: center;
+    /*background-position: center;*/
     background-repeat: no-repeat;
     background-size: cover;    color: white;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
