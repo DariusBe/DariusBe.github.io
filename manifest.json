@@ -1,10 +1,10 @@
 {
-    "name": "AppName",
-    "short_name": "AppName",
+    "name": "Countdown",
+    "short_name": "Counter",
     "start_url": "/index.html",
     "display": "standalone",
-    "background_color": "#FFE9D2",
-    "theme_color": "#FFE1C4",
+    "background_color": "#2F2F5D",
+    "theme_color": "#3333FF",
     "orientation": "portrait-primary",
     "icons": [
         {
