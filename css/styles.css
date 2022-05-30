@@ -1,4 +1,7 @@
 html, body {
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
 
     background-color: rgb(47, 47, 93);
     background-image: url("/img/wide.png");
@@ -6,18 +9,20 @@ html, body {
     background-repeat: no-repeat;
     background-size: cover;    color: white;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
+    
 }
 
 /*Topbar-Elemente*/
 .topbar {
+    margin: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     background-color: rgba(0, 0, 0, .2);
-
     width: 50%;
 
-    border-radius: 15px;
+
+    border-radius: 10px;
 }
 .topbar span {
     display: flex;
@@ -40,7 +45,14 @@ html, body {
     background-color: #F2CB18;
 }
 
+.burgerMenu{
+    font-size: 25px;
+    display: none;
+}
+
 /*main*/
 .countdownPanel {
     display: flex;
+    margin: auto;
 }
+
