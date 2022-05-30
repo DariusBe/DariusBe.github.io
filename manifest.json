@@ -3,8 +3,8 @@
     "short_name": "Counter",
     "start_url": "/index.html",
     "display": "standalone",
-    "background_color": "#2F2F5D",
-    "theme_color": "#3333FF",
+    "background_color": "rgb(114, 114, 114)",
+    "theme_color": "rgb(180, 180, 180)",
     "orientation": "portrait-primary",
     "icons": [
         {

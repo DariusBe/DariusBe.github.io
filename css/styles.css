@@ -62,8 +62,11 @@ html, body {
 
 /*Für Mobilansicht:*/
 /*Burger-Menü anzeigen ab 844px*/
-@media screen and (max-width: 500px) {
+@media screen and (max-width: 600px) {
     .topbar {
         display: none;
+    }
+    .burgerMenu {
+        display: block;
     }
 }
