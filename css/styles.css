@@ -27,6 +27,7 @@ html, body {
 .topbar span {
     display: flex;
     flex-direction: column;
+    width: 100%;
 
     align-items: center;
     padding: 5px 15px 15px 15px;
@@ -35,7 +36,11 @@ html, body {
     font-size: 10px;
     padding: 5px;
 }
+.topbar input {
+    width: 25%;
+}
 .topbar #okButton {
+    width: 60px;
     margin: 10px 0px 25px 0px;
     padding: 2px 15px;
     border-radius: 5px;
@@ -45,14 +50,20 @@ html, body {
     background-color: #F2CB18;
 }
 
-.burgerMenu{
+.burgerMenu {
     font-size: 25px;
     display: none;
 }
 
 /*main*/
 .countdownPanel {
-    display: flex;
     margin: auto;
 }
 
+/*Für Mobilansicht:*/
+/*Burger-Menü anzeigen ab 844px*/
+@media screen and (max-width: 500px) {
+    .topbar {
+        display: none;
+    }
+}
