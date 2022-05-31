@@ -75,16 +75,21 @@ html, body {
     }
     .topbar .menuElems {
         width: 250px;
-        transform: translate(1000px);
+        transform: translateX(250%);
+        transition: transform 0.5s ease-in;
     }
     .burgerMenu a {
         position: absolute;
         display: block;
         text-align: right;
-        padding: 25px;
-        right: 0px;
+        top: 50px;
+        right: 50px;
 
         font-size: 55px;
         cursor: pointer;
     }
+}
+
+.topbar-active {
+    transform: translateX(0%);
 }
