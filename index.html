@@ -17,10 +17,10 @@
     <link rel="manifest" href="/manifest.json">
 </head>
 
-<body>
+<body onload="app()">
     <nav class="topbar">
-        <div class="burgerMenu">&#x2261</div>
-        <div class="menuElems">
+        <a class="burgerMenu" id="bm">&#x2261</a>
+        <div class="menuElems" id="me">
             <h2>Einstellungen</h2>
             <label for="auswahlDatum">End-Datum</label>
             <input type="date" id="auswahlDatum" name="date">

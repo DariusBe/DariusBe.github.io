@@ -29,6 +29,7 @@ html, body {
     border-radius: 10px;
 }
 .topbar div {
+    margin-top: 50px;
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -75,7 +76,7 @@ html, body {
     }
     .menuElems {
         width: 250px;
-        transform: translateX(130%);
+        transform: translateX(250%);
         transition: transform 0.5s ease-in;
     }
     .burgerMenu {
@@ -90,5 +91,4 @@ html, body {
 
 .menuElems-active {
     transform: translateX(0%);
-    color: black;
 }
