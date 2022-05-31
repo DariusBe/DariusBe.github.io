@@ -8,8 +8,12 @@ html, body {
     /*background-position: center;*/
     background-repeat: no-repeat;
     background-size: cover;    color: white;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
-    
+    font-family: 'Roboto', sans-serif;
+    font-size: 25px;
+
+    /*vertical-scrollen aus
+    * dudurch sind nach außen verschobene Elemente nicht erreichbar */
+    overflow-x: hidden;
 }
 
 /*Topbar-Elemente*/
@@ -24,13 +28,12 @@ html, body {
 
     border-radius: 10px;
 }
-.topbar span {
+.topbar div {
     display: flex;
     flex-direction: column;
     width: 100%;
 
     align-items: center;
-    padding: 5px 15px 15px 15px;
 }
 .topbar label {
     font-size: 10px;
@@ -40,6 +43,7 @@ html, body {
     width: 25%;
 }
 .topbar #okButton {
+    max-width: 60px;
     width: 60px;
     margin: 10px 0px 25px 0px;
     padding: 2px 15px;
@@ -49,24 +53,38 @@ html, body {
 .topbar #okButton:hover {
     background-color: #F2CB18;
 }
-
-.burgerMenu {
-    font-size: 25px;
+.burgerMenu a {
     display: none;
 }
 
 /*main*/
 .countdownPanel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     margin: auto;
+    text-align: center;
 }
 
-/*Für Mobilansicht:*/
+/* ----- Für Mobilansicht: ----- */
 /*Burger-Menü anzeigen ab 844px*/
 @media screen and (max-width: 600px) {
     .topbar {
-        display: none;
+        background-color: rgba(0,0,0,0);
+        width: 50%;
     }
-    .burgerMenu {
+    .topbar .menuElems {
+        width: 250px;
+        transform: translate(1000px);
+    }
+    .burgerMenu a {
+        position: absolute;
         display: block;
+        text-align: right;
+        padding: 25px;
+        right: 0px;
+
+        font-size: 55px;
+        cursor: pointer;
     }
 }
