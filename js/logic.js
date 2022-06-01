@@ -16,7 +16,23 @@ function onClickMenuEinblenden() {
     });
 }
 
+function onButtonInputfelderAuswerten() {
+
+    const feld = document.querySelector("#displayRestzeit");
+    const okButton = document.querySelector("#okButton");
+
+    okButton.addEventListener("click", () => {
+        const inputDatum = document.querySelector("#auswahlDatum").value;
+        const inputUhrzeit = document.querySelector("#auswahlUhrzeit").value;
+
+
+        feld.innerHTML = inputDatum.getDate();
+    });
+
+}
+
 const app = ()=>{
     onClickMenuEinblenden();
     setInterval(zeigeUhrzeit, 1000);
+    onButtonInputfelderAuswerten();
 }
