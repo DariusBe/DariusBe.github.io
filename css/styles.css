@@ -1,7 +1,8 @@
 html, body {
+    display: flex;
+    flex-direction: column;
     margin: 0px;
     padding: 0px;
-    box-sizing: border-box;
 
     background-color: rgb(47, 47, 93);
     background-image: url("/img/wide.png");
@@ -18,12 +19,13 @@ html, body {
 
 /*Topbar-Elemente*/
 .topbar {
+    position: relative;
     margin: auto;
+    margin-top: 25px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: rgba(0, 0, 0, .2);
-    width: 50%;
+    width: 100%;
 
 
     border-radius: 10px;
@@ -32,16 +34,21 @@ html, body {
     margin-top: 50px;
     display: flex;
     flex-direction: column;
-    width: 100%;
+    width: 50%;
+    max-width: 500px;
 
     align-items: center;
+    background-color: rgba(0, 0, 0, .2);
+    border-radius: 20px;
+
 }
 .topbar label {
     font-size: 10px;
     padding: 5px;
 }
 .topbar input {
-    width: 25%;
+    width: 50%;
+    max-width: 250px;
 }
 .topbar #okButton {
     max-width: 60px;
@@ -60,6 +67,8 @@ html, body {
 
 /*main*/
 .countdownPanel {
+    position: relative;
+    margin-top: 0px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -71,24 +80,39 @@ html, body {
 /*Burger-Menü anzeigen ab 844px*/
 @media screen and (max-width: 600px) {
     .topbar {
-        background-color: rgba(0,0,0,0);
-        width: 50%;
+        background-color: transparent;
     }
     .menuElems {
+        font-size: small;
         width: 250px;
         transform: translateX(250%);
-        transition: transform 0.5s ease-in;
+        transition: transform 0.4s ease-in;
+        display: none;
     }
     .burgerMenu {
-        position: absolute;
-        display: block;
+        z-index: 3;
+        position: fixed;
+        top: 25px;
+        right: 25px;
+        display: flex;
+        margin: auto;
         text-align: right;
 
         font-size: 55px;
         cursor: pointer;
     }
+    .countdownPanel {
+        transform: translateY(-50%);
+        transition: transform 0.3s ease-in;
+    }
 }
 
 .menuElems-active {
     transform: translateX(0%);
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, .2);
+}
+
+.countdownPanel-up {
+    transform: translate(0%);
 }
