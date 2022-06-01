@@ -37,7 +37,7 @@ function onButtonInputfelderAuswerten() {
 
 }
 
-const app = ()=>{
+const logic = ()=>{
     onClickMenuEinblenden();
     setInterval(zeigeUhrzeit, 1000);
     onButtonInputfelderAuswerten();
