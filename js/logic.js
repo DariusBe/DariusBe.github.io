@@ -21,12 +21,18 @@ function onButtonInputfelderAuswerten() {
     const feld = document.querySelector("#displayRestzeit");
     const okButton = document.querySelector("#okButton");
 
+    document.querySelector("#auswahlDatum").addEventListener("change", () => {
+        const inputDatum = this.value;
+    });
+
+    var dateEntered = new Date(inputDatum);
+
+    const inputUhrzeit = document.querySelector("#auswahlUhrzeit").value;
+    const aktuellesDatum = new Date();
+
+
     okButton.addEventListener("click", () => {
-        const inputDatum = document.querySelector("#auswahlDatum").value;
-        const inputUhrzeit = document.querySelector("#auswahlUhrzeit").value;
-
-
-        feld.innerHTML = inputDatum.getDate();
+        feld.innerHTML = dateEntered.getFullYear();
     });
 
 }
