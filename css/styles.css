@@ -85,9 +85,9 @@ html, body {
     .menuElems {
         font-size: small;
         width: 250px;
-        transform: translateX(250%);
-        transition: transform 0.4s ease-in;
-        display: none;
+        transform: translateY(-250%) scale(.01);
+        transition: transform 0.5s ease-in-out;
+
     }
     .burgerMenu {
         z-index: 3;
@@ -102,8 +102,8 @@ html, body {
         cursor: pointer;
     }
     .countdownPanel {
-        transform: translateY(-50%);
-        transition: transform 0.3s ease-in;
+        transform:  translateY(-50%);
+        transition: transform 0.5s ease-in-out;
     }
 }
 
@@ -114,5 +114,5 @@ html, body {
 }
 
 .countdownPanel-up {
-    transform: translate(0%);
+    transform: scale(85%) translateY(0%);
 }

@@ -12,7 +12,7 @@ function onClickMenuEinblenden() {
     burgermenu.addEventListener("click", () => {
        
         document.querySelector("#me").classList.toggle("menuElems-active");
-
+        document.querySelector(".countdownPanel").classList.toggle("countdownPanel-up");
     });
 }
 
