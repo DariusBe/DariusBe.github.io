@@ -1,6 +1,7 @@
 
 function zeigeUhrzeit()
 {
+    const displayZeit = document.querySelector("#displayTime");
     var str = "";
     var now = new Date();
     str = now.toLocaleTimeString('de-DE', {
@@ -8,7 +9,7 @@ function zeigeUhrzeit()
         minute: '2-digit',
         second: '2-digit',
       });
-    document.getElementById("displayTime").innerHTML = str;
+    displayZeit.innerHTML = str;
 };
 
 function onClickMenuEinblenden() {
@@ -55,12 +56,13 @@ function setzeStandardwerte() {
     const presetDatum = new Date(heute);
 
     /*Für Tests - Uhrzeit vor Mitternacht*/
-    //voreingestelltesDatum.setHours(22);
+    presetDatum.setHours(1);
 
     //Füllen des Datum-Inputfeldes mit heutigem Datum
     if(presetDatum.getHours() >= 22) {
         const morgen = new Date();
-        morgen.setDate(presetDatum.getDate()+1);
+        //Hinzufügen eines Tages (in ms)
+        morgen.setTime(presetDatum.getTime() + 24*60*60*1000);
         feldDatum.valueAsDate = morgen;
     }
     //Für 00/01 Uhr auftretende Datumsdiskrepanz zuaddieren
@@ -69,7 +71,9 @@ function setzeStandardwerte() {
         feldDatum.valueAsDate = presetDatum;
     }
     //Für alle anderen Uhrzeiten
-    else feldDatum.valueAsDate = presetDatum;
+    else { 
+        feldDatum.valueAsDate = presetDatum;
+    }
 
     //Füllen des Zeit-Inputfeldes mit Zeit aus "heute"
     //davor Setzen der Voreinstellung (übernächste volle Stunde)
@@ -81,6 +85,11 @@ function setzeStandardwerte() {
         minute: '2-digit',
       });
     feldZeit.value = presetZeit;
+}
+
+function zeigeRestzeit() {
+    const feldDatum = document.querySelector("#auswahlDatum");
+    const feldZeit = document.querySelector("#auswahlUhrzeit");
 }
 
 const logic = ()=>{
