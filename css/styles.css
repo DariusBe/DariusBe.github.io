@@ -42,6 +42,7 @@ html, body {
     backdrop-filter: blur(8px);
     background-color: rgba(0, 0, 0, .1);
     border-radius: 25px;
+    
 }
 .topbar label {
     font-size: 10px;
@@ -49,9 +50,11 @@ html, body {
 }
 .topbar input {
     border: none;
+    outline: none;
     width: 50%;
     max-width: 250px;
     border-radius: 4px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 6px 20px 0 rgba(0, 0, 0, 0.15);
 }
 .topbar #okButton {
     max-width: 60px;
@@ -61,8 +64,10 @@ html, body {
     border-radius: 5px;
     border-width: 0;
 }
-.topbar #okButton:hover {
+.topbar #okButton:active {
     background-color: #F2CB18;
+    box-shadow: none;
+
 }
 .burgerMenu {
     display: none;
