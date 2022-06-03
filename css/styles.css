@@ -51,6 +51,7 @@ html, body {
 .topbar input {
     width: 50%;
     max-width: 250px;
+    border-radius: 5px;
 }
 .topbar #okButton {
     max-width: 60px;
