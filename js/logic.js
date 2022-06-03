@@ -1,7 +1,7 @@
 
 function zeigeUhrzeit()
 {
-    const displayZeit = document.querySelector("#displayTime");
+    const displayZeit = document.querySelector("#displayZeit");
     var str = "";
     var now = new Date();
     str = now.toLocaleTimeString('de-DE', {
@@ -21,31 +21,6 @@ function onClickMenuEinblenden() {
     });
 }
 
-function onButtonInputfelderAuswerten() {
-
-    const feld = document.querySelector("#displayRestzeit");
-    const okButton = document.querySelector("#okButton");
-
-    document.querySelector("#auswahlDatum").addEventListener("change", () => {
-        var inputDatum = document.querySelector("#auswahlDatum").valueAsDate;
-        var dateEntered = new Date(inputDatum);
-        const gerade = new Date;
-        setInterval(feld.innerHTML = (gerade.getTime()-dateEntered.getTime())/360000, 1000);
-    });
-
-    var inputDatum = document.querySelector("#auswahlDatum").value;
-    var dateEntered = new Date(inputDatum);
-
-    const inputUhrzeit = document.querySelector("#auswahlUhrzeit").value;
-    const aktuellesDatum = new Date();
-    //feld.innerHTML = dateEntered;
-
-    okButton.addEventListener("click", () => {
-        //TODO
-    });
-
-}
-
 function setzeStandardwerte() {
     //Bereitsstellung der Inputfelder
     const feldDatum = document.querySelector("#auswahlDatum");
@@ -56,7 +31,7 @@ function setzeStandardwerte() {
     const presetDatum = new Date(heute);
 
     /*Für Tests - Uhrzeit vor Mitternacht*/
-    presetDatum.setHours(1);
+    //presetDatum.setHours(22);
 
     //Füllen des Datum-Inputfeldes mit heutigem Datum
     if(presetDatum.getHours() >= 22) {
@@ -87,14 +62,59 @@ function setzeStandardwerte() {
     feldZeit.value = presetZeit;
 }
 
+function onButtonInputfelderAuswerten() {
+    const feld = document.querySelector("#displayRestzeit");
+    const okButton = document.querySelector("#okButton");
+
+    document.querySelector("#auswahlDatum").addEventListener("change", () => {
+        var inputDatum = document.querySelector("#auswahlDatum").valueAsDate;
+        var dateEntered = new Date(inputDatum);
+        const gerade = new Date;
+        setInterval(feld.innerHTML = (gerade.getTime()-dateEntered.getTime())/360000, 1000);
+    });
+
+    var inputDatum = document.querySelector("#auswahlDatum").value;
+    var dateEntered = new Date(inputDatum);
+
+    const inputUhrzeit = document.querySelector("#auswahlUhrzeit").value;
+    const aktuellesDatum = new Date();
+    //feld.innerHTML = dateEntered;
+
+    okButton.addEventListener("click", () => {
+        //TODO
+    });
+
+}
+
 function zeigeRestzeit() {
-    const feldDatum = document.querySelector("#auswahlDatum");
-    const feldZeit = document.querySelector("#auswahlUhrzeit");
+    const feldDatum = document.querySelector("#auswahlDatum").valueAsDate;
+    const feldZeit = document.querySelector("#auswahlUhrzeit").valueAsDate;
+    var feld = document.querySelector("#displayRestzeit");
+    
+    fJahr = feldDatum.getUTCFullYear();
+    fMonat = feldDatum.getUTCMonth();
+    fTag = feldDatum.getUTCDate();
+    fStunde = feldZeit.getUTCHours();
+    fMinute = feldZeit.getUTCMinutes();
+    fSekunde = feldZeit.getUTCSeconds();
+    var outputDatum = new Date(fJahr, fMonat, fTag, fStunde, fMinute, fSekunde, 0);
+
+    //Datumsdifferenz in Sekunden:
+    var uebrigeStunden = Math.floor(datumsDifferenzInSek(outputDatum)/3600);
+    var uebrigeMinuten = Math.floor(datumsDifferenzInSek(outputDatum)/60)%60;
+    feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten + " Min.";
+}
+
+function datumsDifferenzInSek(datum) {
+    const jetzt = new Date();
+    var diff = (Math.floor((datum-jetzt)/(1000)+1));
+    return diff;
 }
 
 const logic = ()=>{
-    setzeStandardwerte();
-    onClickMenuEinblenden();
-    onButtonInputfelderAuswerten();
     setInterval(zeigeUhrzeit, 1000);
+    onClickMenuEinblenden();
+    setzeStandardwerte();
+    onButtonInputfelderAuswerten();
+    setInterval(zeigeRestzeit, 1000);
 }

@@ -74,6 +74,9 @@ html, body {
     margin: auto;
     text-align: center;
 }
+.countdownPanel #meldung {
+    display: none;
+}
 
 /* ----- Für Mobilansicht: ----- */
 /*Burger-Menü anzeigen ab 844px*/
