@@ -15,7 +15,6 @@ function zeigeUhrzeit()
 function onClickMenuEinblenden() {
     const burgermenu = document.querySelector("#bm");
     burgermenu.addEventListener("click", () => {
-       
         document.querySelector("#me").classList.toggle("menuElems-active");
         document.querySelector(".countdownPanel").classList.toggle("countdownPanel-up");
     });
@@ -111,10 +110,18 @@ function zeigeRestzeit() {
     else if (uebrigeStunden==1 && uebrigeMinuten==60) {
         feld.innerHTML = uebrigeMinuten%61+" Min.";
     }
-    else if (uebrigeStunden<1 && uebrigeMinuten<60) {
+    else if (uebrigeStunden<1 && uebrigeMinuten<60 && uebrigeMinuten>60) {
         feld.innerHTML = uebrigeMinuten%61+" Min.";
     }
+    else if (uebrigeSekunden<60) {
+        feld.innerHTML = uebrigeSekunden+1+" Sek.";
+    }
     else feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
+    
+    if(uebrigeSekunden < 0) {
+        //Meldung anzeigen
+        document.querySelector("body").classList.toggle("html-alert");
+    }
 }
 
 function datumsDifferenzInSek(datum) {
