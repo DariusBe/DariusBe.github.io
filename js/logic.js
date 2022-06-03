@@ -106,6 +106,7 @@ function zeigeRestzeit() {
 
     if (datumsDifferenzInSek(outputDatum) < 0) {
         feld.innerHTML = "dieser Zeitpunkt liegt in der Vergangenheit!";
+        document.querySelector("#restzeitLabel").style.display = "none";
     }
     else if (uebrigeStunden==1 && uebrigeMinuten==60) {
         feld.innerHTML = uebrigeMinuten%61+" Min.";
