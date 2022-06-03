@@ -70,8 +70,8 @@ function setzeStandardwerte() {
     //Füllen des Zeit-Inputfeldes mit Zeit aus "heute"
     //davor Setzen der Voreinstellung (übernächste volle Stunde)
     presetDatum.setHours(presetDatum.getHours()+2);
-    presetDatum.setMinutes(00);
-    presetDatum.setSeconds(00);
+    presetDatum.setMinutes(0);
+    presetDatum.setSeconds(0);
     var presetZeit = presetDatum.toLocaleTimeString([], {timeStyle: 'short'});
     feldZeit.value = presetZeit;
 }
