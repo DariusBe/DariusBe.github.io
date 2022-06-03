@@ -72,6 +72,7 @@ html, body {
 .countdownPanel {
     position: relative;
     margin-top: 0px;
+    width: 80%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -79,26 +80,29 @@ html, body {
     text-align: center;
 }
 
+.countdownPanel .trennlinie {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    background-color: white;
+    height: .1pt;
+    width: 75%;
+}
+
 .countdownPanel label {
-    font-size: small;
+    font-size: medium;
+    margin: 5px;
 }
 
 
 .countdownPanel h3 {
-    font-size: smaller;
+    font-size: larger;
+    margin: 5px;
 }
 
 .countdownPanel #meldung {
     display: none;
 }
 
-.countdownPanel .trennlinie {
-    margin: 2px 2px;
-    background-color: white;
-    height: 1px;
-    width: 75%;
-    margin: 15px;
-}
 
 /* ----- Für Mobilansicht: ----- */
 /*Burger-Menü anzeigen ab 844px*/
@@ -128,7 +132,7 @@ html, body {
     .countdownPanel {
         font-size: smaller;
         transform:  translateY(-100%);
-        transition: transform 0.3s ease-in-out;
+        transition: transform 0.4s ease-in-out;
     }
 }
 
@@ -138,5 +142,5 @@ html, body {
 }
 
 .countdownPanel-up {
-    transform: scale(85%) translateY(0%);
+    transform: scale(75%) translateY(0%);
 }

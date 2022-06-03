@@ -111,6 +111,9 @@ function zeigeRestzeit() {
     else if (uebrigeStunden==1 && uebrigeMinuten==60) {
         feld.innerHTML = uebrigeMinuten%61+" Min.";
     }
+    else if (uebrigeStunden<1 && uebrigeMinuten<60) {
+        feld.innerHTML = uebrigeMinuten%61+" Min.";
+    }
     else feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
 }
 
