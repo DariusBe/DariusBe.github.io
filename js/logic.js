@@ -3,7 +3,11 @@ function zeigeUhrzeit()
 {
     var str = "";
     var now = new Date();
-    str = now.toLocaleTimeString();
+    str = now.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
     document.getElementById("displayTime").innerHTML = str;
 };
 
@@ -72,7 +76,10 @@ function setzeStandardwerte() {
     presetDatum.setHours(presetDatum.getHours()+2);
     presetDatum.setMinutes(0);
     presetDatum.setSeconds(0);
-    var presetZeit = presetDatum.toLocaleTimeString([], {timeStyle: 'short'});
+    var presetZeit = presetDatum.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     feldZeit.value = presetZeit;
 }
 
