@@ -31,15 +31,17 @@ html, body {
 }
 .topbar div {
     margin-top: 50px;
+    padding-top: 25px;
     display: flex;
     flex-direction: column;
     width: 50%;
     max-width: 500px;
-
     align-items: center;
-    background-color: rgba(0, 0, 0, .2);
-    border-radius: 20px;
 
+    /*Blur-Filter*/
+    backdrop-filter: blur(8px);
+    background-color: rgba(0, 0, 0, .1);
+    border-radius: 25px;
 }
 .topbar label {
     font-size: 10px;
@@ -74,6 +76,12 @@ html, body {
     margin: auto;
     text-align: center;
 }
+
+
+.countdownPanel h3 {
+    font-size: smaller;
+}
+
 .countdownPanel #meldung {
     display: none;
 }
@@ -111,7 +119,8 @@ html, body {
         cursor: pointer;
     }
     .countdownPanel {
-        transform:  translateY(-35%);
+        font-size: smaller;
+        transform:  translateY(-100%);
         transition: transform 0.3s ease-in-out;
     }
 }
@@ -119,7 +128,6 @@ html, body {
 .menuElems-active {
     transform: translateX(0%);
     border-radius: 10px;
-    background-color: rgba(0, 0, 0, .2);
 }
 
 .countdownPanel-up {

@@ -113,8 +113,8 @@ function datumsDifferenzInSek(datum) {
 
 const logic = ()=>{
     setInterval(zeigeUhrzeit, 1000);
+    setInterval(zeigeRestzeit, 1000);
     onClickMenuEinblenden();
     setzeStandardwerte();
     onButtonInputfelderAuswerten();
-    setInterval(zeigeRestzeit, 1000);
 }
