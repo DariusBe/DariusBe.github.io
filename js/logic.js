@@ -22,23 +22,36 @@ function onButtonInputfelderAuswerten() {
     const okButton = document.querySelector("#okButton");
 
     document.querySelector("#auswahlDatum").addEventListener("change", () => {
-        const inputDatum = this.value;
+        var inputDatum = document.querySelector("#auswahlDatum").valueAsDate;
+        var dateEntered = new Date(inputDatum);
+        const gerade = new Date;
+        setInterval(feld.innerHTML = (gerade.getTime()-dateEntered.getTime())/360000, 1000);
     });
 
+    var inputDatum = document.querySelector("#auswahlDatum").value;
     var dateEntered = new Date(inputDatum);
 
     const inputUhrzeit = document.querySelector("#auswahlUhrzeit").value;
     const aktuellesDatum = new Date();
-
+    //feld.innerHTML = dateEntered;
 
     okButton.addEventListener("click", () => {
-        feld.innerHTML = dateEntered.getFullYear();
+        //TODO
     });
 
 }
 
+function setzeStandardwerte() {
+    //Bereitsstellung des Inputfeldes als  
+    const feld = document.querySelector("#auswahlDatum");
+    const heute = new Date();
+    feld.valueAsDate = heute;
+}
+
 const logic = ()=>{
+
+    setzeStandardwerte();
     onClickMenuEinblenden();
-    setInterval(zeigeUhrzeit, 1000);
     onButtonInputfelderAuswerten();
+    setInterval(zeigeUhrzeit, 1000);
 }
