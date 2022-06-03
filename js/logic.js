@@ -42,14 +42,39 @@ function onButtonInputfelderAuswerten() {
 }
 
 function setzeStandardwerte() {
-    //Bereitsstellung des Inputfeldes als  
-    const feld = document.querySelector("#auswahlDatum");
+    //Bereitsstellung der Inputfelder
+    const feldDatum = document.querySelector("#auswahlDatum");
+    const feldZeit = document.querySelector("#auswahlUhrzeit");
+
+    //Erzeugen eines neuen, aktuellen Datums
     const heute = new Date();
-    feld.valueAsDate = heute;
+    //Für Tests: Uhrzeit vor Mitternacht:
+    heute.setHours(23);
+
+    //Füllen des Datum-Inputfeldes mit heutigem Datum
+    if(heute.getHours() >= 22) {
+        const morgen = new Date();
+        morgen.setDate(heute.getDate()+1);
+        feldDatum.valueAsDate = morgen;
+    }
+    else if (heute.getHours() < 2) {
+        heute.setDate(heute.getDate()+1);
+        feldDatum.valueAsDate = heute;
+
+    }
+    else feldDatum.valueAsDate = heute;
+    //Füllen des Zeit-Inputfeldes mit Zeit aus "heute"
+    //davor Setzen der Voreinstellung (übernächste volle Stunde)
+
+
+    heute.setHours(heute.getHours()+2);
+    heute.setMinutes(00);
+    heute.setSeconds(00);
+    var voreingestellteZeit = heute.toLocaleTimeString([], {timeStyle: 'short'});
+    feldZeit.value = voreingestellteZeit;
 }
 
 const logic = ()=>{
-
     setzeStandardwerte();
     onClickMenuEinblenden();
     onButtonInputfelderAuswerten();
