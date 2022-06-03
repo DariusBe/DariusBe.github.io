@@ -78,6 +78,13 @@ html, body {
     display: none;
 }
 
+.countdownPanel .trennlinie {
+    margin: 2px 2px;
+    background-color: white;
+    height: 1px;
+    width: 75%;
+}
+
 /* ----- Für Mobilansicht: ----- */
 /*Burger-Menü anzeigen ab 844px*/
 @media screen and (max-width: 600px) {
