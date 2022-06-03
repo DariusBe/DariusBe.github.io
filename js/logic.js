@@ -107,11 +107,12 @@ function zeigeRestzeit() {
     if (datumsDifferenzInSek(outputDatum) < 0) {
         feld.innerHTML = "dieser Zeitpunkt liegt in der Vergangenheit!";
         document.querySelector("#restzeitLabel").style.display = "none";
+        document.querySelector("body").classList.toggle("html-alert");
     }
     else if (uebrigeStunden==1 && uebrigeMinuten==60) {
         feld.innerHTML = uebrigeMinuten%61+" Min.";
     }
-    else if (uebrigeStunden<1 && uebrigeMinuten<60 && uebrigeMinuten>60) {
+    else if (uebrigeStunden<1 && uebrigeMinuten<60 && uebrigeSekunden>61) {
         feld.innerHTML = uebrigeMinuten%61+" Min.";
     }
     else if (uebrigeSekunden<60) {
@@ -119,10 +120,7 @@ function zeigeRestzeit() {
     }
     else feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
     
-    if(uebrigeSekunden < 0) {
-        //Meldung anzeigen
-        document.querySelector("body").classList.toggle("html-alert");
-    }
+
 }
 
 function datumsDifferenzInSek(datum) {
