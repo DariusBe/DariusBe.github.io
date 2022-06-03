@@ -61,35 +61,36 @@ function setzeStandardwerte() {
     feldZeit.value = presetZeit;
 }
 
-function onButtonInputfelderAuswerten() {
-    const feld = document.querySelector("#displayRestzeit");
-    const okButton = document.querySelector("#okButton");
+// function onButtonInputfelderAuswerten() {
+//     const feld = document.querySelector("#displayRestzeit");
+//     const okButton = document.querySelector("#okButton");
 
-    document.querySelector("#auswahlDatum").addEventListener("change", () => {
-        var inputDatum = document.querySelector("#auswahlDatum").valueAsDate;
-        var dateEntered = new Date(inputDatum);
-        const gerade = new Date;
-        setInterval(feld.innerHTML = (gerade.getTime()-dateEntered.getTime())/360000, 1000);
-    });
+//     document.querySelector("#auswahlDatum").addEventListener("change", () => {
+//         var inputDatum = document.querySelector("#auswahlDatum").valueAsDate;
+//         var dateEntered = new Date(inputDatum);
+//         const gerade = new Date;
+//         setInterval(feld.innerHTML = (gerade.getTime()-dateEntered.getTime())/360000, 1000);
+//     });
 
-    var inputDatum = document.querySelector("#auswahlDatum").value;
-    var dateEntered = new Date(inputDatum);
+//     var inputDatum = document.querySelector("#auswahlDatum").value;
+//     var dateEntered = new Date(inputDatum);
 
-    const inputUhrzeit = document.querySelector("#auswahlUhrzeit").value;
-    const aktuellesDatum = new Date();
-    //feld.innerHTML = dateEntered;
+//     const inputUhrzeit = document.querySelector("#auswahlUhrzeit").value;
+//     const aktuellesDatum = new Date();
+//     //feld.innerHTML = dateEntered;
 
-    okButton.addEventListener("click", () => {
-        //TODO
-    });
+//     okButton.addEventListener("click", () => {
+//         //TODO
+//     });
 
-}
+// }
 
 function zeigeRestzeit() {
     const feldDatum = document.querySelector("#auswahlDatum").valueAsDate;
     const feldZeit = document.querySelector("#auswahlUhrzeit").valueAsDate;
     var feld = document.querySelector("#displayRestzeit");
-    
+    const okButton = document.querySelector("#okButton");
+
     //Datumsobjekt aus Feldern erzeugen:
     fJahr = feldDatum.getUTCFullYear();
     fMonat = feldDatum.getUTCMonth();
@@ -119,8 +120,6 @@ function zeigeRestzeit() {
         feld.innerHTML = uebrigeSekunden+1+" Sek.";
     }
     else feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
-    
-
 }
 
 function datumsDifferenzInSek(datum) {
@@ -129,7 +128,16 @@ function datumsDifferenzInSek(datum) {
     return diff;
 }
 
+function onButton() {
+    const okButton = document.querySelector("#okButton");
+
+    okButton.addEventListener("click", () => {
+        document.querySelector("#me").classList.toggle("menuElems-active");
+        document.querySelector(".countdownPanel").classList.toggle("countdownPanel-up");    });
+}
+
 const logic = ()=>{
+    onButton();
     setInterval(zeigeUhrzeit, 1000);
     setInterval(zeigeRestzeit, 1000);
     onClickMenuEinblenden();

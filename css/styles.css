@@ -9,7 +9,8 @@ html, body {
     background-image: url("/img/wide.png");
     /*background-position: center;*/
     background-repeat: no-repeat;
-    background-size: cover;    color: white;
+    background-size: cover;
+    color: white;
     font-family: 'Roboto', sans-serif;
     font-size: 25px;
     /*vertical-scrollen aus
@@ -39,8 +40,9 @@ html, body {
     align-items: center;
 
     /*Blur-Filter*/
-    backdrop-filter: blur(8px);
-    background-color: rgba(0, 0, 0, .1);
+    box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.1), 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+    background-color: rgba(0, 0, 0, .08);
+    backdrop-filter: blur(3px);
     border-radius: 25px;
     
 }
