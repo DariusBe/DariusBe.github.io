@@ -48,30 +48,32 @@ function setzeStandardwerte() {
 
     //Erzeugen eines neuen, aktuellen Datums
     const heute = new Date();
-    //Für Tests: Uhrzeit vor Mitternacht:
-    heute.setHours(23);
+    const presetDatum = new Date(heute);
+
+    /*Für Tests - Uhrzeit vor Mitternacht*/
+    //voreingestelltesDatum.setHours(22);
 
     //Füllen des Datum-Inputfeldes mit heutigem Datum
-    if(heute.getHours() >= 22) {
+    if(presetDatum.getHours() >= 22) {
         const morgen = new Date();
-        morgen.setDate(heute.getDate()+1);
+        morgen.setDate(presetDatum.getDate()+1);
         feldDatum.valueAsDate = morgen;
     }
-    else if (heute.getHours() < 2) {
-        heute.setDate(heute.getDate()+1);
-        feldDatum.valueAsDate = heute;
-
+    //Für 00/01 Uhr auftretende Datumsdiskrepanz zuaddieren
+    else if (presetDatum.getHours() < 2) {
+        presetDatum.setDate(presetDatum.getDate()+1);
+        feldDatum.valueAsDate = presetDatum;
     }
-    else feldDatum.valueAsDate = heute;
+    //Für alle anderen Uhrzeiten
+    else feldDatum.valueAsDate = presetDatum;
+
     //Füllen des Zeit-Inputfeldes mit Zeit aus "heute"
     //davor Setzen der Voreinstellung (übernächste volle Stunde)
-
-
-    heute.setHours(heute.getHours()+2);
-    heute.setMinutes(00);
-    heute.setSeconds(00);
-    var voreingestellteZeit = heute.toLocaleTimeString([], {timeStyle: 'short'});
-    feldZeit.value = voreingestellteZeit;
+    presetDatum.setHours(presetDatum.getHours()+2);
+    presetDatum.setMinutes(00);
+    presetDatum.setSeconds(00);
+    var presetZeit = presetDatum.toLocaleTimeString([], {timeStyle: 'short'});
+    feldZeit.value = presetZeit;
 }
 
 const logic = ()=>{
