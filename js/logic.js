@@ -91,6 +91,7 @@ function zeigeRestzeit() {
     const feldZeit = document.querySelector("#auswahlUhrzeit").valueAsDate;
     var feld = document.querySelector("#displayRestzeit");
     
+    //Datumsobjekt aus Feldern erzeugen:
     fJahr = feldDatum.getUTCFullYear();
     fMonat = feldDatum.getUTCMonth();
     fTag = feldDatum.getUTCDate();
@@ -100,14 +101,22 @@ function zeigeRestzeit() {
     var outputDatum = new Date(fJahr, fMonat, fTag, fStunde, fMinute, fSekunde, 0);
 
     //Datumsdifferenz in Sekunden:
-    var uebrigeStunden = Math.floor(datumsDifferenzInSek(outputDatum)/3600);
-    var uebrigeMinuten = Math.floor(datumsDifferenzInSek(outputDatum)/60)%60;
-    feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten + " Min.";
+    var uebrigeSekunden = Math.floor(datumsDifferenzInSek(outputDatum));
+    var uebrigeMinuten = Math.floor(uebrigeSekunden/60);
+    var uebrigeStunden = Math.floor(uebrigeSekunden/3600);
+
+    if (datumsDifferenzInSek(outputDatum) < 0) {
+        feld.innerHTML = "dieser Zeitpunkt liegt in der Vergangenheit!";
+    }
+    else if (uebrigeStunden==1 && uebrigeMinuten==60) {
+        feld.innerHTML = uebrigeMinuten%61+" Min.";
+    }
+    else feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
 }
 
 function datumsDifferenzInSek(datum) {
     const jetzt = new Date();
-    var diff = (Math.floor((datum-jetzt)/(1000)+1));
+    var diff = ((datum-jetzt)/(1000));
     return diff;
 }
 
