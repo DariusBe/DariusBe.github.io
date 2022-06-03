@@ -1,4 +1,5 @@
 html, body {
+    size: 100%;
     display: flex;
     flex-direction: column;
     margin: 0px;
@@ -77,6 +78,10 @@ html, body {
     text-align: center;
 }
 
+.countdownPanel label {
+    font-size: small;
+}
+
 
 .countdownPanel h3 {
     font-size: smaller;
@@ -91,6 +96,7 @@ html, body {
     background-color: white;
     height: 1px;
     width: 75%;
+    margin: 15px;
 }
 
 /* ----- Für Mobilansicht: ----- */
