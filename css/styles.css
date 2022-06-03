@@ -3,16 +3,15 @@ html, body {
     display: flex;
     flex-direction: column;
     margin: 0px;
+    
     padding: 0px;
 
-    background-color: rgb(47, 47, 93);
     background-image: url("/img/wide.png");
     /*background-position: center;*/
     background-repeat: no-repeat;
     background-size: cover;    color: white;
     font-family: 'Roboto', sans-serif;
     font-size: 25px;
-
     /*vertical-scrollen aus
     * dudurch sind nach außen verschobene Elemente nicht erreichbar */
     overflow-x: hidden;
@@ -49,9 +48,10 @@ html, body {
     padding: 5px;
 }
 .topbar input {
+    border: none;
     width: 50%;
     max-width: 250px;
-    border-radius: 5px;
+    border-radius: 4px;
 }
 .topbar #okButton {
     max-width: 60px;
@@ -143,4 +143,9 @@ html, body {
 
 .countdownPanel-up {
     transform: scale(75%) translateY(0%);
+}
+
+.html-alert {
+    background: rgba(15, 15, 15, .5);
+    transition: all .2s ease-in-out;
 }
