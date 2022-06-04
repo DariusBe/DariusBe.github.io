@@ -1,3 +1,4 @@
+const startzeit = new Date();
 
 function zeigeUhrzeit()
 {
@@ -10,7 +11,7 @@ function zeigeUhrzeit()
         second: '2-digit',
       });
     displayZeit.innerHTML = str;
-};
+}
 
 function onClickMenuEinblenden() {
     const burgermenu = document.querySelector("#bm");
@@ -30,7 +31,7 @@ function setzeStandardwerte() {
     const presetDatum = new Date(heute);
 
     /*Für Tests - Uhrzeit vor Mitternacht*/
-    //presetDatum.setHours(22);
+    presetDatum.setHours(1);
 
     //Füllen des Datum-Inputfeldes mit heutigem Datum
     if(presetDatum.getHours() >= 22) {
@@ -86,26 +87,28 @@ function setzeStandardwerte() {
 // }
 
 function zeigeRestzeit() {
-    const feldDatum = document.querySelector("#auswahlDatum").valueAsDate;
-    const feldZeit = document.querySelector("#auswahlUhrzeit").valueAsDate;
     var feld = document.querySelector("#displayRestzeit");
-    const okButton = document.querySelector("#okButton");
 
     //Datumsobjekt aus Feldern erzeugen:
-    fJahr = feldDatum.getUTCFullYear();
-    fMonat = feldDatum.getUTCMonth();
-    fTag = feldDatum.getUTCDate();
-    fStunde = feldZeit.getUTCHours();
-    fMinute = feldZeit.getUTCMinutes();
-    fSekunde = feldZeit.getUTCSeconds();
-    var outputDatum = new Date(fJahr, fMonat, fTag, fStunde, fMinute, fSekunde, 0);
+    // fJahr = feldDatum.getUTCFullYear();
+    // fMonat = feldDatum.getUTCMonth();
+    // fTag = feldDatum.getUTCDate();
+    // fStunde = feldZeit.getUTCHours();
+    // fMinute = feldZeit.getUTCMinutes();
+    // fSekunde = feldZeit.getUTCSeconds();
+    // var outputDatum = new Date(fJahr, fMonat, fTag, fStunde, fMinute, fSekunde, 0);
+
+    var outputDatum = new Date(leseFelderAus());
+    const jetzt = new Date();
+
 
     //Datumsdifferenz in Sekunden:
-    var uebrigeSekunden = Math.floor(datumsDifferenzInSek(outputDatum));
+    var uebrigeSekunden;
+    uebrigeSekunden = Math.floor(datumsDifferenzInSek(outputDatum, jetzt));
     var uebrigeMinuten = Math.floor(uebrigeSekunden/60);
     var uebrigeStunden = Math.floor(uebrigeSekunden/3600);
 
-    if (datumsDifferenzInSek(outputDatum) < 0) {
+    if (datumsDifferenzInSek(outputDatum, jetzt) < 0) {
         feld.innerHTML = "dieser Zeitpunkt liegt in der Vergangenheit!";
         document.querySelector("#restzeitLabel").style.display = "none";
         document.querySelector("body").classList.toggle("html-alert");
@@ -120,27 +123,68 @@ function zeigeRestzeit() {
         feld.innerHTML = uebrigeSekunden+1+" Sek.";
     }
     else feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
+
+
+    /* Ladebalken: */
+    /* 3000*/
+
+
+    /*const prozent = (minVal/maxVal)*100;*/
+    const lel = startzeit;
+    const minVal = jetzt;
+    const maxVal = outputDatum;
+    const schritt = minVal-lel;
+    const rech = maxVal-lel;
+    var prozent = Math.floor((schritt/rech)*100);
+    document.querySelector("#test").innerHTML = 
+    "maxVal: " + maxVal.getTime() + "<br>" +
+    "minVal: " + minVal.getTime() + "<br>" + 
+    "start: " + lel.getTime() + "<br>" +
+    "schritte: " + schritt + "<br>" +
+    "max-start: " + rech + "<br>" +
+    "prozent: " + prozent;
+    str = prozent+"%";
+    document.querySelector(".fuellStand").style.width = str;
+
 }
 
-function datumsDifferenzInSek(datum) {
-    const jetzt = new Date();
-    var diff = ((datum-jetzt)/(1000));
+function leseFelderAus() {
+    const feldDatum = document.querySelector("#auswahlDatum").valueAsDate;
+    const feldZeit = document.querySelector("#auswahlUhrzeit").valueAsDate;
+
+    //Datumsobjekt aus Feldern erzeugen:
+    fJahr = feldDatum.getUTCFullYear();
+    fMonat = feldDatum.getUTCMonth();
+    fTag = feldDatum.getUTCDate();
+    fStunde = feldZeit.getUTCHours();
+    fMinute = feldZeit.getUTCMinutes();
+    fSekunde = feldZeit.getUTCSeconds();
+    const outputDatum = new Date(fJahr, fMonat, fTag, fStunde, fMinute, fSekunde, 0);
+    
+    return outputDatum;
+}
+
+function datumsDifferenzInSek(datumEnde, datumAnfang) {
+    var diff = ((datumEnde-datumAnfang)/1000);
     return diff;
 }
+
+
 
 function onButton() {
     const okButton = document.querySelector("#okButton");
 
     okButton.addEventListener("click", () => {
         document.querySelector("#me").classList.toggle("menuElems-active");
-        document.querySelector(".countdownPanel").classList.toggle("countdownPanel-up");    });
+        document.querySelector(".countdownPanel").classList.toggle("countdownPanel-up");
+    });
 }
 
 const logic = ()=>{
+    
     onButton();
     setInterval(zeigeUhrzeit, 1000);
     setInterval(zeigeRestzeit, 1000);
     onClickMenuEinblenden();
     setzeStandardwerte();
-    onButtonInputfelderAuswerten();
 }
