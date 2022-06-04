@@ -1,4 +1,4 @@
-const startzeit = new Date();
+var startzeit = new Date();
 
 function zeigeUhrzeit()
 {
@@ -31,7 +31,7 @@ function setzeStandardwerte() {
     const presetDatum = new Date(heute);
 
     /*Für Tests - Uhrzeit vor Mitternacht*/
-    presetDatum.setHours(1);
+    // presetDatum.setHours(1);
 
     //Füllen des Datum-Inputfeldes mit heutigem Datum
     if(presetDatum.getHours() >= 22) {
@@ -124,11 +124,7 @@ function zeigeRestzeit() {
     }
     else feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
 
-
-    /* Ladebalken: */
-    /* 3000*/
-
-
+    /*Ladebalken*/
     /*const prozent = (minVal/maxVal)*100;*/
     const lel = startzeit;
     const minVal = jetzt;
@@ -136,15 +132,20 @@ function zeigeRestzeit() {
     const schritt = minVal-lel;
     const rech = maxVal-lel;
     var prozent = Math.floor((schritt/rech)*100);
-    document.querySelector("#test").innerHTML = 
-    "maxVal: " + maxVal.getTime() + "<br>" +
-    "minVal: " + minVal.getTime() + "<br>" + 
-    "start: " + lel.getTime() + "<br>" +
-    "schritte: " + schritt + "<br>" +
-    "max-start: " + rech + "<br>" +
-    "prozent: " + prozent;
+
+    /* Testausgabe */
+    // document.querySelector("#ausgabe").style.display = "block";
+    // document.querySelector("#ausgabe").innerHTML =
+    // "maxVal: " + maxVal.getTime() + "<br>" +
+    // "minVal: " + minVal.getTime() + "<br>" + 
+    // "start: " + lel.getTime() + "<br>" +
+    // "schritte: " + schritt + "<br>" +
+    // "max-start: " + rech + "<br>" +
+    // "prozent: " + prozent;
     str = prozent+"%";
-    document.querySelector(".fuellStand").style.width = str;
+    if(prozent <100) {
+        document.querySelector(".fuellStand").style.width = str;
+    }
 
 }
 
@@ -175,6 +176,7 @@ function onButton() {
     const okButton = document.querySelector("#okButton");
 
     okButton.addEventListener("click", () => {
+        startzeit = new Date();
         document.querySelector("#me").classList.toggle("menuElems-active");
         document.querySelector(".countdownPanel").classList.toggle("countdownPanel-up");
     });

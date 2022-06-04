@@ -3,7 +3,6 @@ html, body {
     display: flex;
     flex-direction: column;
     margin: 0px;
-    
     padding: 0px;
 
     background-image: url("/img/wide.png");
@@ -41,6 +40,8 @@ html, body {
 
     /*Blur-Filter*/
     box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.1), 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+    box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .45);
+
     background-color: rgba(0, 0, 0, .08);
     border-radius: 25px;
     backdrop-filter: blur(15px);
@@ -55,6 +56,7 @@ html, body {
     width: 50%;
     max-width: 250px;
     border-radius: 4px;
+    
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 6px 20px 0 rgba(0, 0, 0, 0.15);
 }
 .topbar #okButton {
@@ -112,19 +114,25 @@ html, body {
 
 /*Ladebalken*/
 .ladeBalken {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    height: 50px;
-    background-color: rgba(0, 0, 0, .08);
-    backdrop-filter: blur(8px);
-}
-.ladeBalken .fuellStand {
-    width: 10%;
-    height: 50px;
-    background-color: rgba(255, 255, 255, 0.1);
+    position: flex;
+    margin: auto;
+    font-size: small;
+    text-align: center;
+    width: 50%;
+    height: 40px;
+    background-color: rgba(213, 213, 213,.3);
+    backdrop-filter: blur(2px);
+    border-radius: 100cm;
+    box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .35);
+    overflow: hidden;
 }
 
+.fuellStand {
+    width: 1%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.4);
+    box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .1);
+}
 
 
 /* ----- Für Mobilansicht: ----- */
@@ -171,4 +179,9 @@ html, body {
 .html-alert {
     background: rgba(15, 15, 15, .5);
     transition: all .2s ease-in-out;
+}
+
+#ausgabe {
+    display: none;
+    font-size: small;
 }
