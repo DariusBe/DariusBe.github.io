@@ -1,4 +1,4 @@
-html, body {
+html, body, .frame {
     height: 100%;
     width: 100%;
     display: flex;
@@ -43,9 +43,9 @@ html, body {
     /* box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.1), 0 12px 40px 0 rgba(0, 0, 0, 0.15); */
     box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .45);
 
-    background-color: rgba(0, 0, 0, .08);
+    background-color: rgba(213, 213, 213,.3);
+    backdrop-filter: blur(10px);
     border-radius: 25px;
-    backdrop-filter: blur(15px);
 }
 .topbar label {
     font-size: 10px;
@@ -122,7 +122,7 @@ html, body {
     width: 50%;
     height: 40px;
     background-color: rgba(213, 213, 213,.3);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(10px);
     border-radius: 100cm;
     box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .35);
     overflow: hidden;
