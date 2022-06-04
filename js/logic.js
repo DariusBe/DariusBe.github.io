@@ -124,6 +124,10 @@ function zeigeRestzeit() {
     }
     else feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
 
+    //nach Durchlauf Label "verbliebene Zeit" wieder einblenden
+    document.querySelector("#restzeitLabel").style.display = "block";
+
+
     /*Ladebalken*/
     /*const prozent = (minVal/maxVal)*100;*/
     const lel = startzeit;
