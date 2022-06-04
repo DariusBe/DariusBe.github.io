@@ -2,6 +2,7 @@
     "name": "Countdown",
     "short_name": "Counter",
     "start_url": "/index.html",
+    "lang": "en-US",
     "display": "fullscreen",
     "background_color": "rgb(114, 114, 114)",
     "theme_color": "rgb(180, 180, 180)",
@@ -12,6 +13,13 @@
             "type": "image/png",
             "sizes": "144x144",
             "purpose": "iOS"
+
+        },       
+        {
+            "src": "/img/Antu_Charm_512x512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "any"
 
         },
         {
