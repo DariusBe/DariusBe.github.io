@@ -87,7 +87,7 @@ function setzeStandardwerte() {
 // }
 
 function zeigeRestzeit() {
-    var feld = document.querySelector("#displayRestzeit");
+    const feld = document.querySelector("#displayRestzeit");
 
     //Datumsobjekt aus Feldern erzeugen:
     // fJahr = feldDatum.getUTCFullYear();
@@ -126,7 +126,8 @@ function zeigeRestzeit() {
 
     //nach Durchlauf Label "verbliebene Zeit" wieder einblenden
     document.querySelector("#restzeitLabel").style.display = "block";
-
+    const fuellung = document.querySelector(".fuellStand");
+    const balken = document.querySelector(".ladeBalken");
 
     /*Ladebalken*/
     /*const prozent = (minVal/maxVal)*100;*/
@@ -146,12 +147,13 @@ function zeigeRestzeit() {
     // "schritte: " + schritt + "<br>" +
     // "max-start: " + rech + "<br>" +
     // "prozent: " + prozent;
+    
     str = prozent+"%";
-    if(prozent <100) {
-        document.querySelector(".fuellStand").style.width = str;
+    if(prozent<100) {
+        fuellung.style.width = str;
     }
     else if (prozent>100) {
-        document.querySelector(".fuellStand").style.width = "100%";
+        fuellung.style.width = str;
     }
 
 }
@@ -192,10 +194,9 @@ function onButton() {
 }
 
 const logic = ()=>{
-    
     onButton();
     setInterval(zeigeUhrzeit, 1000);
-    setInterval(zeigeRestzeit, 1000);
     onClickMenuEinblenden();
     setzeStandardwerte();
+    setInterval(zeigeRestzeit, 1000);
 }

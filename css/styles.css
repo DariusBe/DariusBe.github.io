@@ -116,7 +116,7 @@ html, body, .frame {
 
 /*Ladebalken*/
 .ladeBalken {
-    position: flex;
+    position: block;
     margin: auto;
     font-size: small;
     text-align: center;
@@ -130,7 +130,7 @@ html, body, .frame {
 }
 
 .fuellStand {
-    width: 1%;
+    width: 0%;
     height: 100%;
     
     background: -moz-linear-gradient(top,  rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%);
