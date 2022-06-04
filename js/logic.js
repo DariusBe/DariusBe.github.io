@@ -146,6 +146,9 @@ function zeigeRestzeit() {
     if(prozent <100) {
         document.querySelector(".fuellStand").style.width = str;
     }
+    else if (prozent>100) {
+        document.querySelector(".fuellStand").style.width = "100%";
+    }
 
 }
 

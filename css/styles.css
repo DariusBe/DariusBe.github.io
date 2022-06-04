@@ -120,8 +120,8 @@ html, body, .frame {
     margin: auto;
     font-size: small;
     text-align: center;
-    width: 50%;
-    height: 40px;
+    width: 40%;
+    height: 25px;
     background-color: rgba(213, 213, 213,.3);
     backdrop-filter: blur(10px);
     border-radius: 100cm;
@@ -132,8 +132,10 @@ html, body, .frame {
 .fuellStand {
     width: 1%;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.4);
-    box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .1);
+    
+    background: -moz-linear-gradient(top,  rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%);
+    background: -webkit-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 100%);
+    background: linear-gradient(to bottom,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 100%);
 }
 
 
