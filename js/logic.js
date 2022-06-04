@@ -179,6 +179,8 @@ function onButton() {
         startzeit = new Date();
         document.querySelector("#me").classList.toggle("menuElems-active");
         document.querySelector(".countdownPanel").classList.toggle("countdownPanel-up");
+        //Fehler ausschließen, dass Body-Alert nach Auswahl gültiger Uhrzeit erhalten bleibt:
+        document.querySelector("body").classList.remove("html-alert");
     });
 }
 
