@@ -1,40 +1,46 @@
 //Name für Cache-Ressource:
 const staticCacheName = "site-static";
-//Liste zu cachender Inhalte:
+//Array der möglichen Requests, die gecacht werden sollen
 const assets = [
-    //Array der möglichen Requests, die gecacht werden sollen
-    "/",     //unspez. index-Page
-    "/index.html",  //index-Page
+    "/",
+    "/index.html",
     "/js/app.js",
-    "js/logic.js",
-    "css/style.css",
+    "/js/logic.js",
+    "/manifest.json",
+    "/css/styles.css",
     "/img/wide.png",
-    "https://fonts.googleapis.com", //Online-Fonts
-    "https://fonts.gstatic.com",
+    "/img/Antu_Charm_512x512.png",
+    "/img/Antu_Charm_DARK_144x144.png",
+    "https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap",
+    "https://fonts.gstatic.com/s/roboto/v30/KFOkCnqEu92Fr1MmgVxIIzI.woff2",
 ];
 
-//Vorbereitung + Konsolen-Output
+//Service Worker für Caching aller nötigen Elemente (offline)
 self.addEventListener("install", event => {
-    
-    //da SW-Install vielleicht früher beendet als Caching:
+    //da SerWorker-Install vielleicht früher beendet als Caching:
+    //Ressourcen-Caching (asynchron) abwarten mit waitUntil()
     event.waitUntil(
-
-        //Ressourcen-Caching (asynchron)
         caches.open(staticCacheName).then(cache => {
-            
             console.log("Elemente gecacht.");
-            //Array von Ressourcen vom Server abrufen und in Cache ablegen:
             cache.addAll(assets);
         })
     );
-    console.log("Service Worker wurde installiert");
+    console.log("Caching-Service Worker installiert.");
 });
 
 self.addEventListener("activate", event => {
-    console.log("Service Worker wurde aktiviert");
+    console.log("Service Worker aktiviert");
 });
 
-//Fetch-Events:
+//Fetch-Events abfangen, fetch auf Cache umleiten (für offline-Funktionalität)
 self.addEventListener("fetch", event => {
-    console.log("Fetch ausgelöst", event);
+    //console.log("Fetch ausgelöst", event);
+    event.respondWith(
+        //wenn der Request auf etwas zielt, das in der Cache liegt:
+        caches.match(event.request).then(cacheResponse => {
+            //returne diesen Inhalt, sonst returne request --> fahre (online) fort
+            //
+            return cacheResponse || fetch(event.request);
+        })
+    )
 });
