@@ -19,7 +19,7 @@
             "src": "/img/Antu_Charm_512x512.png",
             "type": "image/png",
             "sizes": "512x512",
-            "purpose": "any"
+            "purpose": "maskable"
 
         },
         {
