@@ -179,17 +179,24 @@ function datumsDifferenzInSek(datumEnde, datumAnfang) {
     return diff;
 }
 
-
-
 function onButton() {
     const okButton = document.querySelector("#okButton");
+    const panel = document.querySelector(".countdownPanel");
 
     okButton.addEventListener("click", () => {
         startzeit = new Date();
-        document.querySelector("#me").classList.toggle("menuElems-active");
-        document.querySelector(".countdownPanel").classList.toggle("countdownPanel-up");
+        //Unterscheidung notwendig: nur in Mobil-Ansicht
+        //wird Panel nach oben verschoben; auch: Aufhebung des Alert-Effekts 
+        if (window.matchMedia("(max-width: 600px)").matches) {
+            document.querySelector("body").classList.remove("html-alert");
+            panel.classList.toggle("countdownPanel-up");
+            document.querySelector("#me").classList.toggle("menuElems-active");
+
+          }
+        else {
+            document.querySelector("body").classList.remove("html-alert");
+        }
         //Fehler ausschließen, dass Body-Alert nach Auswahl gültiger Uhrzeit erhalten bleibt:
-        document.querySelector("body").classList.remove("html-alert");
     });
 }
 
