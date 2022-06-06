@@ -1,5 +1,5 @@
 //Name für Cache-Ressource:
-const staticCacheName = "site-static";
+const staticCacheName = "site-static-v1";
 //Array der möglichen Requests, die gecacht werden sollen
 const assets = [
     "/",
@@ -28,8 +28,25 @@ self.addEventListener("install", event => {
     console.log("Caching-Service Worker installiert.");
 });
 
+//Problem: bei Änderungen an Dateien werden diese in Cache momentan nicht aktualisiert
+//Deshalb "site-static" muss versioniert werden! --> neues Install-Event
+//Beschaffung 
 self.addEventListener("activate", event => {
     console.log("Service Worker aktiviert");
+
+    event.waitUntil(
+        caches.keys().then(keys => {
+            console.log(keys);
+            //alle alten Caches löschen (asynchroner Task)
+            //dafür alle promises als Array 
+            return Promise.all(keys
+                .filter(key => key !== staticCacheName)
+                //wenn Ausdruck wahr: behalte betrachteten Promise (mittels Key) in Liste
+                //lösche alle keys in diesem Array --> alle alten Caches
+                .map(key => caches.delete(key))
+            )
+        })
+    );
 });
 
 //Fetch-Events abfangen, fetch auf Cache umleiten (für offline-Funktionalität)
@@ -39,8 +56,7 @@ self.addEventListener("fetch", event => {
         //wenn der Request auf etwas zielt, das in der Cache liegt:
         caches.match(event.request).then(cacheResponse => {
             //returne diesen Inhalt, sonst returne request --> fahre (online) fort
-            //
             return cacheResponse || fetch(event.request);
         })
-    )
+    );
 });
