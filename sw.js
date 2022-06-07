@@ -57,9 +57,7 @@ self.addEventListener("fetch", event => {
         //wenn der Request auf etwas zielt, das in der Cache liegt:
         caches.match(event.request).then(cacheResponse => {
             //returne diesen Inhalt, sonst returne request --> fahre (online) fort
-            return cacheResponse || fetch(event.request).then(fetchResponse => {
-                //dann gebe diesen in dynamic cache
-            });
+            return cacheResponse || fetch(event.request);
         })
     );
 });
