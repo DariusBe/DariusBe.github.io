@@ -70,7 +70,7 @@ html, body, .frame {
     border-width: 0;
 }
 .topbar #okButton:active {
-    background-color: #F2CB18;
+    background-color: #afd3c0; /*#F2CB18;*/
     box-shadow: none;
 
 }
@@ -120,12 +120,13 @@ html, body, .frame {
 .ladeBalken {
     position: relative;
     display: flex;
-    bottom: 10%;
+    bottom: 5%;
     margin: auto;
     font-size: small;
     text-align: center;
     width: 40%;
     height: 25px;
+    outline: .5mm solid rgb(46, 29, 29);
     background-color: rgba(213, 213, 213,.3);
     backdrop-filter: blur(10px);
     border-radius: 100cm;
@@ -193,69 +194,4 @@ html, body, .frame {
 #ausgabe {
     display: none;
     font-size: small;
-}
-
-/*About-Page Styles*/
-/*Link (in index.html)*/
-.aboutLink {
-    display: block;
-    position: relative;
-    left: 15px;
-    bottom: 15px;
-    font-size: small;
-    text-decoration: none;
-}
-.aboutLink a {
-    font-size: x-small;
-    color:rgba(213, 213, 213,1);
-    text-decoration: none;
-    border-radius: 12px;
-    border: 1px solid white;
-    padding: 6px;
-}
-.aboutLink a:active {
-    color:rgb(86, 86, 86);
-    text-decoration: none;  
-}
-
-.about {
-    text-decoration: none;
-    position: relative;
-    margin: auto;
-    width: 100%;
-    margin-top: 25px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    border-radius: 10px;
-}
-
-.about div {
-    margin-top: 50px;
-    padding: 25px;
-    width: 75%;
-    max-width: 500px;
-    align-items: center;
-    font-size: small;
-
-    /*Blur-Filter*/
-    backdrop-filter: blur(10px);
-
-    /* box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.1), 0 12px 40px 0 rgba(0, 0, 0, 0.15); */
-    box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .45);
-
-    background-color: rgba(213, 213, 213,.3);
-    border-radius: 25px;
-}
-
-.about a {
-    font-size: x-small;
-    position: absolute;
-    right: 15px;
-    bottom: 15px;
-    color:rgb(255, 255, 255);
-    text-decoration: none;
-    border-radius: 12px;
-    border: 1px solid white;
-    padding: 6px;
 }

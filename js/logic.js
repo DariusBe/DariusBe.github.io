@@ -201,6 +201,7 @@ function onButton() {
 }
 
 const logic = ()=>{
+    isPushSupported();
     onButton();
     setInterval(zeigeUhrzeit, 1000);
     onClickMenuEinblenden();
