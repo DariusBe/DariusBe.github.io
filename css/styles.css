@@ -192,3 +192,63 @@ html, body, .frame {
     display: none;
     font-size: small;
 }
+
+/*About-Page Styles*/
+/*Link (in index.html)*/
+.aboutLink {
+    display: block;
+    position: relative;
+    left: 15px;
+    bottom: 15px;
+    font-size: small;
+    text-decoration: none;
+}
+.aboutLink a {
+    color:rgba(213, 213, 213,1);
+    text-decoration: none;
+    border-radius: 5px;
+    border: 1px solid white;
+    padding: 4px;
+}
+.aboutLink a:active {
+    color:rgb(86, 86, 86);
+    text-decoration: none;  
+}
+
+.about {
+    text-decoration: none;
+    position: relative;
+    margin: auto;
+    width: 100%;
+    margin-top: 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 10px;
+}
+
+.about div {
+    margin-top: 50px;
+    padding: 25px;
+    width: 75%;
+    max-width: 500px;
+    align-items: center;
+    font-size: small;
+
+    /*Blur-Filter*/
+    backdrop-filter: blur(10px);
+
+    /* box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.1), 0 12px 40px 0 rgba(0, 0, 0, 0.15); */
+    box-shadow: inset 0 -1px 1px rgba(255, 255, 255, .45);
+
+    background-color: rgba(213, 213, 213,.3);
+    border-radius: 25px;
+}
+
+.about a {
+    color:rgb(255, 255, 255);
+    text-decoration: none;
+    border-radius: 5px;
+    border: 1px solid white;
+    padding: 4px;
+}

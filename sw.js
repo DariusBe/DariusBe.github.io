@@ -1,9 +1,10 @@
 //Name für Cache-Ressource:
 const staticCacheName = "site-static-v1";
-//Array der möglichen Requests, die gecacht werden sollen
+//Array der möglichen Requests, die gecacht werden müssen (offline-Funktionalität):
 const assets = [
     "/",
     "/index.html",
+    "/pages/about.html",
     "/js/app.js",
     "/js/logic.js",
     "/manifest.json",
@@ -15,7 +16,7 @@ const assets = [
     "https://fonts.gstatic.com/s/roboto/v30/KFOkCnqEu92Fr1MmgVxIIzI.woff2",
 ];
 
-//Service Worker für Caching aller nötigen Elemente (offline)
+//Service Worker für Caching aller nötigen Elemente
 self.addEventListener("install", event => {
     //da SerWorker-Install vielleicht früher beendet als Caching:
     //Ressourcen-Caching (asynchron) abwarten mit waitUntil()
