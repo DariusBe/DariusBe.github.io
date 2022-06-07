@@ -118,7 +118,9 @@ html, body, .frame {
 
 /*Ladebalken*/
 .ladeBalken {
-    position: block;
+    position: relative;
+    display: flex;
+    bottom: 10%;
     margin: auto;
     font-size: small;
     text-align: center;
@@ -204,11 +206,12 @@ html, body, .frame {
     text-decoration: none;
 }
 .aboutLink a {
+    font-size: x-small;
     color:rgba(213, 213, 213,1);
     text-decoration: none;
-    border-radius: 5px;
+    border-radius: 12px;
     border: 1px solid white;
-    padding: 4px;
+    padding: 6px;
 }
 .aboutLink a:active {
     color:rgb(86, 86, 86);
@@ -246,9 +249,13 @@ html, body, .frame {
 }
 
 .about a {
+    font-size: x-small;
+    position: absolute;
+    right: 15px;
+    bottom: 15px;
     color:rgb(255, 255, 255);
     text-decoration: none;
-    border-radius: 5px;
+    border-radius: 12px;
     border: 1px solid white;
-    padding: 4px;
+    padding: 6px;
 }
