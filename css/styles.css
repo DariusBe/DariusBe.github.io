@@ -30,6 +30,18 @@ html, body, .frame {
 
     border-radius: 10px;
 }
+.topbar span {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 15px;
+    text-align: center;
+}
+.topbar #notifyCheckbox {
+    width: auto;
+    height: auto;
+}
+
 .topbar div {
     margin-top: 50px;
     padding-top: 25px;
@@ -53,6 +65,9 @@ html, body, .frame {
     padding: 5px;
 }
 .topbar input {
+    display: block;
+    position: relative;
+    margin: auto;
     border: none;
     outline: none;
     width: 50%;
@@ -194,4 +209,9 @@ html, body, .frame {
 #ausgabe {
     display: none;
     font-size: small;
+}
+
+/* Schriftfarbenwechsel bei Viertelstunden */
+.blink {
+    color: rgb(195, 195, 195);
 }

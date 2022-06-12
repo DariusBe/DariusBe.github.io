@@ -62,43 +62,22 @@ function setzeStandardwerte() {
     feldZeit.value = presetZeit;
 }
 
-// function onButtonInputfelderAuswerten() {
-//     const feld = document.querySelector("#displayRestzeit");
-//     const okButton = document.querySelector("#okButton");
-
-//     document.querySelector("#auswahlDatum").addEventListener("change", () => {
-//         var inputDatum = document.querySelector("#auswahlDatum").valueAsDate;
-//         var dateEntered = new Date(inputDatum);
-//         const gerade = new Date;
-//         setInterval(feld.innerHTML = (gerade.getTime()-dateEntered.getTime())/360000, 1000);
-//     });
-
-//     var inputDatum = document.querySelector("#auswahlDatum").value;
-//     var dateEntered = new Date(inputDatum);
-
-//     const inputUhrzeit = document.querySelector("#auswahlUhrzeit").value;
-//     const aktuellesDatum = new Date();
-//     //feld.innerHTML = dateEntered;
-
-//     okButton.addEventListener("click", () => {
-//         //TODO
-//     });
-
-// }
+function aendereTimerzeit() {
+    const feld = document.querySelector("#displayEnde");
+    var date = new Date(leseFelderAus());
+    ende = date.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    feld.innerHTML = "Ende: " + ende;
+}
 
 function zeigeRestzeit() {
     const feld = document.querySelector("#displayRestzeit");
-
-    //Datumsobjekt aus Feldern erzeugen:
-    // fJahr = feldDatum.getUTCFullYear();
-    // fMonat = feldDatum.getUTCMonth();
-    // fTag = feldDatum.getUTCDate();
-    // fStunde = feldZeit.getUTCHours();
-    // fMinute = feldZeit.getUTCMinutes();
-    // fSekunde = feldZeit.getUTCSeconds();
-    // var outputDatum = new Date(fJahr, fMonat, fTag, fStunde, fMinute, fSekunde, 0);
-
     var outputDatum = new Date(leseFelderAus());
+
+    localStorage.setItem("gewaehltesDatum", outputDatum);
+
     const jetzt = new Date();
 
 
@@ -114,17 +93,20 @@ function zeigeRestzeit() {
         document.querySelector("body").classList.toggle("html-alert");
     }
     else if (uebrigeStunden==1 && uebrigeMinuten==60) {
+        if(uebrigeMinuten%15 == 0) document.querySelector("#displayRestzeit").classList.toggle("blink");
         feld.innerHTML = uebrigeMinuten%61+" Min.";
     }
     else if (uebrigeStunden<1 && uebrigeMinuten<60 && uebrigeSekunden>61) {
-        feld.innerHTML = uebrigeMinuten%61+" Min.";
-    }
+        if(uebrigeMinuten%15 == 0) document.querySelector("#displayRestzeit").classList.toggle("blink");
+        feld.innerHTML = uebrigeMinuten%61+" Min.";    }
     else if (uebrigeSekunden<60) {
         feld.innerHTML = uebrigeSekunden+1+" Sek.";
     }
-    else feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
-
-    //nach Durchlauf Label "verbliebene Zeit" wieder einblenden
+    else {
+        if(uebrigeMinuten%15 == 0) document.querySelector("#displayRestzeit").classList.toggle("blink");
+        feld.innerHTML = uebrigeStunden+" Std. " + uebrigeMinuten%60+" Min.";
+    }
+    //nach Durchlauf Label "verbliebene Zeit" wieder einblenden und style wiederherstellen
     document.querySelector("#restzeitLabel").style.display = "block";
     const fuellung = document.querySelector(".fuellStand");
     const balken = document.querySelector(".ladeBalken");
@@ -184,6 +166,7 @@ function onButton() {
     const panel = document.querySelector(".countdownPanel");
 
     okButton.addEventListener("click", () => {
+        aendereTimerzeit();
         startzeit = new Date();
         //Unterscheidung notwendig: nur in Mobil-Ansicht
         //wird Panel nach oben verschoben; auch: Aufhebung des Alert-Effekts 
@@ -200,11 +183,36 @@ function onButton() {
     });
 }
 
+// function checkoxAuslesen() {
+//     const checkbox = document.querySelector("#notifyCheckbox");
+
+//     checkbox.addEventListener("change", () => {
+//         pushInit();
+//         istPushSupported();
+
+//         if(Notification.permission === 'granted') {
+
+//             console.log("1");
+//             unsubscribePush();
+//         }
+//         else if(Notification.permission === 'denied') {
+//             console.log("2");
+//             pushAnmelden();
+//         }
+//         else if(Notification.permission === 'default') {
+//             console.log("3");
+//             var n = new Notification("Hi there!");
+//         }
+//     });
+
+// }
+
 const logic = ()=>{
-    isPushSupported();
+    //checkoxAuslesen();
     onButton();
     setInterval(zeigeUhrzeit, 1000);
     onClickMenuEinblenden();
     setzeStandardwerte();
+    aendereTimerzeit();
     setInterval(zeigeRestzeit, 1000);
 }

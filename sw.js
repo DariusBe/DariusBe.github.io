@@ -4,7 +4,6 @@ const staticCacheName = "site-static-v1";
 const assets = [
     "/",
     "/index.html",
-    "/pages/about.html",
     "/js/app.js",
     "/js/logic.js",
     "/manifest.json",

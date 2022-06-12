@@ -1,18 +1,22 @@
-if('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-    //gibt nach erfolgreichem Abschluss promise, danach:
-    .then((reg) => console.log('Service worker erfolgreich registriert', reg))
-    //sonst Fehler loggen:
-    .catch((err) => console.log('Service worker-Registrierung fehlgeschlagen', err));
+function pushInit() {
+  if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+      //gibt nach erfolgreichem Abschluss promise, danach:
+      .then((reg) => console.log('Service worker erfolgreich registriert', reg))
+      //sonst Fehler loggen:
+      .catch((err) => console.log('Service worker-Registrierung fehlgeschlagen', err));
+  }
 }
 
-function isPushSupported() {
+function istPushSupported() {
     //prüfen, ob notifications erlaubt sind
     if (Notification.permission === 'denied') {
-      alert('Push-Benachrichtigungen sind nicht aktiviert.');
+      alert('Push-Benachrichtigungen sind deaktiviert.');
       return;
     }
-
+    else if (Notification.permission === 'granted') {
+      alert("Push-Benachrichtigungen sind aktiviert.");
+    }
     //prüfen, ob der Browser Push-Benachrichtigungen unterstützt:
     if (!('PushManager' in window)) {
       alert('Dieser Browser unterstützt keine Push-Benachrichtigungen');
@@ -32,7 +36,7 @@ function isPushSupported() {
   }
 
 
-function subscribePush() {
+function pushAnmelden() {
     //Subscribes user to Push notifications
     registration.pushManager.subscribe({
         userVisibleOnly: true //Set user to see every notification
