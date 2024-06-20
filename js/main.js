@@ -31,16 +31,40 @@ const fragmentShader = await loader.loadAsync('js/shaders/fragment.glsl');
 const vertexShader = await loader.loadAsync('js/shaders/vertex.glsl');
 
 // Create a shader material
-const material = new THREE.ShaderMaterial({
+var material = new THREE.ShaderMaterial({
     fragmentShader: fragmentShader,
-    vertexShader: vertexShader
+    vertexShader: vertexShader,
+    uniforms: {
+        u_time: { value: 1.0 },
+        u_resolution: { value: new THREE.Vector2() },
+        u_mouse: { value: new THREE.Vector2() }
+    }
 });
+
+
+
 
 // Create a plane
 const plane = new THREE.Mesh(geometry, material);
 scene.add(plane);
 
-renderer.render(scene, camera);
+// Update the u_mouse uniform whenever the mouse moves
+document.onmousemove = function(e) {
+    material.uniforms.u_mouse.value.x = 2*e.pageX;
+    material.uniforms.u_mouse.value.y = window.innerHeight*2 - (2*e.pageY);
+}
+
+// Set up an animation loop
+function animate() {
+    requestAnimationFrame(animate);
+
+    // Update the u_time uniform every frame
+    material.uniforms.u_time.value += 0.01;
+
+    renderer.render(scene, camera);
+}
+
+animate();
 // // Animation loop
 // function animate() {
 //     requestAnimationFrame(animate);
