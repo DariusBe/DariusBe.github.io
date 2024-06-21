@@ -1,5 +1,7 @@
-import WebGLRenderer from './webgl.js';
+import { WebGLRenderer } from './webgl.js';
+import { PhysarumManager } from './physarum.js';
 
 
 // main
-const webGLRenderer = new WebGLRenderer('webgl-canvas');
+const physarumManager = new PhysarumManager(100);
+const webGLRenderer = new WebGLRenderer('webgl-canvas', physarumManager);

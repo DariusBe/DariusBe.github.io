@@ -1,15 +1,16 @@
 import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
+import { PhysarumManager } from './physarum.js';
 
 // to provide an export for the class, we can use the export keyword before the class definition
 
-export default class WebGLRenderer {
-    constructor(canvasId) {
+export class WebGLRenderer {
+    constructor(canvasId, physarumManager) {
         // Get the canvas element from the HTML
         this.canvas = document.getElementById(canvasId);
-
+        this.physarumManager = physarumManager;
         // Create a WebGL renderer
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas });
-
+        this.points = [];
         this.renderer.setClearColor(0xFFFFFF); // Set the background color
         this.renderer.setPixelRatio(window.devicePixelRatio); // Set the pixel ratio
         this.renderer.setSize(window.innerWidth, window.innerHeight); // Set the size of the renderer
@@ -26,13 +27,27 @@ export default class WebGLRenderer {
 
         this.loader = new THREE.FileLoader();
 
+        this.fillArray();
+
+
         // Load the fragment shader file
         this.loadShaders().then(([fragmentShader, vertexShader]) => {
-            this.createMaterial(fragmentShader, vertexShader);
-            this.createPlane();
-            this.addEventListeners();
-            this.animate();
+        this.createMaterial(fragmentShader, vertexShader);
+        this.createPlane();
+        this.addEventListeners();
+        this.animate();
         });
+    }
+
+    fillArray() {
+        for (let i = 0; i < this.physarumManager.count; i++) {
+            this.points.push(
+                new THREE.Vector2(
+                    this.physarumManager.population[i].position.x,
+                    this.physarumManager.population[i].position.y
+                )
+            );
+        }
     }
 
     async loadShaders() {
@@ -42,17 +57,17 @@ export default class WebGLRenderer {
     }
 
     createMaterial(fragmentShader, vertexShader) {
-        let points = [new THREE.Vector2(0.5, 0.5), new THREE.Vector2(1.0, 1.0)];
-
         // Create a shader material
         this.material = new THREE.ShaderMaterial({
             fragmentShader: fragmentShader,
             vertexShader: vertexShader,
             uniforms: {
-                u_time: { value: 1.0 },
+                u_time: { value: 0.0 },
                 u_resolution: { value: new THREE.Vector2() },
                 u_mouse: { value: new THREE.Vector2() },
-                u_points: { value: points }
+                // pass size of points as uniform
+                u_population: { value: this.physarumManager.count },
+                u_points: { value: this.points },
             }
         });
 
@@ -89,10 +104,14 @@ export default class WebGLRenderer {
 
     animate() {
         requestAnimationFrame(() => this.animate());
-
         // Update the u_time uniform every frame
         this.material.uniforms.u_time.value += 0.01;
+        // Update the points uniform every frame
+        this.physarumManager.update();
 
+        // Update u_points uniform
+        this.material.uniforms.u_points.value = this.physarumManager.population.map(physarum => new THREE.Vector2(physarum.position.x, physarum.position.y));    
+        
         this.renderer.render(this.scene, this.camera);
     }
 }

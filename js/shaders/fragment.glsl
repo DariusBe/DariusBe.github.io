@@ -1,7 +1,8 @@
 uniform vec4 u_mouse;
 uniform vec2 u_resolution;
 uniform float u_time;
-uniform vec2 u_points[2];
+uniform int u_population;
+uniform vec2 u_points[100];
 
 // Function to calculate color based on mouse position
 vec3 cursorIndicator() {
@@ -17,10 +18,9 @@ void main() {
 
     vec3 color = cursorIndicator();
 
-    // Draw the array: each point is a circle
-    for (int i = 0; i < 2; i++) {
+    for (int i = 1; i < u_population; i++) {
         vec2 point = u_points[i];
-        float dist = distance(vec2(gl_FragCoord.x, gl_FragCoord.y), point * u_resolution.xy);
+            float dist = distance(gl_FragCoord.xy, point);
         if (dist < 3.0) {
             color = vec3(1.0, 1.0, 1.0);
         }
