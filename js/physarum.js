@@ -1,9 +1,8 @@
-import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
-
 export class PhysarumManager {
-    constructor(count) {
+    constructor(count, rotationAngle) {
         this.count = count;
         this.population = [];
+        this.rotationAngle = rotationAngle || 22.5;
 
         // initialize the population
         this.createPopulation();
@@ -11,32 +10,28 @@ export class PhysarumManager {
     
     createPopulation() {
         for (let i = 0; i < this.count; i++) {
-            const x = Math.random() * window.innerWidth*2;
-            const y = Math.random() * window.innerHeight*2;
-            this.population.push(new Physarum(x, y));
+            const x = (Math.random() - 0.5) * 2; // * window.innerWidth);
+            const y = (Math.random() - 0.5) * 2; // * window.innerHeight);
+            const rot = Math.sign(Math.random() - 0.5) * this.rotationAngle * (Math.floor(Math.random()*360 / this.rotationAngle));
+            const rand = Math.random();
+            this.population[i] = new Physarum(x, y, 0.0);
         }
     }
 
     update() {
         for (let i = 0; i < this.count; i++) {
-            const physarum = this.population[i];
-            // update the position
-            physarum.position.x += Math.cos(physarum.rotation);
-            physarum.position.y += Math.sin(physarum.rotation);
-
-            if (physarum.position.x < 0 || physarum.position.x > window.innerWidth*2) {
-                physarum.rotation += 180;
-            }
-            if (physarum.position.y < 0 || physarum.position.y > window.innerHeight*2) {
-                physarum.rotation += 180;
-            }
+            // // move the physarum
+            // this.population[i].position.x += Math.cos(this.population[i].rotation * Math.PI / 180);
+            // this.population[i].position.y += Math.sin(this.population[i].rotation * Math.PI / 180);
+            // // rotate the physarum
+            // this.population[i].rotation += Math.sign(Math.random() - 0.5) * this.rotationAngle;
         }
     }
 }
 
 class Physarum {
-    constructor(x, y) {
-        this.position = new THREE.Vector2(x, y);
-        this.rotation = Math.random() * Math.PI * 2;
+    constructor(x, y, rot) {
+        this.position = { x: x, y: y };
+        this.rotation = rot;
     }
 }
