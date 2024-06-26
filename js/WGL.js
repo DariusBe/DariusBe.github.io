@@ -112,12 +112,12 @@ export class WebGLRenderer {
         const particleVertexShaderSource = 
         `#version 300 es
 
-        in vec3 aPopulation_test;
+        in vec3 aPopulation;
 
         void main() {
-            vec2 pos = vec2(aPopulation_test.xy);
+            vec2 pos = vec2(aPopulation.xy);
             gl_Position = vec4(pos, 0.0, 1.0);
-            gl_PointSize = 1.0;
+            gl_PointSize = 2.5;
         }
         `;
         
@@ -190,7 +190,6 @@ export class WebGLRenderer {
         // set to use program and get attached program name
         this.gl.useProgram(program);
         const programName = program === this.canvasProgram ? 'canvasProgram ' : 'particleProgram ';
-        console.log('%c' + programName + 'uniforms and attributes:', 'color: green');
 
         // uTime
         var uTime = this.gl.getUniformLocation(program, 'uTime');
@@ -253,7 +252,7 @@ export class WebGLRenderer {
         this.gl.useProgram(this.particleProgram);
 
         // aPopulation
-        const aPopulationLoc = this.gl.getAttribLocation(this.particleProgram, 'aPopulation_test');
+        const aPopulationLoc = this.gl.getAttribLocation(this.particleProgram, 'aPopulation');
         const populationBuffer = new Float32Array(
             this.physarumManager.population.map((p) => {
                 return [p.position.x, p.position.y, p.rotation];
@@ -327,10 +326,11 @@ export class WebGLRenderer {
 
     animate() {
         requestAnimationFrame(this.animate.bind(this)); // bind this to the animate function
+        // to set fps, use setTimeout or requestAnimationFrame
         this.prepareParticleAttributes();
 
         // update time for both programs
-        this.uTime += 0.1;
+        this.uTime += 1;
         this.gl.useProgram(this.canvasProgram);
         this.gl.uniform1f(this.gl.getUniformLocation(this.canvasProgram, 'uTime'), this.uTime);
         this.gl.useProgram(this.particleProgram);
@@ -342,7 +342,9 @@ export class WebGLRenderer {
         // update mouse uniform
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));    
 
-        this.updatePopulation();
+        if (this.uTime % 2 === 0) {
+            this.updatePopulation();
+        }
         this.drawPoints();
 
     }
