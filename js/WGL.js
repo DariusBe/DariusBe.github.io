@@ -113,9 +113,11 @@ export class WebGLRenderer {
         `#version 300 es
 
         in vec3 aPopulation_test;
+
         void main() {
-            gl_Position = vec4(aPopulation_test, 1.0);
-            gl_PointSize = 5.0;
+            vec2 pos = vec2(aPopulation_test.xy);
+            gl_Position = vec4(pos, 0.0, 1.0);
+            gl_PointSize = 1.0;
         }
         `;
         
@@ -140,13 +142,7 @@ export class WebGLRenderer {
             vec2 mousePos = uMouse.xy * vec2(aspectRatio, 1.0);
             float mouseButton = uMouse.z;
 
-
-            vec3 color = vec3(1);
-            color.x = mousePos.x;
-            color.y = mousePos.y;
-            if (mouseButton == 1.0) {
-                color = vec3(0.0, 0.0, 0.0);
-            }
+            vec3 color = vec3(0);
             fragColor = vec4(color, 1.0);
         }
         `;
@@ -219,12 +215,9 @@ export class WebGLRenderer {
             console.log('%c' + programName + 'uMouse uniform was not found or used', 'color: yellow');
         }
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
-        this.gl.useProgram(null);
     }
 
     prepareCanvasAttributes() {
-        this.gl.useProgram(this.canvasProgram);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         /*
         const attributeLocation var from getAttribLocation(canvasProgram, 'attribute_name')
         const bufferData = Float32Array([])
@@ -234,7 +227,10 @@ export class WebGLRenderer {
         enableVertexAttribArray(attributeLocation) only once after binding to buffer
         define buffer layout: vertexAttribPointer(attributeLocation, nr_of_chunks, FLOAT, normalized=false, chunk_size_in_bytes, offset_in_bytes)
         */
-        
+
+        // set to use program and get attached program name
+        this.gl.useProgram(this.canvasProgram);
+
         // aCanvas
         const aCanvasLoc = this.gl.getAttribLocation(this.canvasProgram, 'aCanvas');        
         this.canvasBorder = new Float32Array([
@@ -250,15 +246,11 @@ export class WebGLRenderer {
         if (aCanvasLoc === -1) {
             console.log('%c aCanvas attribute was not found or used', 'color: yellow');
         }
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
-        // blend both programs, use correct uniforms and attributes
-        this.gl.useProgram(this.canvasProgram);
-        this.gl.useProgram(null);
     }
 
     prepareParticleAttributes() {
+        // set to use program and get attached program name
         this.gl.useProgram(this.particleProgram);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
 
         // aPopulation
         const aPopulationLoc = this.gl.getAttribLocation(this.particleProgram, 'aPopulation_test');
@@ -286,9 +278,10 @@ export class WebGLRenderer {
             // right mouse button
             button = 2.0;
         }
-        
+
         this.gl.useProgram(this.canvasProgram);
         this.gl.uniform3fv(this.gl.getUniformLocation(this.canvasProgram, 'uMouse'), new Float32Array([e.clientX / this.canvas.width,  1-(e.clientY / this.canvas.height), button]));
+
         this.gl.useProgram(this.particleProgram);
         this.gl.uniform3fv(this.gl.getUniformLocation(this.particleProgram, 'uMouse'), new Float32Array([e.clientX / this.canvas.width,  1-(e.clientY / this.canvas.height), button]));
         
@@ -302,6 +295,10 @@ export class WebGLRenderer {
         this.gl.uniform2fv(this.gl.getUniformLocation(this.canvasProgram, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
         this.gl.useProgram(this.particleProgram);
         this.gl.uniform2fv(this.gl.getUniformLocation(this.particleProgram, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
+    }
+
+    updatePopulation() {
+        this.physarumManager.update();
     }
 
     drawPoints() {
@@ -345,6 +342,7 @@ export class WebGLRenderer {
         // update mouse uniform
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));    
 
+        this.updatePopulation();
         this.drawPoints();
 
     }
