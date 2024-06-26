@@ -1,9 +1,9 @@
 export class PhysarumManager {
     constructor(count, rotationAngle) {
-        this.count = count || 1000;
+        this.count = count || 250;
         this.population = [];
         this.rotationAngle = rotationAngle || 22.5;
-        this.stepWidth = 0.025;
+        this.stepWidth = 0.01;
 
         // initialize the population
         this.createPopulation();

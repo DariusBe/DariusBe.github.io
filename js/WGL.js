@@ -1,9 +1,14 @@
 const canvasVertexShaderSource = `#version 300 es
 #pragma vscode_glsllint_stage : vert
 
-in vec2 aCanvas;
+layout(location=0) in vec2 aCanvas;
+layout(location=1) in vec2 aTextureCoord;
+
+out vec2 vTextureCoord;
 
 void main() {
+    vTextureCoord = aTextureCoord;
+
     vec3 pos = vec3(aCanvas, 0.0);
     gl_Position = vec4(pos, 1.0);
 }
@@ -13,6 +18,10 @@ void main() {
 const canvasFragmentShaderSource = `#version 300 es
 #pragma vscode_glsllint_stage : frag
 precision mediump float;
+
+// texture data
+in vec2 vTextureCoord;
+uniform sampler2D uSampler; // texture unit 0
 
 uniform float uTime;
 uniform vec2 uResolution;
@@ -29,19 +38,21 @@ vec3 drawMouseCursor(vec2 st, vec2 mousePos) {
 }
 
 void main() {
-    float time = uTime;
-    //normalize gl_FragCoord with correct aspect ratio
-    float aspectRatio = uResolution.x / uResolution.y;
-    vec2 st = gl_FragCoord.xy / uResolution.xy * vec2(aspectRatio, 1.0);
-    // normalize mouse position with correct aspect ratio
-    vec2 mousePos = uMouse.xy * vec2(aspectRatio, 1.0);
-    float mouseButton = uMouse.z;
+    // float time = uTime;
+    // //normalize gl_FragCoord with correct aspect ratio
+    // float aspectRatio = uResolution.x / uResolution.y;
+    // vec2 st = gl_FragCoord.xy / uResolution.xy * vec2(aspectRatio, 1.0);
+    // // normalize mouse position with correct aspect ratio
+    // vec2 mousePos = uMouse.xy * vec2(aspectRatio, 1.0);
+    // float mouseButton = uMouse.z;
 
-    vec3 color = vec3(1.0);
-    if (mouseButton == 1.0) {
-        color = vec3(1.0, 0.0, 0.0);
-    }
-    fragColor = vec4(color, 1.0);
+    // vec3 color = vec3(1.0);
+    // if (mouseButton == 1.0) {
+    //     color = vec3(0.9);
+    // }
+
+    //fragColor = vec4(color, 1.0);
+    fragColor = texture(uSampler, vTextureCoord);
 }
 `;
 
@@ -58,6 +69,9 @@ export class WebGLRenderer {
 
         this.aCanvasBuffer = this.gl.createBuffer();
         this.canvasBorder;
+
+        // Canvas Texture
+        this.canvasTexture = this.gl.createTexture(); 
         
         // Particle program
         this.particleProgram = this.gl.createProgram();
@@ -68,6 +82,7 @@ export class WebGLRenderer {
 
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onResize = this.onResize.bind(this);
+        this.uPointSize = 3.0;
         this.uTime = 0.0;
 
         this.createCanvasShaders();
@@ -114,10 +129,31 @@ export class WebGLRenderer {
 
         in vec3 aPopulation;
 
+        uniform float uPointSize;
+        uniform float uTime;
+        uniform vec3 uMouse;
+
         void main() {
+            // normalize mouse position
+            vec2 mouse = uMouse.xy;
+            mouse.x = (mouse.x * 2.0) - 1.0;
+            mouse.y = (mouse.y * 2.0) - 1.0;
+
+            // mouse attraction force of radius 0.5
+            vec2 mouseForce = vec2(0.0);
+            if (distance(aPopulation.xy, mouse) < 0.5) {
+                mouseForce = normalize(mouse - aPopulation.xy) * 0.1;
+            }
+
             vec2 pos = vec2(aPopulation.xy);
+
+            // add mouse force position 
+            pos += mouseForce;
+            
+
+
             gl_Position = vec4(pos, 0.0, 1.0);
-            gl_PointSize = 2.5;
+            gl_PointSize = uPointSize;
         }
         `;
         
@@ -127,9 +163,7 @@ export class WebGLRenderer {
         precision mediump float;
 
 
-        uniform float uTime;
         uniform vec2 uResolution;
-        uniform vec3 uMouse;
 
         out vec4 fragColor;
 
@@ -139,8 +173,6 @@ export class WebGLRenderer {
             float aspectRatio = uResolution.x / uResolution.y;
             vec2 st = gl_PointCoord.xy * vec2(aspectRatio, 1.0);
             // normalize mouse position with correct aspect ratio
-            vec2 mousePos = uMouse.xy * vec2(aspectRatio, 1.0);
-            float mouseButton = uMouse.z;
 
             vec3 color = vec3(0);
             fragColor = vec4(color, 1.0);
@@ -214,6 +246,25 @@ export class WebGLRenderer {
             console.log('%c' + programName + 'uMouse uniform was not found or used', 'color: yellow');
         }
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+
+        // uPointSize
+        if (program === this.particleProgram) {
+            const uPointSize = this.gl.getUniformLocation(program, 'uPointSize');
+            this.gl.uniform1f(uPointSize, this.uPointSize);
+            if (uPointSize === null) {
+                console.log('%c' + programName + 'uPointSize uniform was not found or used', 'color: yellow');
+            }
+        }
+
+        // Texture uSampler
+        const textureUnit = 0;
+        if (program === this.canvasProgram) {
+            const uSampler = this.gl.getUniformLocation(program, 'uSampler');
+            this.gl.uniform1i(uSampler, textureUnit); // texture unit 1
+            if (uSampler === null) {
+                console.log('%c' + programName + 'uSampler uniform was not found or used', 'color: yellow');
+            }   
+        }
     }
 
     prepareCanvasAttributes() {
@@ -245,7 +296,100 @@ export class WebGLRenderer {
         if (aCanvasLoc === -1) {
             console.log('%c aCanvas attribute was not found or used', 'color: yellow');
         }
+
+        // Texture aTextureCoord
+        const aTextureCoordLoc = this.gl.getAttribLocation(this.canvasProgram, 'aTextureCoord');
+        const texCoordBufferData = new Float32Array([
+            0.0, 0.0,
+            1.0, 0.0,
+            1.0, 1.0,
+            0.0, 1.0
+        ]);
+        const texCoordBuffer = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texCoordBuffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, texCoordBufferData, this.gl.STATIC_DRAW);
+        this.gl.vertexAttribPointer(aTextureCoordLoc, 2, this.gl.FLOAT, false, 0, 0); // 1 is the location of aTextureCoord
+        this.gl.enableVertexAttribArray(aTextureCoordLoc); // 1 is the location of aTextureCoord
+        
+        // create color texture on the fly, further steps don't require async loading
+        // make map at least 4x4
+        const pixelMap = new Uint8Array([
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+            255, 0, 0, // red
+            0, 255, 0, // green
+
+            255, 0, 0,  // red
+            0, 255, 0,  // green
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+            255, 0, 0,  // red
+            0, 255, 0,  // green
+
+            255, 0, 0,  // red
+            0, 255, 0,  // green
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+            255, 0, 0, // red
+            0, 255, 0, // green
+
+            255, 0, 0,  // red
+            0, 255, 0,  // green
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+            255, 0, 0,  // red
+            0, 255, 0,  // green
+
+            255, 0, 0,  // red
+            0, 255, 0,  // green
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+
+
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+            255, 0, 0,  // red
+            0, 255, 0,  // green
+
+            255, 0, 0,  // red
+            0, 255, 0,  // green
+            0, 0, 255,  // blue
+            255, 255, 0, // yellows
+
+            255, 0, 0,  // red
+            0, 255, 0,  // green
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+
+            0, 0, 255,  // blue
+            255, 255, 0, // yellow
+            255, 0, 0, // red
+            0, 255, 0, // green
+
+        ]);
+
+        //this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.canvasTexture);
+        // where width and height describe the size of the texture in pixels
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGB, 4, 4, 0, this.gl.RGB, this.gl.UNSIGNED_BYTE, pixelMap);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
     }
+
+    loadImages = async (path) => new Promise(resolve => {
+        const img = new Image();
+        img.addEventListener('load', () => resolve(img));
+        img.src = path;
+    });
 
     prepareParticleAttributes() {
         // set to use program and get attached program name
@@ -378,6 +522,83 @@ uniform1f(uniformLocation, bufferData) for float, uniform2fv(location, bufferDat
     EXAMPLE:
     uniform1f(uniformLocation, 0.5);
     uniform2fv(uniformLocation, new Float32Array([0.5, 0.5]));
+
+TEXTURES:
+- necessary in fragment shader are uniform sampler2D uSampler 
+    and an attribute in vec2 vTextureCoord that is passed from vertex shader:
+        VERTEX SHADER:
+            #version 300 es
+
+            layout(location=0) in vec2 aCanvas;
+            layout(location=1) in vec2 aTextureCoord;   --> incoming texture coordinates
+
+            void main() {
+                vTextureCoord = aTextureCoord;          --> pass texture coordinates to fragment shader
+                gl_Position = vec4(aCanvas, 0.0, 1.0);
+            }
+
+        FRAGMENT SHADER:
+            #version 300 es
+            precision mediump float;
+
+            // texture data
+            in vec2 vTextureCoord;                      --> incoming texture coordinates from vertex shader
+            uniform sampler2D uSampler; //textureunit 0 --> necessary uniform for texture
+            out vec4 fragColor;
+
+            void main() {
+                fragColor = texture(uSampler, vTextureCoord);
+            }
+
+given that vertices already exist, are bound to buffer and have been defined with vertexAttribPointer
+    EXAMPLE:
+        plane = new Float32Array([
+        -1.0, -1.0,
+        1.0, -1.0,
+        1.0, 1.0,
+        -1.0, 1.0
+    ]);
+provide texture coordinates as attribute:
+const texCoordBufferData = Float32Array([0.0, 0.0, ...]), with texture coordinates for each vertex matching order of vertices
+    EXAMPLE: Cube Unwrapping
+        "1.0, 1.0, 1.0,  0.0, 0.0"
+        X    Y    Z                                   U    V
+        -1.0, -1.0, (1.0) (top right (front)) lies at 0.0, 0.0 (bottom left of texture)
+        ...
+const texCoordBuffer = createBuffer()
+bindBuffer(ARRAY_BUFFER, texCoordBuffer)
+bufferData(ARRAY_BUFFER, texCoordBufferData, STATIC_DRAW)
+vertexAttribPointer(texCoordLocation, 2, FLOAT, false, 0, 0)
+enableVertexAttribArray(texCoordLocation)
+provide texture image from file (async) or array 'pixels':
+    EXAMPLE:
+        const loadImage = () =>  new Promise(resolve => {
+            const img = new Image();
+            image.addEventListener('load', () => resolve(img));
+            img.src = './image.jpg';
+        });
+        const run = async () => {
+            const img = loadImage('image.jpg');
+            // all later texture code must be in the async function
+            [ const texture = createTexture();
+                ... ]
+            };
+    or
+        const pixels = new Uint8Array([
+            255, 0, 0, 255,  // red
+            0, 255, 0, 255,  // green
+            0, 0, 255, 255,  // blue
+            255, 255, 0, 255 // yellow
+        ]);
+- either way, image will be flipped vertically due to openGL coordinate system, so lets flip storage strategy before creating texture
+    pixelStorei(UNPACK_FLIP_Y_WEBGL, true)
+const texture = createTexture()
+bindTexture(TEXTURE_2D, texture)
+texImage2D(TEXTURE_2D, 0, RGBA, 4, 4, 0, RGBA, gl.UNSIGNED_BYTE, pixels) // target, mipmap_level, internalFormat, (opt. width, height, border=always_zero,) format, type, data_source
+- WebGL by default requires mipmaps (either create ad-hoc (1) or change default config (2))
+    1) generateMipmap(TEXTURE_2D)
+    2) texParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, NEAREST) and texParameteri(TEXTURE_2D, TEXTURE_MAG_FILTER, NEAREST)
+
 
 
 DRAW:
