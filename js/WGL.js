@@ -1,3 +1,6 @@
+import { Utils } from './Utils.js';
+import { PhysarumManager } from './physarum.js';
+
 const canvasVertexShaderSource = `#version 300 es
 #pragma vscode_glsllint_stage : vert
 
@@ -8,9 +11,7 @@ out vec2 vTextureCoord;
 
 void main() {
     vTextureCoord = aTextureCoord;
-
-    vec3 pos = vec3(aCanvas, 0.0);
-    gl_Position = vec4(pos, 1.0);
+    gl_Position = vec4(aCanvas, 0.0, 1.0);
 }
 `;
 
@@ -46,13 +47,9 @@ void main() {
     // vec2 mousePos = uMouse.xy * vec2(aspectRatio, 1.0);
     // float mouseButton = uMouse.z;
 
-    // vec3 color = vec3(1.0);
-    // if (mouseButton == 1.0) {
-    //     color = vec3(0.9);
-    // }
+    vec3 color = vec3(0.9);
 
-    //fragColor = vec4(color, 1.0);
-    fragColor = texture(uSampler, vTextureCoord);
+    fragColor = texture(uSampler, vTextureCoord) + vec4(color, 1.0);
 }
 `;
 
@@ -60,7 +57,7 @@ export class WebGLRenderer {
     constructor(canvasId, physarumManager) {
         this.canvas = document.getElementById(canvasId);
         this.gl = this.canvas.getContext('webgl2');
-        this.physarumManager = physarumManager;
+        this.physarumManager = physarumManager || new PhysarumManager(50);
 
         // Canvas program
         this.canvasProgram = this.gl.createProgram();
@@ -80,10 +77,15 @@ export class WebGLRenderer {
 
         this.aParticlesBuffer = this.gl.createBuffer();
 
+        // Uniforms
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onResize = this.onResize.bind(this);
-        this.uPointSize = 3.0;
+        this.uPointSize = 1.5;
         this.uTime = 0.0;
+
+        // TFO
+        this.CHUNKS = this.physarumManager.count*2;
+        this.tfoBuffer = this.gl.createBuffer();
 
         this.createCanvasShaders();
         this.createParticlesShaders();
@@ -127,11 +129,19 @@ export class WebGLRenderer {
         const particleVertexShaderSource = 
         `#version 300 es
 
-        in vec3 aPopulation;
+        layout(location=0) in vec3 aPopulation;
 
         uniform float uPointSize;
         uniform float uTime;
         uniform vec3 uMouse;
+
+        // TFOs
+        out float output1;  // 4 bytes
+        out vec3 output2;   // 3*4 bytes
+
+        vec2 roundVec(vec2 v, float factor) {
+            return vec2(floor(v.x * factor) / factor, floor(v.y * factor) / factor);
+        }
 
         void main() {
             // normalize mouse position
@@ -145,15 +155,18 @@ export class WebGLRenderer {
                 mouseForce = normalize(mouse - aPopulation.xy) * 0.1;
             }
 
-            vec2 pos = vec2(aPopulation.xy);
+            vec2 pos = aPopulation.xy;
+            //pos = roundVec(pos, 100000.0);
 
             // add mouse force position 
-            pos += mouseForce;
-            
-
-
+            if (uMouse.z == 1.0) {
+                pos += mouseForce;
+            }
             gl_Position = vec4(pos, 0.0, 1.0);
             gl_PointSize = uPointSize;
+
+            output1 = float(gl_VertexID);
+            output2 = aPopulation;
         }
         `;
         
@@ -182,6 +195,7 @@ export class WebGLRenderer {
         // Vertex shader
         this.gl.shaderSource(this.particleVertexShader, particleVertexShaderSource);
         this.gl.compileShader(this.particleVertexShader);
+
         this.gl.attachShader(this.particleProgram, this.particleVertexShader);
         if (!this.gl.getShaderParameter(this.particleVertexShader, this.gl.COMPILE_STATUS)) {
             console.log('%cVertex shader compile error:\n', 'color: red', this.gl.getShaderInfoLog(this.particleVertexShader));
@@ -195,8 +209,12 @@ export class WebGLRenderer {
             console.log('%cFragment shader compile error:\n', 'color: red', this.gl.getShaderInfoLog(this.particleFragmentShader));
         }
 
+        // TFO for transform feedback here
+        this.gl.transformFeedbackVaryings(this.particleProgram, ['output1', 'output2'], this.gl.INTERLEAVED_ATTRIBS);
+
         // Link the particleProgram
         this.gl.linkProgram(this.particleProgram);
+
         this.gl.useProgram(this.particleProgram); // -1 if not linked
         if (!this.gl.getProgramParameter(this.particleProgram, this.gl.LINK_STATUS)) {
             // getProgramInfoLog() returns a string containing info about the last link error
@@ -204,21 +222,15 @@ export class WebGLRenderer {
             const str = this.gl.getProgramInfoLog(this.particleProgram);
             console.log('%c ↓ Error linking particleProgram:\n', 'color: purple', str); 
         }
+
+        this.prepareParticleTransformFeedback();
         this.prepareParticleAttributes();
         this.prepareUniforms(this.particleProgram);
+        
     }
 
 
     prepareUniforms(program) {
-        /*
-        const uniformLocation = getUniformLocation(program, 'uniform_name')
-        const bufferData = Float32Array([]), etc.
-        uniform1f(uniformLocation, bufferData) for float, uniform2fv(location, bufferData) for vec2, etc.
-            EXAMPLE:
-            uniform1f(uniformLocation, 0.5);
-            uniform2fv(uniformLocation, new Float32Array([0.5, 0.5]));
-        */
-
         // set to use program and get attached program name
         this.gl.useProgram(program);
         const programName = program === this.canvasProgram ? 'canvasProgram ' : 'particleProgram ';
@@ -245,7 +257,6 @@ export class WebGLRenderer {
         if (uMouse === null) {
             console.log('%c' + programName + 'uMouse uniform was not found or used', 'color: yellow');
         }
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
 
         // uPointSize
         if (program === this.particleProgram) {
@@ -268,16 +279,6 @@ export class WebGLRenderer {
     }
 
     prepareCanvasAttributes() {
-        /*
-        const attributeLocation var from getAttribLocation(canvasProgram, 'attribute_name')
-        const bufferData = Float32Array([])
-        const buffer = createBuffer()
-        bindBuffer(ARRAY_BUFFER, buffer)
-        bufferData(ARRAY_BUFFER, bufferData, STATIC_DRAW) if not changing
-        enableVertexAttribArray(attributeLocation) only once after binding to buffer
-        define buffer layout: vertexAttribPointer(attributeLocation, nr_of_chunks, FLOAT, normalized=false, chunk_size_in_bytes, offset_in_bytes)
-        */
-
         // set to use program and get attached program name
         this.gl.useProgram(this.canvasProgram);
 
@@ -296,6 +297,7 @@ export class WebGLRenderer {
         if (aCanvasLoc === -1) {
             console.log('%c aCanvas attribute was not found or used', 'color: yellow');
         }
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
 
         // Texture aTextureCoord
         const aTextureCoordLoc = this.gl.getAttribLocation(this.canvasProgram, 'aTextureCoord');
@@ -310,86 +312,25 @@ export class WebGLRenderer {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, texCoordBufferData, this.gl.STATIC_DRAW);
         this.gl.vertexAttribPointer(aTextureCoordLoc, 2, this.gl.FLOAT, false, 0, 0); // 1 is the location of aTextureCoord
         this.gl.enableVertexAttribArray(aTextureCoordLoc); // 1 is the location of aTextureCoord
-        
-        // create color texture on the fly, further steps don't require async loading
-        // make map at least 4x4
-        const pixelMap = new Uint8Array([
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0, // red
-            0, 255, 0, // green
 
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
+        // async code block in using async Utils.loadImages
+        const prepareTextureBuffer = async () => {
+            const pixelMap = await Utils.loadImage('src/img/labyrinth_1_penalty.png');
+            const imageWidth = pixelMap.width;
+            const imageHeight = pixelMap.height;
+            
+            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true); // flip image vertically
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.canvasTexture);
+            // where width and height describe the size of the texture in pixels
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGB, imageWidth, imageHeight, 0, this.gl.RGB, this.gl.UNSIGNED_BYTE, pixelMap);
+            
+            this.gl.generateMipmap(this.gl.TEXTURE_2D);
+        }
 
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0,  // red
-            0, 255, 0,  // green
+        prepareTextureBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
 
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0, // red
-            0, 255, 0, // green
-
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-
-
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellows
-
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0, // red
-            0, 255, 0, // green
-
-        ]);
-
-        //this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, this.canvasTexture);
-        // where width and height describe the size of the texture in pixels
-        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGB, 4, 4, 0, this.gl.RGB, this.gl.UNSIGNED_BYTE, pixelMap);
-        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
-        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
     }
-
-    loadImages = async (path) => new Promise(resolve => {
-        const img = new Image();
-        img.addEventListener('load', () => resolve(img));
-        img.src = path;
-    });
 
     prepareParticleAttributes() {
         // set to use program and get attached program name
@@ -409,6 +350,17 @@ export class WebGLRenderer {
         if (aPopulationLoc === -1) {
             console.log('%c aPopulation attribute was not found or used', 'color: yellow');
         }
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+    }
+
+    // TFO
+    prepareParticleTransformFeedback() {
+        // set to use program and get attached program name
+        this.gl.useProgram(this.particleProgram);
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.tfoBuffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, 20 * this.physarumManager.count, this.gl.DYNAMIC_READ);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
     }
 
     onMouseMove(e) {
@@ -445,8 +397,6 @@ export class WebGLRenderer {
     }
 
     drawPoints() {
-
-        // depth test should be disabled for 2D rendering:
         /*
             gl.useProgram( shader1 );
             gl.bindBuffer(cubeVbo )
@@ -461,11 +411,24 @@ export class WebGLRenderer {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.aCanvasBuffer);
         this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, 0, 0);
         this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+
 
         this.gl.useProgram(this.particleProgram);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.aParticlesBuffer);
         this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, true, 0, 0);
+        
+        // TFO
+        this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.tfoBuffer); // for interleaved attribs, index is 0
+        this.gl.beginTransformFeedback(this.gl.POINTS);
+
         this.gl.drawArrays(this.gl.POINTS, 0, this.physarumManager.count);
+        // TFO
+        this.gl.endTransformFeedback();
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+        // TFO
+        this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, null); // unbind TFO buffer
     }
 
     animate() {
@@ -490,7 +453,14 @@ export class WebGLRenderer {
             this.updatePopulation();
         }
         this.drawPoints();
-
+        
+        if (this.uTime % 100 === 0) {
+            // print TFO buffers
+            const view = new Float32Array(this.CHUNKS);
+            this.gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, this.tfoBuffer);
+            this.gl.getBufferSubData(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, view);
+            console.log(view);
+        }
     }
 }
 /*
@@ -506,9 +476,12 @@ link & use canvasProgram
 ATTRIBUTES:
 const attributeLocation var from getAttribLocation(canvasProgram, 'attribute_name')
 const bufferData = Float32Array([])
-const buffer = createBuffer(), bindBuffer(ARRAY_BUFFER, buffer), bufferData(ARRAY_BUFFER, bufferData, STATIC_DRAW) if not changing
-enableVertexAttribArray(attributeLocation) only once after binding to buffer
-define buffer layout: vertexAttribPointer(attributeLocation, nr_of_chunks, FLOAT, normalized=false, chunk_size_in_bytes, offset_in_bytes)
+const buffer = createBuffer()
+bindBuffer(ARRAY_BUFFER, buffer)
+bufferData(ARRAY_BUFFER, bufferData, STATIC_DRAW) // if not changing
+enableVertexAttribArray(attributeLocation) // only once after binding to buffer
+define buffer layout: 
+vertexAttribPointer(attributeLocation, nr_of_chunks, FLOAT, normalized=false, chunk_size_in_bytes, offset_in_bytes)
     EXAMPLE:
     vertexAttribPointer(attributeLocation, 2, this.gl.FLOAT, false, 3*4, 0);
     would mean we have an array of 3 floats (= 4 bytes) per vertex, and we want to use the first 2 floats as x,y coordinates
@@ -611,6 +584,37 @@ gl.bindBuffer(cubeNormalVbo )
 gl.vertexAttribPointer() ...
 gl.drawArrays()
 drawArrays(mode, first, count)
+
+TRANSFORM FEEDBACK:
+- allows to capture output of vertex shader in buffer object
+        VERTEX SHADER:
+            #version 300 es
+
+            out vec4 outValue; // e.g. position
+            out float outValue2; // e.g. velocity
+            out vec2 vTexCoords; // e.g. not relevant --> not in transformFeedback array
+
+            void main() {
+                vTextureCoord = aTextureCoord;
+                gl_Position = vec4(aCanvas, 0.0, 1.0);
+            }
+- in js call 
+transformFeedbackVaryings(program, ['outValue', 'outValue2'], SEPARATE_ATTRIBS)
+    then link program and use it.. order of outValues in array must match order of attributes in buffer
+- SEPARETE_ATTRIBS for one buffer per outVal, INTERLEAVED_ATTRIBS would put all outputs in one buffer
+optional: 
+    const tfo = createTransformFeedback()           // manage TF operations, keep track in case of multiple TFOs
+    bindTransformFeedback(TRANSFORM_FEEDBACK, tfo)  // to then bind it
+bindBufferBase(TRANSFORM_FEEDBACK_BUFFER, 0, buffer) // to bind buffer to TFO
+- here, index is 0/1/2 ... for each of the outValues with SEPARATE_ATTRIBS, or 0 for INTERLEAVED_ATTRIBS
+beginTransformFeedback(GL_PRIMITIVES) // PRIMITIVES are either POINTS, LINES, TRIANGLES and must be sane as in draw-call
+endTransformFeedback() // end the feedback
+- TF can also be paused and resumed, e.g. to continue writing to the same buffer with other shaders
+- most common sources of error are wrongly bound buffers:
+    - after initialization all array buffers always unbind with bindBuffer(ARRAY_BUFFER, null)
+    - after every animation frame and the completion of a TFO, unbind both ARRAY_BUFFER and TRANSFORM_FEEDBACK_BUFFER:
+    gl.bindBuffer(ARRAY_BUFFER, null)
+    gl.bindBuffer(TRANSFORM_FEEDBACK_BUFFER, null)
 */
 
 

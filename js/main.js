@@ -3,6 +3,6 @@ import { PhysarumManager } from './physarum.js';
 import { WebGLRenderer } from './WGL.js';
 
 // main
-const physarumManager = new PhysarumManager(500);
+// const physarumManager = new PhysarumManager();
 
-const webGLRenderer = new WebGLRenderer('webgl-canvas', physarumManager);
+const webGLRenderer = new WebGLRenderer('webgl-canvas');

@@ -30,7 +30,8 @@ export class PhysarumManager {
             this.population[i].position.y = Math.min(1, Math.max(-1, this.population[i].position.y));
 
             // rotate the physarum
-            this.population[i].rotation += Math.sign(Math.random() - 0.5) * this.rotationAngle * (Math.floor(Math.random()*360 / this.rotationAngle));
+            const randRot = Math.sign(Math.random() - 0.5) * this.rotationAngle * (Math.floor(Math.random()*360 / this.rotationAngle));
+            this.population[i].rotation = (this.population[i].rotation + randRot) % 360;
         }
     }
 }
