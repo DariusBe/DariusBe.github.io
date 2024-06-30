@@ -1,6 +1,6 @@
 import { PhysarumManager } from './physarum.js';
 //import { WebGLRenderer } from './webgl.js';
-import { WebGLRenderer } from './WGL.js';
+import { WebGLRenderer } from './webGL.js';
 import { Utils } from './Utils.js';
 
 // main
