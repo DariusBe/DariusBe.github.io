@@ -70,4 +70,10 @@ export class Utils {
     
         ]);
     }
+
+    static readShaderFile = async (path) => {
+        const response = await fetch(path);
+        const shaderCode = await response.text();
+        return shaderCode;
+    }
 }

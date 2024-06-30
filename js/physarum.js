@@ -11,8 +11,8 @@ export class PhysarumManager {
     
     createPopulation() {
         for (let i = 0; i < this.count; i++) {
-            const x = 0; //(Math.random() * 2) -1; // * window.innerWidth);
-            const y = 0; //(Math.random() * 2) -1; // * window.innerHeight);
+            const x = (Math.random() * 2) -1; // * window.innerWidth);
+            const y = (Math.random() * 2) -1; // * window.innerHeight);
             const rot = Math.sign(Math.random() - 0.5) * this.rotationAngle * (Math.floor(Math.random()*360 / this.rotationAngle));
             this.population[i] = new Physarum(x, y, rot);
         }

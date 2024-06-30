@@ -13,7 +13,7 @@ export class WebGLRenderer {
         this.gl = this.canvas.getContext('webgl2');
 
         // Physarum Management
-        this.particleCount = 2;
+        this.particleCount = 15;
         this.physarumManager = physarumManager || new PhysarumManager(this.particleCount);
 
         // Canvas program
@@ -33,8 +33,8 @@ export class WebGLRenderer {
         this.particleFragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
         this.particleVertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
 
-        this.particleVAO = this.gl.createVertexArray();
-        this.aParticlesBuffer = this.gl.createBuffer();
+        this.vao_1 = this.gl.createVertexArray();
+        this.buffer_1 = this.gl.createBuffer();
 
         // Uniforms
         this.onMouseMove = this.onMouseMove.bind(this);
@@ -43,15 +43,15 @@ export class WebGLRenderer {
         this.uTime = 0.0;
 
         // TFO
-        this.tfoVAO = this.gl.createVertexArray();
-        this.tfoBufferSize = this.particleCount*2;
-        this.tfoBuffer = this.gl.createBuffer();
+        this.vao_2 = this.gl.createVertexArray();
+        this.tfoBufferSize = this.particleCount*3;
+        this.buffer_2 = this.gl.createBuffer();
 
         this.createCanvasShaders();
         this.createParticlesShaders();
 
-        this.vao = this.particleVAO;
-        this.buffer = this.aParticlesBuffer;
+        this.vao = this.vao_1;
+        this.buffer = this.buffer_2;
         this.animate();
     }
 
@@ -87,57 +87,6 @@ export class WebGLRenderer {
     }
 
     createParticlesShaders() {
-        // Vertex shader
-        const particleVertexShaderSource = 
-        `#version 300 es
-
-        in vec3 aPopulation;
-        in float aVelocity;
-
-        uniform float uPointSize;
-        uniform float uTime;
-        uniform vec3 uMouse;
-
-        // TFOs
-        out vec3 position;   // 3*4 bytess
-        out float velocity;  // 4 bytes
-
-        vec2 roundVec(vec2 v, float factor) {
-            return vec2(floor(v.x * factor) / factor, floor(v.y * factor) / factor);
-        }
-
-        float randomFloat() {
-            return fract(sin(230946214.123) * 43758.5453);
-        }
-
-        void main() {
-            gl_PointSize = 15.0;
-            vec2 pos = aPopulation.xy;
-            float rotation = aPopulation.z;
-
-            pos.x += cos(rotation)*0.02;
-            pos.y += sin(rotation);
-
-            position += vec3(0.01);
-            velocity += 0.1;
-
-            gl_Position = vec4(pos, 0.0, 1.0);
-        }
-        `;
-        
-        // Fragment shader
-        const particleFragmentShaderSource = 
-        `#version 300 es
-        precision mediump float;
-
-        out vec4 fragColor;
-        
-        void main() {
-            fragColor = vec4(1.0, 0.0, 0.0, 1.0);
-        }
-        `;
-
-        // Vertex shader
         this.gl.shaderSource(this.particleVertexShader, particleVertexShaderSource);
         this.gl.compileShader(this.particleVertexShader);
 
@@ -155,7 +104,7 @@ export class WebGLRenderer {
         }
 
         // TFO for transform feedback here
-        this.gl.transformFeedbackVaryings(this.particleProgram, ['position', 'velocity'], this.gl.INTERLEAVED_ATTRIBS);
+        this.gl.transformFeedbackVaryings(this.particleProgram, ['position'], this.gl.INTERLEAVED_ATTRIBS);
 
         // Link the particleProgram
         this.gl.linkProgram(this.particleProgram);
@@ -278,23 +227,16 @@ export class WebGLRenderer {
     prepareParticleAttributes() {
         // set to use program and get attached program name
         this.gl.useProgram(this.particleProgram);
-
-        this.gl.bindVertexArray(this.particleVAO);
-        // aPopulation
-        const aPopulationLoc = this.gl.getAttribLocation(this.particleProgram, 'aPopulation');
-        const populationBuffer = new Float32Array(
-            this.physarumManager.population.map((p) => {
-                return [p.position.x, p.position.y, p.rotation, 3.0];
-            }).flat()
+        const initialData = new Float32Array(
+            this.physarumManager.population.map(p => [p.position.x, p.position.y, 0.0]).flat()
         );
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.aParticlesBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, populationBuffer, this.gl.STATIC_DRAW);
-        this.gl.enableVertexAttribArray(aPopulationLoc);
-        // 
-        this.gl.vertexAttribPointer(aPopulationLoc, 4, this.gl.FLOAT, true, 4*4, 0);
-        if (aPopulationLoc === -1) {
-            console.log('%c aPopulation attribute was not found or used', 'color: yellow');
-        }
+
+        this.gl.bindVertexArray(this.vao_1);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer_1);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, 3 * 4 * this.particleCount, this.gl.DYNAMIC_DRAW);
+        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, initialData);
+        this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 3*4, 0);
+        this.gl.enableVertexAttribArray(0);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.bindVertexArray(null);
     }
@@ -304,9 +246,11 @@ export class WebGLRenderer {
         // set to use program and get attached program name
         this.gl.useProgram(this.particleProgram);
 
-        this.gl.bindVertexArray(this.tfoVAO);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.tfoBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, 4 * 4 * this.particleCount, this.gl.STATIC_READ);
+        this.gl.bindVertexArray(this.vao_2);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer_2);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, 3 * 4 * this.particleCount, this.gl.DYNAMIC_DRAW);
+        this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 3*4, 0);
+        this.gl.enableVertexAttribArray(0);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.bindVertexArray(null);
     }
@@ -360,8 +304,7 @@ export class WebGLRenderer {
         // update after window resize
         window.addEventListener('resize', this.onResize.bind(this));
         // update mouse uniform
-        this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));    
-
+        this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));            
        
         const view = new Float32Array(this.tfoBufferSize);
         this.gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, this.tfoBuffer);
@@ -369,10 +312,6 @@ export class WebGLRenderer {
         this.gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, null);
         console.log(view);
         this.drawPoints();
-    
-        
-
-        this.getBufferContents(this.tfoBuffer);
     }
 
     drawPoints() {
@@ -386,6 +325,8 @@ export class WebGLRenderer {
         
         // switch between particle and TFO loop
         this.gl.bindVertexArray(this.vao);
+        // vertexAttribPointer args are (index, size, type, normalized, stride, offset)
+        // this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 3*4, 0);
         this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.buffer);
         this.gl.beginTransformFeedback(this.gl.POINTS);
         this.gl.drawArrays(this.gl.POINTS, 0, this.particleCount);
@@ -393,24 +334,23 @@ export class WebGLRenderer {
         this.gl.bindVertexArray(null);
         this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
 
-        if (this.vao === this.tfoVAO) {
-            this.vao = this.particleVAO;
-            this.buffer = this.tfoBuffer;
-            console.log('Switching to particleVAO');
+        if (this.vao === this.vao_1) {
+            this.vao = this.vao_2;
+            this.buffer = this.buffer_1;
+            console.log('Switching to vao_1');
         } else {
-            this.vao = this.tfoVAO;
-            this.buffer = this.aParticlesBuffer;
-            console.log('Switching to tfoVAO');
+            this.vao = this.vao_1;
+            this.buffer = this.buffer_2;
+            console.log('Switching to vao_2');
         }
-        // end loop
 
-        this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
+        // this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
 
 
-        // this.gl.bindVertexArray(this.particleVAO);
+        // this.gl.bindVertexArray(this.vao_1);
         
         // // TFO
-        // this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.tfoBuffer); // for interleaved attribs, index is 0
+        // this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.buffer_2); // for interleaved attribs, index is 0
         // this.gl.beginTransformFeedback(this.gl.POINTS);
 
         // this.gl.drawArrays(this.gl.POINTS, 0, this.physarumManager.count);
