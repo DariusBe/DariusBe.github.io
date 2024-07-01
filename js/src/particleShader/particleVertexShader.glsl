@@ -10,30 +10,37 @@ layout(location=0) in vec3 aPosition;
 
 out vec3 position;   // 3*4 bytess
 
-float randomFloat() {
-    return 
-    fract(sin(mod(float(gl_VertexID), uTime) + gl_Position.x) * 43758.5453123) +
-    fract(cos(float(gl_VertexID) + gl_Position.y) * 123879.1453123) - 0.5;
+float randomVal() {
+    return fract(sin(dot(aPosition.xy, vec2(12.9898,78.233))) * 43758.5453);
+}
+
+float randomAngle() {
+    return sin(uTime);
 }
 
 
 void main() {
     // Move the vertex using Transform Feedback Input
     vec2 newPos = aPosition.xy;
-    newPos.x += randomFloat() * 0.001;
-    newPos.y += randomFloat() * 0.001;
+    float rotation = aPosition.z;
+    rotation += randomVal() * 0.1;
 
-    if (newPos.x > 1.0) {
-        newPos.x = -1.0;
-    } else if (newPos.x < -1.0){
-        newPos.x = 1.0;
+    // normalize moues position
+    vec2 mouse = uMouse.xy * 2.0 - 1.0;
+    float mouseClick = uMouse.z;
+
+    // Move the vertex
+    newPos.x += cos(rotation) * 0.025;
+    newPos.y +=  sin(rotation) * 0.025;
+
+    // mouse force
+    vec2 mouseForce = mouse - newPos.xy;
+    float distance = length(mouseForce);
+    if (distance < 0.15 && mouseClick == 1.0) {
+        newPos += normalize(mouseForce) * 0.1;
     }
-    if (newPos.y > 1.0) {
-        newPos.y = -1.0;
-    } else if (newPos.y < -1.0){
-        newPos.y = 1.0;
-    }
+
     gl_Position = vec4(newPos, 0.0, 1.0);
-    position = vec3(newPos, 0.0);
-    gl_PointSize = 25.0;
+    position = vec3(newPos, rotation);
+    gl_PointSize = uPointSize;
 }

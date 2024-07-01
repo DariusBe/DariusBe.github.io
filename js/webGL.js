@@ -13,7 +13,7 @@ export class WebGLRenderer {
         this.gl = this.canvas.getContext('webgl2');
 
         // Physarum Management
-        this.particleCount = 15;
+        this.particleCount = 500000;
         this.physarumManager = physarumManager || new PhysarumManager(this.particleCount);
 
         // Canvas program
@@ -39,8 +39,8 @@ export class WebGLRenderer {
         // Uniforms
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onResize = this.onResize.bind(this);
-        this.uPointSize = 1.5;
-        this.uTime = 0.0;
+        this.uPointSize = 1.0;
+        this.uTime = new Date().getTime();
 
         // TFO
         this.vao_2 = this.gl.createVertexArray();
@@ -166,6 +166,13 @@ export class WebGLRenderer {
             if (uPointSize === null) {
                 console.log('%c' + programName + 'uPointSize uniform was not found or used', 'color: yellow');
             }
+
+            // uTime
+            var uTime = this.gl.getUniformLocation(program, 'uTime');
+            this.gl.uniform1f(uTime, this.uTime);
+            if (uTime === null) {
+                console.log('%c' + programName + 'uTime uniform was not found or used', 'color: yellow');
+            }
         }
     }
 
@@ -228,7 +235,7 @@ export class WebGLRenderer {
         // set to use program and get attached program name
         this.gl.useProgram(this.particleProgram);
         const initialData = new Float32Array(
-            this.physarumManager.population.map(p => [p.position.x, p.position.y, 0.0]).flat()
+            this.physarumManager.population.map(p => [Math.random()/5-0.5, Math.random()/5-0.5, 0.0]).flat()
         );
 
         this.gl.bindVertexArray(this.vao_1);
@@ -284,33 +291,23 @@ export class WebGLRenderer {
         this.gl.uniform2fv(this.gl.getUniformLocation(this.particleProgram, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
     }
 
-    updatePopulation() {
-        this.physarumManager.update();
-    }
-
     animate() {
         requestAnimationFrame(this.animate.bind(this)); // bind this to the animate function
         // to set fps, use setTimeout or requestAnimationFrame
         //this.prepareParticleAttributes();
 
         // update time for both programs
-        this.uTime += 1;
+        this.uTime += 1.0;
         this.gl.useProgram(this.canvasProgram);
         this.gl.uniform1f(this.gl.getUniformLocation(this.canvasProgram, 'uTime'), this.uTime);
         this.gl.useProgram(this.particleProgram);
         this.gl.uniform1f(this.gl.getUniformLocation(this.particleProgram, 'uTime'), this.uTime);
-
 
         // update after window resize
         window.addEventListener('resize', this.onResize.bind(this));
         // update mouse uniform
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));            
        
-        const view = new Float32Array(this.tfoBufferSize);
-        this.gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, this.tfoBuffer);
-        this.gl.getBufferSubData(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, view);
-        this.gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, null);
-        console.log(view);
         this.drawPoints();
     }
 
@@ -321,12 +318,10 @@ export class WebGLRenderer {
         // this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4);
         // this.gl.bindVertexArray(null);
 
+        // particle program with TFOs
         this.gl.useProgram(this.particleProgram);
-        
         // switch between particle and TFO loop
         this.gl.bindVertexArray(this.vao);
-        // vertexAttribPointer args are (index, size, type, normalized, stride, offset)
-        // this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 3*4, 0);
         this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.buffer);
         this.gl.beginTransformFeedback(this.gl.POINTS);
         this.gl.drawArrays(this.gl.POINTS, 0, this.particleCount);
@@ -337,29 +332,10 @@ export class WebGLRenderer {
         if (this.vao === this.vao_1) {
             this.vao = this.vao_2;
             this.buffer = this.buffer_1;
-            console.log('Switching to vao_1');
         } else {
             this.vao = this.vao_1;
             this.buffer = this.buffer_2;
-            console.log('Switching to vao_2');
         }
-
-        // this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
-
-
-        // this.gl.bindVertexArray(this.vao_1);
-        
-        // // TFO
-        // this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.buffer_2); // for interleaved attribs, index is 0
-        // this.gl.beginTransformFeedback(this.gl.POINTS);
-
-        // this.gl.drawArrays(this.gl.POINTS, 0, this.physarumManager.count);
-        // // TFO
-        // this.gl.endTransformFeedback();
-
-        // this.gl.bindVertexArray(null);
-        // // TFO
-        // this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, null); // unbind TFO buffer
     }
 
     getBufferContents = (buffer) => {
@@ -537,6 +513,12 @@ endTransformFeedback() // end the feedback
     gl.bindBuffer(TRANSFORM_FEEDBACK_BUFFER, null)
 */
 
+
+// const view = new Float32Array(this.tfoBufferSize);
+// this.gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, this.tfoBuffer);
+// this.gl.getBufferSubData(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, view);
+// this.gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, null);
+// console.log(view);
 
 // let runs = 1000;
 // const start = performance.now();
