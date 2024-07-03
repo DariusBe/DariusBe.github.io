@@ -18,7 +18,7 @@ float randomVal() {
     return fract(sin(dot(aPosition.xy, vec2(12.9898,78.233))) * 43758.5453) * sign_flag;
 }
 
-void applyBoundary(vec2 pos, float boundary) {
+void applyBoundary(inout vec2 pos, float boundary) {
     pos.x = clamp(pos.x, -boundary, boundary);
     pos.y = clamp(pos.y, -boundary, boundary);
 }
@@ -35,7 +35,7 @@ void main() {
     
 
     // Move the vertex
-    float stepWidth = 0.0085;
+    float stepWidth = 0.05;
     newPos.x += cos(rotation) * stepWidth;
     newPos.y +=  sin(rotation) * stepWidth;
 
@@ -53,5 +53,5 @@ void main() {
 
     gl_Position = vec4(newPos, 0.0, 1.0);
     position = vec3(newPos, rotation);
-    gl_PointSize = uPointSize;
+    gl_PointSize = 15.0;
 }
