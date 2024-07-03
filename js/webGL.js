@@ -39,7 +39,7 @@ export class WebGLRenderer {
         // Uniforms
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onResize = this.onResize.bind(this);
-        this.uPointSize = 1.0;
+        this.uPointSize = 1.5;
         this.uTime = new Date().getTime();
 
         // TFO
@@ -313,10 +313,10 @@ export class WebGLRenderer {
 
     drawPoints() {
         // canvas VAO and program
-        // this.gl.useProgram(this.canvasProgram);
-        // this.gl.bindVertexArray(this.canvasVAO);
-        // this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4);
-        // this.gl.bindVertexArray(null);
+        this.gl.useProgram(this.canvasProgram);
+        this.gl.bindVertexArray(this.canvasVAO);
+        this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4);
+        this.gl.bindVertexArray(null);
 
         // particle program with TFOs
         this.gl.useProgram(this.particleProgram);
