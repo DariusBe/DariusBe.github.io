@@ -13,7 +13,7 @@ export class WebGLRenderer {
         this.gl = this.canvas.getContext('webgl2');
 
         // Physarum Management
-        this.particleCount = 500000;
+        this.particleCount = 10000;
         this.physarumManager = physarumManager || new PhysarumManager(this.particleCount);
 
         // Canvas program
@@ -235,7 +235,7 @@ export class WebGLRenderer {
         // set to use program and get attached program name
         this.gl.useProgram(this.particleProgram);
         const initialData = new Float32Array(
-            this.physarumManager.population.map(p => [Math.random()/5-0.5, Math.random()/5-0.5, 0.0]).flat()
+            this.physarumManager.population.map(p => [(Math.random()-0.5)*0.25, (Math.random()-0.5)*0.25, 0.0]).flat()
         );
 
         this.gl.bindVertexArray(this.vao_1);
