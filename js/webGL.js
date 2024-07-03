@@ -7,26 +7,44 @@ const canvasFragmentShaderSource = await Utils.readShaderFile('js/src/canvasShad
 const particleVertexShaderSource = await Utils.readShaderFile('js/src/particleShader/particleVertexShader.glsl');
 const particleFragmentShaderSource = await Utils.readShaderFile('js/src/particleShader/particleFragmentShader.glsl');
 
+
+
 export class WebGLRenderer {
-    constructor(canvasId, physarumManager) {
+    constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         this.gl = this.canvas.getContext('webgl2');
 
         // Physarum Management
-        this.particleCount = 10000;
-        this.physarumManager = physarumManager || new PhysarumManager(this.particleCount);
+        this.particleCount = 10;
 
         // Canvas program
         this.canvasProgram = this.gl.createProgram();
         this.canvasFragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
         this.canvasVertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
-
         this.canvasVAO = this.gl.createVertexArray();
         this.aCanvasBuffer = this.gl.createBuffer();
-        this.canvasBorder;
+        this.canvasRect = new Float32Array([
+            -1.0, -1.0,
+            1.0, -1.0,
+            1.0, 1.0,
+            -1.0, 1.0
+        ]);
+
+        // Uniforms
+        this.uPointSize = 15.0;
+        this.uStepWidth = 0.01;
+        this.onMouseMove = this.onMouseMove.bind(this);
+        this.onResize = this.onResize.bind(this);
+        this.uTime = new Date().getTime();
 
         // Canvas Texture
         this.canvasTexture = this.gl.createTexture(); 
+        // Position Texture
+        this.positionTexture = this.gl.createTexture();
+
+        // FBO requirements
+        this.fbo = this.gl.createFramebuffer();
+        this.depthRenderBuffer = this.gl.createRenderbuffer();
         
         // Particle program
         this.particleProgram = this.gl.createProgram();
@@ -35,12 +53,6 @@ export class WebGLRenderer {
 
         this.vao_1 = this.gl.createVertexArray();
         this.buffer_1 = this.gl.createBuffer();
-
-        // Uniforms
-        this.onMouseMove = this.onMouseMove.bind(this);
-        this.onResize = this.onResize.bind(this);
-        this.uPointSize = 1.5;
-        this.uTime = new Date().getTime();
 
         // TFO
         this.vao_2 = this.gl.createVertexArray();
@@ -52,6 +64,7 @@ export class WebGLRenderer {
 
         this.vao = this.vao_1;
         this.buffer = this.buffer_2;
+        this.fbo = this.prepareFramebufferObject(this.particleProgram);
         this.animate();
     }
 
@@ -120,7 +133,6 @@ export class WebGLRenderer {
         this.prepareParticleTransformFeedback();
         this.prepareParticleAttributes();
         this.prepareUniforms(this.particleProgram);
-        
     }
 
 
@@ -151,7 +163,7 @@ export class WebGLRenderer {
             }
             // uSampler
             const textureUnit = 0;
-            const uSampler = this.gl.getUniformLocation(program, 'uSampler');
+            const uSampler = this.gl.getUniformLocation(program, 'fboPositionSampler');
             this.gl.uniform1i(uSampler, textureUnit); // texture unit 1
             if (uSampler === null) {
                 console.log('%c' + programName + 'uSampler uniform was not found or used', 'color: yellow');
@@ -165,6 +177,12 @@ export class WebGLRenderer {
             this.gl.uniform1f(uPointSize, this.uPointSize);
             if (uPointSize === null) {
                 console.log('%c' + programName + 'uPointSize uniform was not found or used', 'color: yellow');
+            }
+
+            const uStepWidth = this.gl.getUniformLocation(program, 'uStepWidth');
+            this.gl.uniform1f(uStepWidth, this.uStepWidth);
+            if (uStepWidth === null) {
+                console.log('%c' + programName + 'uStepWidth uniform was not found or used', 'color: yellow');
             }
 
             // uTime
@@ -183,14 +201,8 @@ export class WebGLRenderer {
         this.gl.bindVertexArray(this.canvasVAO);
         // aCanvas
         const aCanvasLoc = this.gl.getAttribLocation(this.canvasProgram, 'aCanvas');        
-        this.canvasBorder = new Float32Array([
-            -1.0, -1.0,
-            1.0, -1.0,
-            1.0, 1.0,
-            -1.0, 1.0
-        ]);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.aCanvasBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.canvasBorder, this.gl.STATIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.canvasRect, this.gl.STATIC_DRAW);
         this.gl.enableVertexAttribArray(aCanvasLoc);
         this.gl.vertexAttribPointer(aCanvasLoc, 2, this.gl.FLOAT, false, 0, 0);
         if (aCanvasLoc === -1) {
@@ -213,20 +225,23 @@ export class WebGLRenderer {
         this.gl.enableVertexAttribArray(aTextureCoordLoc); // 1 is the location of aTextureCoord
 
         // async code block in using async Utils.loadImages
-        const prepareTextureBuffer = async () => {
-            const pixelMap = await Utils.loadImage('src/img/labyrinth_1_penalty.png');
-            const imageWidth = pixelMap.width;
-            const imageHeight = pixelMap.height;
+        // const prepareTextureBuffer = async () => {
+        //     const pixelMap = await Utils.loadImage('src/img/labyrinth_1_penalty.png');
+        //     const imageWidth = pixelMap.width;
+        //     const imageHeight = pixelMap.height;
             
-            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true); // flip image vertically
-            this.gl.bindTexture(this.gl.TEXTURE_2D, this.canvasTexture);
-            // where width and height describe the size of the texture in pixels
-            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGB, imageWidth, imageHeight, 0, this.gl.RGB, this.gl.UNSIGNED_BYTE, pixelMap);
+        //     this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true); // flip image vertically
+        //     this.gl.bindTexture(this.gl.TEXTURE_2D, this.canvasTexture);
+        //     // where width and height describe the size of the texture in pixels
+        //     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGB, imageWidth, imageHeight, 0, this.gl.RGB, this.gl.UNSIGNED_BYTE, pixelMap);
             
-            this.gl.generateMipmap(this.gl.TEXTURE_2D);
-        }
-
-        prepareTextureBuffer();
+        //     this.gl.generateMipmap(this.gl.TEXTURE_2D);
+        // }
+        // prepareTextureBuffer();
+        
+        
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.positionTexture);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.bindVertexArray(null);
     }
@@ -235,7 +250,7 @@ export class WebGLRenderer {
         // set to use program and get attached program name
         this.gl.useProgram(this.particleProgram);
         const initialData = new Float32Array(
-            this.physarumManager.population.map(p => [(Math.random()-0.5)*0.25, (Math.random()-0.5)*0.25, 0.0]).flat()
+            Array(this.particleCount).fill().map((_, i) => [(Math.random()-0.5)*0.25, (Math.random()-0.5)*0.25, 0.0]).flat()
         );
 
         this.gl.bindVertexArray(this.vao_1);
@@ -260,6 +275,38 @@ export class WebGLRenderer {
         this.gl.enableVertexAttribArray(0);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.bindVertexArray(null);
+    }
+
+    prepareFramebufferObject = (program) => {
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fbo);
+
+        // create the texture to store the position data --> TODO: more textures needed for other data?
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.positionTexture);
+        this.gl.texStorage2D(this.gl.TEXTURE_2D, 1, this.gl.RGBA8, this.canvas.width, this.canvas.height);
+
+        // create the renderbuffer for depth testing
+        this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.depthRenderBuffer);
+        this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, this.canvas.width, this.canvas.height);
+
+        this.gl.framebufferTexture2D(
+            this.gl.FRAMEBUFFER, // target
+            this.gl.COLOR_ATTACHMENT0, // attachment point == location of point locations in fragment shader
+            this.gl.TEXTURE_2D, // texture target
+            this.positionTexture, // texture
+            0);
+            
+        // depth_testing requires a renderbuffer
+        this.gl.framebufferRenderbuffer(
+            this.gl.FRAMEBUFFER, // target
+            this.gl.DEPTH_ATTACHMENT, // attachment point
+            this.gl.RENDERBUFFER, // renderbuffer target
+            this.depthRenderBuffer // renderbuffer
+        );
+
+        // unbind
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
+        return this.fbo;
     }
 
     onMouseMove(e) {
@@ -311,13 +358,15 @@ export class WebGLRenderer {
         this.drawPoints();
     }
 
-    drawPoints() {
+    renderCanvas() {
         // canvas VAO and program
         this.gl.useProgram(this.canvasProgram);
         this.gl.bindVertexArray(this.canvasVAO);
         this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4);
         this.gl.bindVertexArray(null);
+    }
 
+    computeParticles() {
         // particle program with TFOs
         this.gl.useProgram(this.particleProgram);
         // switch between particle and TFO loop
@@ -338,25 +387,15 @@ export class WebGLRenderer {
         }
     }
 
-    getBufferContents = (buffer) => {
-        const sync = this.gl.fenceSync(this.gl.SYNC_GPU_COMMANDS_COMPLETE,0);
-        
-        const checkStatus = () => {
-            const status = this.gl.clientWaitSync(sync, this.gl.SYNC_FLUSH_COMMANDS_BIT, 0);
-            if (status === this.gl.TIMEOUT_EXPIRED) {
-                console.log("GPU is still busy. Let's wait some more.");
-            } else if (status === this.gl.WAIT_FAILED) {
-                console.error("GPU is done goofed");
-            } else { 
-                const view = new Float32Array (COUNT);
-                gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, buffer);
-                gl.getBufferSubData(gl.TRANSFORM_FEEDBACK_BUFFER, 0, view);
-                gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, null);
-                console.log(view);
-            }
-            setTimeout (checkStatus);
-        };
-    };
+
+    drawPoints() {
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fbo);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        this.computeParticles();
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
+        this.renderCanvas();
+    }
 }
 
 /*
@@ -512,6 +551,26 @@ endTransformFeedback() // end the feedback
     gl.bindBuffer(ARRAY_BUFFER, null)
     gl.bindBuffer(TRANSFORM_FEEDBACK_BUFFER, null)
 */
+
+// getBufferContents = (buffer) => {
+//     const sync = this.gl.fenceSync(this.gl.SYNC_GPU_COMMANDS_COMPLETE,0);
+    
+//     const checkStatus = () => {
+//         const status = this.gl.clientWaitSync(sync, this.gl.SYNC_FLUSH_COMMANDS_BIT, 0);
+//         if (status === this.gl.TIMEOUT_EXPIRED) {
+//             console.log("GPU is still busy. Let's wait some more.");
+//         } else if (status === this.gl.WAIT_FAILED) {
+//             console.error("GPU is done goofed");
+//         } else { 
+//             const view = new Float32Array (COUNT);
+//             gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, buffer);
+//             gl.getBufferSubData(gl.TRANSFORM_FEEDBACK_BUFFER, 0, view);
+//             gl.bindBuffer(this.gl.TRANSFORM_FEEDBACK_BUFFER, null);
+//             console.log(view);
+//         }
+//         setTimeout (checkStatus);
+//     };
+// };
 
 
 // const view = new Float32Array(this.tfoBufferSize);

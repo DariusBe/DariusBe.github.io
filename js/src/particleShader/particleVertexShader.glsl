@@ -1,6 +1,7 @@
 #version 300 es
 
 uniform float uPointSize;
+uniform float uStepWidth;
 uniform float uTime;
 uniform vec3 uMouse;
 
@@ -35,7 +36,7 @@ void main() {
     
 
     // Move the vertex
-    float stepWidth = 0.05;
+    float stepWidth = uStepWidth;
     newPos.x += cos(rotation) * stepWidth;
     newPos.y +=  sin(rotation) * stepWidth;
 
@@ -53,5 +54,5 @@ void main() {
 
     gl_Position = vec4(newPos, 0.0, 1.0);
     position = vec3(newPos, rotation);
-    gl_PointSize = 15.0;
+    gl_PointSize = uPointSize;
 }
