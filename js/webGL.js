@@ -13,9 +13,11 @@ export class WebGLRenderer {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         this.gl = this.canvas.getContext('webgl2');
+        // enable true floating point storage types
+        this.gl.getExtension('EXT_color_buffer_float');
 
         // Physarum Management
-        this.particleCount = 10;
+        this.particleCount = 10000;
 
         // Canvas program
         this.canvasProgram = this.gl.createProgram();
@@ -31,8 +33,8 @@ export class WebGLRenderer {
         ]);
 
         // Uniforms
-        this.uPointSize = 15.0;
-        this.uStepWidth = 0.01;
+        this.uPointSize = 1;
+        this.uStepWidth = 0.001;
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onResize = this.onResize.bind(this);
         this.uTime = new Date().getTime();
@@ -282,7 +284,7 @@ export class WebGLRenderer {
 
         // create the texture to store the position data --> TODO: more textures needed for other data?
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.positionTexture);
-        this.gl.texStorage2D(this.gl.TEXTURE_2D, 1, this.gl.RGBA8, this.canvas.width, this.canvas.height);
+        this.gl.texStorage2D(this.gl.TEXTURE_2D, 1, this.gl.RGBA16F, this.canvas.width, this.canvas.height);
 
         // create the renderbuffer for depth testing
         this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.depthRenderBuffer);
@@ -369,6 +371,8 @@ export class WebGLRenderer {
     computeParticles() {
         // particle program with TFOs
         this.gl.useProgram(this.particleProgram);
+        // enable depth testing
+        this.gl.enable(this.gl.DEPTH_TEST);
         // switch between particle and TFO loop
         this.gl.bindVertexArray(this.vao);
         this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.buffer);
@@ -377,6 +381,7 @@ export class WebGLRenderer {
         this.gl.endTransformFeedback();
         this.gl.bindVertexArray(null);
         this.gl.bindBufferBase(this.gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
+
 
         if (this.vao === this.vao_1) {
             this.vao = this.vao_2;
