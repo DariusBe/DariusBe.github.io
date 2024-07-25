@@ -36,9 +36,11 @@ const onmousemove = (e) => {
     gl.uniform3fv(gl.getUniformLocation(canvasProgram, 'uMouse'), mouse);
 };
 const touchmove = (e) => {
-    const touch = e.touches[0];
-    const mouse = new Float32Array([touch.clientX / canvas.width, 1-(touch.clientY / canvas.height), 1.0]);
-    console.info('x:',touch.clientX, touch.clientY);
+    var touch = e.touches[0];
+    // update mouse uniform
+    const pressedButton = 1.0;
+    var mouse = new Float32Array([touch.clientX / canvas.width, 1-(touch.clientY / canvas.height), pressedButton]);
+    gl.useProgram(canvasProgram);
     gl.uniform3fv(gl.getUniformLocation(canvasProgram, 'uMouse'), mouse);
 }
 canvas.addEventListener('touchmove', touchmove);

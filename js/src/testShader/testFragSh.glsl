@@ -17,7 +17,7 @@ void main() {
 
     vec3 color = vec3(1.0, 0.0, 0.0);
     // show the mouse position
-    if (distance(gl_FragCoord.xy, mouse * uv) < 10.0) {
+    if (distance(gl_FragCoord.xy, mouse * uv) < 5.0) {
         if (mouseClick == 1.0) {
             color = vec3(0.0, 0.0, 1.0);
         } else {
