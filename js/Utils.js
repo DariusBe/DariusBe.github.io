@@ -76,4 +76,34 @@ export class Utils {
         const shaderCode = await response.text();
         return shaderCode;
     }
+
+    static prepareShaderProgram = async (gl, vertexShaderPath, fragmentShaderPath) => {
+        const vertexShaderCode = await Utils.readShaderFile(vertexShaderPath);
+        const fragmentShaderCode = await Utils.readShaderFile(fragmentShaderPath);
+
+        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        vertexShader.name = vertexShaderPath.split('/').pop();
+        gl.shaderSource(vertexShader, vertexShaderCode);
+        gl.compileShader(vertexShader);
+        if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+            console.error('Error compiling ', vertexShader.name, gl.getShaderInfoLog(vertexShader));
+            return;
+        }
+
+        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        fragmentShader.name = fragmentShaderPath.split('/').pop();
+        gl.shaderSource(fragmentShader, fragmentShaderCode);
+        gl.compileShader(fragmentShader);
+        if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+            console.error('Error compiling ', fragmentShader.name, gl.getShaderInfoLog(fragmentShader));
+            return;
+        }
+
+        const shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+
+        return shaderProgram;
+    }
 }
