@@ -22,15 +22,16 @@ void main() {
     // show the mouse position
     if (distance(gl_FragCoord.xy, mouse * uv) < 5.0) {
         if (mouseClick == 1.0) {
-            color = vec3(1.0, 1.0, 1.0);
+            color = vec3(1.0, 0.0, 0.0);
         } else {
-            color = vec3(0.0118, 0.2314, 0.5059);
+            color = vec3(0.2353, 0.2353, 0.2353);
         }
     }
     // normalize the texture size with the resolution
-    float scaleFactor = 50.0 / 100000.0;
-    float texWidth = vTexCoord.x * uv.x * scaleFactor;
-    float texHeight = vTexCoord.y * uv.y * scaleFactor;
+    float aspectRatio = uv.x / uv.y;
+    float scaleFactor = 50.0;
+    float texWidth = aspectRatio * vTexCoord.x * scaleFactor / uv.x * aspectRatio;
+    float texHeight = vTexCoord.y * scaleFactor / uv.y;
     vec2 texCoord = vec2(texWidth, texHeight);
 
     vec3 texColor = texture(uSampler, texCoord).rgb;
