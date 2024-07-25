@@ -36,6 +36,7 @@ const onmousemove = (e) => {
     gl.uniform3fv(gl.getUniformLocation(canvasProgram, 'uMouse'), mouse);
 };
 const touchmove = (e) => {
+    event.preventDefault(); // prevent scrolling
     var touch = e.touches[0];
     // update mouse uniform
     const pressedButton = 1.0;
