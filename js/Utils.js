@@ -139,7 +139,7 @@ export class Utils {
             if (attributeLocation === -1) {
                 console.error('Attribute', attributeName, 'not found in', program.name);
                 continue;
-            } else { console.info(program.name, '\nAttribute', attributeName, 'found in'); }
+            } else { console.info(program.name, '\nAttribute', attributeName, 'found'); }
             const attribBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, attribBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, bufferData, gl.STATIC_DRAW);
