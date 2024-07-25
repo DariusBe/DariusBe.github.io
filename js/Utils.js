@@ -161,6 +161,36 @@ export class Utils {
         return programVAO;
     }
 
+    static prepareImageTextureForProgram = (gl, program, programVAO, sampler = 'uSampler', textureData) => {
+        gl.useProgram(program);
+        gl.bindVertexArray(programVAO);
+    
+        // flip image vertically
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+        const texture = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        // args: target, mipmap-level, internalFormat, format, type, data_source
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureData);
+        gl.generateMipmap(gl.TEXTURE_2D);
+
+        // set texture parameters
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+        // bind texture to sampler
+        const samplerLocation = gl.getUniformLocation(program, sampler);
+        gl.uniform1i(samplerLocation, 0);
+
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindVertexArray(null);
+        gl.useProgram(null);
+
+        return texture;
+    }
+
     static prepareUniform = (gl, program, uniforms) => {
         gl.useProgram(program);
 

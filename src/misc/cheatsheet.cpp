@@ -82,6 +82,7 @@ bindBuffer(ARRAY_BUFFER, texCoordBuffer)
 bufferData(ARRAY_BUFFER, texCoordBufferData, STATIC_DRAW)
 vertexAttribPointer(texCoordLocation, 2, FLOAT, false, 0, 0)
 enableVertexAttribArray(texCoordLocation)
+
 // provide texture image from file (async) or array 'pixels':
     // EXAMPLE:
         const loadImage = () =>  new Promise(resolve => {

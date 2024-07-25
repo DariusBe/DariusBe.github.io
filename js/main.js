@@ -14,26 +14,35 @@ const canvasProgramPaths = [ rootPath+'testShader/testVertSh.glsl', rootPath+'te
 const canvasProgram = await Utils.prepareShaderProgram(gl, canvasProgramPaths[0], canvasProgramPaths[1]);
 canvasProgram.name = 'canvasProgram';
 
+// CANVAS ATTRIBUTES
 const attributes = {
     'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
+    'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords],
 };
 const canvasVAO = Utils.prepareAttributes(gl, canvasProgram, attributes);
 
+// CANVAS UNIFORMS
 var uniforms = {
     uResolution: [[canvas.width, canvas.height], '2fv'],
     uMouse: [[0.0, 0.0, 0.0], '3fv'],
     uTime: [1.0, '1f'],
+    uSampler: [0, '1i'], // texture unit
 };
 Utils.prepareUniform(gl, canvasProgram, uniforms);
 
-gl.clearColor(0.0, 0.0, 0.0, 1.0);
+// CANVAS TEXTURE
+// load image 
+const testMap = await Utils.loadImage('src/misc/testmap.png');
+const texture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
 
 // EVENT HANDLERS
 const onmousemove = (e) => {
     const pressedButton = e.buttons === 1 ? 1.0 : 0.0;
     const mouse = new Float32Array([e.clientX / canvas.width, 1-(e.clientY / canvas.height), pressedButton]);
+    
     gl.useProgram(canvasProgram);
     gl.uniform3fv(gl.getUniformLocation(canvasProgram, 'uMouse'), mouse);
+    // further programs here
 };
 const touchmove = (e) => {
     event.preventDefault(); // prevent scrolling
@@ -47,11 +56,12 @@ const touchmove = (e) => {
 canvas.addEventListener('touchmove', touchmove);
 canvas.addEventListener('mousemove', onmousemove);
 
-// requestAnimationFrame
+// RENDER LOOP
 const render = () => {
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(canvasProgram);
     gl.bindVertexArray(canvasVAO);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     requestAnimationFrame(render);
 };
