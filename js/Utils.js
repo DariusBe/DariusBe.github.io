@@ -193,4 +193,38 @@ export class Utils {
             }
         }
     }
+
+    static prepareFramebufferObject = (gl, program, textureData, textureSize, textureFormat = RGBA16F) => {
+        const fbo = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+
+        // create the texture to store the position data
+        gl.bindTexture(gl.TEXTURE_2D, textureData);
+        // params: target, mipmap-level, internalFormat, width, height
+        gl.texStorage2D(gl.TEXTURE_2D, 1, gl[textureFormat], textureSize.width, textureSize.height);
+
+        // create the renderbuffer for depth testing
+        gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, textureWidth, textureHeight);
+
+        gl.framebufferTexture2D(
+            gl.FRAMEBUFFER, // target
+            gl.COLOR_ATTACHMENT0, // attachment point == location of point locations in fragment shader
+            gl.TEXTURE_2D, // texture target
+            positionTexture, // texture
+            0);
+            
+        // depth_testing requires a renderbuffer
+        gl.framebufferRenderbuffer(
+            gl.FRAMEBUFFER, // target
+            gl.DEPTH_ATTACHMENT, // attachment point
+            gl.RENDERBUFFER, // renderbuffer target
+            depthRenderBuffer // renderbuffer
+        );
+
+        // unbind
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        return fbo;
+    }
 }
