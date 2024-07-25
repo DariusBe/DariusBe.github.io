@@ -45,7 +45,7 @@ const onmousemove = (e) => {
     // further programs here
 };
 const touchmove = (e) => {
-    event.preventDefault(); // prevent scrolling
+    e.preventDefault(); // prevent scrolling
     var touch = e.touches[0];
     // update mouse uniform
     const pressedButton = 1.0;
@@ -53,8 +53,16 @@ const touchmove = (e) => {
     gl.useProgram(canvasProgram);
     gl.uniform3fv(gl.getUniformLocation(canvasProgram, 'uMouse'), mouse);
 }
+const onresize = (e) => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, window.innerWidth, window.innerHeight);
+    gl.useProgram(canvasProgram);
+    gl.uniform2fv(gl.getUniformLocation(canvasProgram, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
+}
 canvas.addEventListener('touchmove', touchmove);
 canvas.addEventListener('mousemove', onmousemove);
+window.addEventListener('resize', onresize);
 
 // RENDER LOOP
 const render = () => {
