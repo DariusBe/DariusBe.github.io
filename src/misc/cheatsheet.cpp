@@ -8,19 +8,24 @@
 // link & use canvasProgram
 
 // ATTRIBUTES:
-const attributeLocation // var from:
-getAttribLocation(canvasProgram, 'attribute_name')
+const attributeLocation = getAttribLocation(canvasProgram, 'attribute_name') // to get location of attribute in shader
 const bufferData = Float32Array([])
 const buffer = createBuffer()
 bindBuffer(ARRAY_BUFFER, buffer)
 bufferData(ARRAY_BUFFER, bufferData, STATIC_DRAW) // if not changing
 enableVertexAttribArray(attributeLocation) // only once after binding to buffer
-// define buffer layout: vertexAttribPointer(attributeLocation, nr_of_chunks, FLOAT, normalized=false, chunk_size_in_bytes, offset_in_bytes)
-    // EXAMPLE:
+    // define buffer layout: vertexAttribPointer(attributeLocation, nr_of_chunks, FLOAT, normalized=false, chunk_size_in_bytes, offset_in_bytes)
+    EXAMPLE:
     vertexAttribPointer(attributeLocation, 2, this.gl.FLOAT, false, 3*4, 0);
     // would mean we have an array of 3 floats (= 4 bytes) per vertex, and we want to use the first 2 floats as x,y coordinates
     vertexAttribPointer(attributeLocation, 1, this.gl.FLOAT, false, 3*4, 2*4);
     // to get the third float from the array
+
+    // multiple attributes can be defined for a single buffer
+    // EXAMPLE: buffer structure: [x, y, r, g, b, u, v] = 7 floats = 7*4 bytes with offsets 0, 2, 5
+    vertexAttribPointer(0, 2, FLOAT, false, 7*4, 0)     // layout(location=0) in vec2 xy
+    vertexAttribPointer(1, 3, FLOAT, false, 7*4, 2*4)   // layout(location=1) in vec3 rgb
+    vertexAttribPointer(2, 2, FLOAT, false, 7*4, 5*4)   // layout(location=2) in vec2 uv
 
 // UNIFORMS:
 const uniformLocation = getUniformLocation(canvasProgram, 'uniform_name')
