@@ -24,7 +24,8 @@ const touchstart = (e) => {
     const touch = e.touches[0];
     const x = touch.clientX;
     const y = touch.clientY;
-    console.log('touchmove', x, y);
+    mouse = new Float32Array([x / canvas.width, 1-(y / canvas.height), 1.0]);
+    gl.uniform3fv(gl.getUniformLocation(canvasProgram, 'uMouse'), mouse);
 }
 canvas.addEventListener('touchstart', touchstart);
 canvas.addEventListener('mousemove', onmousemove);
