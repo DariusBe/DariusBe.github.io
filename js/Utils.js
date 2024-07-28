@@ -6,15 +6,16 @@ export class Utils {
         img.src = src;
     });
 
-    static getRandomStartTexture(width=512, height=512, fillLikeliness=0.5) {
+    static getRandomStartTexture(width=512, height=512) {
         var textureData = new Uint8Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
-            const fill = Math.random() < fillLikeliness ? 255 : 0;
-            textureData[i * 4 + 0] = fill;
-            textureData[i * 4 + 1] = fill;
-            textureData[i * 4 + 2] = fill;
-            textureData[i * 4 + 3] = 255;
+            const fill = Math.random() * 255;
+            textureData[i * 4 + 0] = fill;  // r
+            textureData[i * 4 + 1] = fill;  // g
+            textureData[i * 4 + 2] = fill;  // b
+            textureData[i * 4 + 3] = 255;   // a
         }
+        console.info('Generated random start texture of size', width, 'x', height);
         return new ImageData(new Uint8ClampedArray(textureData), width, height);
     }
 

@@ -32,14 +32,11 @@ var canvasUniforms = {uSampler: [0, '1i']};
 Utils.prepareUniform(gl, canvasProgram, canvasUniforms);
 
 // CANVAS TEXTURE
-// measure performance of different texture sizes
-var now = performance.now();
-// const testMap = await Utils.getRandomStartTexture(150, 150, 0.005);
-const testMap = await Utils.loadImage('src/misc/random_grid.png');
-console.log('Texture generation time in ms: ', performance.now() - now);
+// prepare image
+//const testMap = await Utils.loadImage('src/misc/random_grid.png');
+var testMap = Utils.getRandomStartTexture(canvas.width, canvas.height, 0.5);
 
-
-const texture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
+var texture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
 
 // EVENT HANDLERS
 const onmousemove = (e) => {
@@ -72,6 +69,8 @@ const onresize = (e) => {
         gl.useProgram(program);
         gl.uniform2fv(gl.getUniformLocation(program, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
     }
+    testMap = Utils.getRandomStartTexture(canvas.width, canvas.height, 0.5);
+    texture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
 }
 canvas.addEventListener('touchmove', touchmove);
 canvas.addEventListener('mousemove', onmousemove);
