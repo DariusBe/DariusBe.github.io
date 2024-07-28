@@ -20,7 +20,7 @@ void main() {
 
     vec3 cursor = vec3(0.0);
     // show the mouse position
-    if (distance(gl_FragCoord.xy, mouse * uv) < 12.0) {
+    if (distance(gl_FragCoord.xy, mouse * uv) < 25.0) {
         if (mouseClick == 1.0) {
             cursor = vec3(1.0, 0.0, 0.0);
         } else {
@@ -30,7 +30,7 @@ void main() {
 
     vec3 points = vec3(0.0);
     float currentState = texelFetch(uSampler, ivec2(gl_FragCoord.xy), 0).r;
-    if (currentState < 0.01) {
+    if (currentState < 0.001) {
         points = vec3(1.0);
     }
 
