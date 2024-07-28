@@ -6,69 +6,16 @@ export class Utils {
         img.src = src;
     });
 
-    static getPixelMap() {
-        return new Uint8Array([
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0, // red
-            0, 255, 0, // green
-    
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-    
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-    
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-    
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0, // red
-            0, 255, 0, // green
-    
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-    
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-    
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-    
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellows
-    
-            255, 0, 0,  // red
-            0, 255, 0,  // green
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-    
-            0, 0, 255,  // blue
-            255, 255, 0, // yellow
-            255, 0, 0, // red
-            0, 255, 0, // green
-    
-        ]);
+    static getRandomStartTexture(width=512, height=512, fillLikeliness=0.5) {
+        var textureData = new Uint8Array(width * height * 4);
+        for (let i = 0; i < width * height; i++) {
+            const fill = Math.random() < fillLikeliness ? 255 : 0;
+            textureData[i * 4 + 0] = fill;
+            textureData[i * 4 + 1] = fill;
+            textureData[i * 4 + 2] = fill;
+            textureData[i * 4 + 3] = 255;
+        }
+        return new ImageData(new Uint8ClampedArray(textureData), width, height);
     }
 
     static readShaderFile = async (path) => {
@@ -176,9 +123,12 @@ export class Utils {
         gl.generateMipmap(gl.TEXTURE_2D);
 
         // set texture parameters, repeat 
+        // set to closest pixel
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        // set to repeat
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
         // bind texture to sampler
         const samplerLocation = gl.getUniformLocation(program, sampler);

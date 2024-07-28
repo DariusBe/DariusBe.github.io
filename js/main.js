@@ -32,7 +32,7 @@ var canvasUniforms = {uSampler: [0, '1i']};
 Utils.prepareUniform(gl, canvasProgram, canvasUniforms);
 
 // CANVAS TEXTURE
-const testMap = await Utils.loadImage('src/misc/testmap.png');
+const testMap = await Utils.getRandomStartTexture(canvas.width, canvas.height, 0.02);
 const texture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
 
 // EVENT HANDLERS
@@ -57,7 +57,6 @@ const touchmove = (e) => {
         gl.uniform3fv(gl.getUniformLocation(program, 'uMouse'), mouse);
     }
 }
-
 const onresize = (e) => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
