@@ -18,24 +18,22 @@ void main() {
     vec2 mouse = uMouse.xy;
     float mouseClick = uMouse.z;
 
-    vec3 color = vec3(0.0);
+    vec3 cursor = vec3(0.0);
     // show the mouse position
     if (distance(gl_FragCoord.xy, mouse * uv) < 8.0) {
         if (mouseClick == 1.0) {
-            color = vec3(1.0, 0.0, 0.0);
+            cursor = vec3(1.0, 0.0, 0.0);
         } else {
-            color = vec3(0.25, 0.25, 0.25);
+            cursor = vec3(0.25, 0.25, 0.25);
         }
     }
-    // normalize the texture size with the resolution
-    float aspectRatio = uv.x / uv.y;
-    float scaleFactor = 25.0;
-    float texWidth = aspectRatio * vTexCoord.x * scaleFactor / uv.x * aspectRatio;
-    float texHeight = vTexCoord.y * scaleFactor / uv.y;
-    vec2 texCoord = vec2(texWidth, texHeight);
 
-    vec3 texColor = texture(uSampler, texCoord).rgb;
+    vec3 points = vec3(0.0);
+    float currentState = texelFetch(uSampler, ivec2(gl_FragCoord.xy), 0).r;
+    if (currentState < 0.1) {
+        points = vec3(1.0);
+    }
 
-    fragColor = vec4(texColor + color, 1.0);
+    fragColor = vec4(points + cursor, 1.0);
 }
 

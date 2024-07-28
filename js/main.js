@@ -32,7 +32,13 @@ var canvasUniforms = {uSampler: [0, '1i']};
 Utils.prepareUniform(gl, canvasProgram, canvasUniforms);
 
 // CANVAS TEXTURE
-const testMap = await Utils.getRandomStartTexture(canvas.width, canvas.height, 0.02);
+// measure performance of different texture sizes
+var now = performance.now();
+// const testMap = await Utils.getRandomStartTexture(150, 150, 0.005);
+const testMap = await Utils.loadImage('src/misc/random_grid.png');
+console.log('Texture generation time in ms: ', performance.now() - now);
+
+
 const texture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
 
 // EVENT HANDLERS
