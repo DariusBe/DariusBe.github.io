@@ -6,32 +6,32 @@ import { Utils } from './Utils.js';
 // main
 // const physarumManager = new PhysarumManager();
 // const webGLRenderer = new WebGLRenderer('webgl-canvas');
+
+/* GLOBALS */
 const canvas = document.getElementById('webgl-canvas');
 const gl = canvas.getContext('webgl2');
+var tick = performance.now() / 1000;
 const rootPath = 'js/src/';
-const canvasProgramPaths = [ rootPath+'testShader/testVertSh.glsl', rootPath+'testShader/testFragSh.glsl' ]; 
+var programList = [];
 
+// CANVAS PROGRAM
+const canvasProgramPaths = [ rootPath+'testShader/testVertSh.glsl', rootPath+'testShader/testFragSh.glsl' ]; 
 const canvasProgram = await Utils.prepareShaderProgram(gl, canvasProgramPaths[0], canvasProgramPaths[1]);
 canvasProgram.name = 'canvasProgram';
+programList.push(canvasProgram);
 
 // CANVAS ATTRIBUTES
-const attributes = {
+const canvasAttributes = {
     'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
     'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords],
 };
-const canvasVAO = Utils.prepareAttributes(gl, canvasProgram, attributes);
+const canvasVAO = Utils.prepareAttributes(gl, canvasProgram, canvasAttributes);
 
 // CANVAS UNIFORMS
-var uniforms = {
-    uResolution: [[canvas.width, canvas.height], '2fv'],
-    uMouse: [[0.0, 0.0, 0.0], '3fv'],
-    uTime: [1.0, '1f'],
-    uSampler: [0, '1i'], // texture unit
-};
-Utils.prepareUniform(gl, canvasProgram, uniforms);
+var canvasUniforms = {uSampler: [0, '1i']};
+Utils.prepareUniform(gl, canvasProgram, canvasUniforms);
 
 // CANVAS TEXTURE
-// load image 
 const testMap = await Utils.loadImage('src/misc/testmap.png');
 const texture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
 
@@ -40,8 +40,10 @@ const onmousemove = (e) => {
     const pressedButton = e.buttons === 1 ? 1.0 : 0.0;
     const mouse = new Float32Array([e.clientX / canvas.width, 1-(e.clientY / canvas.height), pressedButton]);
     
-    gl.useProgram(canvasProgram);
-    gl.uniform3fv(gl.getUniformLocation(canvasProgram, 'uMouse'), mouse);
+    for (const program of programList) {
+        gl.useProgram(program);
+        gl.uniform3fv(gl.getUniformLocation(program, 'uMouse'), mouse);
+    }
     // further programs here
 };
 const touchmove = (e) => {
@@ -50,22 +52,44 @@ const touchmove = (e) => {
     // update mouse uniform
     const pressedButton = 1.0;
     var mouse = new Float32Array([touch.clientX / canvas.width, 1-(touch.clientY / canvas.height), pressedButton]);
-    gl.useProgram(canvasProgram);
-    gl.uniform3fv(gl.getUniformLocation(canvasProgram, 'uMouse'), mouse);
+    for (const program of programList) {
+        gl.useProgram(program);
+        gl.uniform3fv(gl.getUniformLocation(program, 'uMouse'), mouse);
+    }
 }
+
 const onresize = (e) => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     gl.useProgram(canvasProgram);
-    gl.uniform2fv(gl.getUniformLocation(canvasProgram, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
+    for (const program of programList) {
+        gl.useProgram(program);
+        gl.uniform2fv(gl.getUniformLocation(program, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
+    }
 }
 canvas.addEventListener('touchmove', touchmove);
 canvas.addEventListener('mousemove', onmousemove);
 window.addEventListener('resize', onresize);
 
+// UPDATE GLOBAL UNIFORMS FOR ALL PROGRAMS
+var globalUniforms = {
+    uResolution: [[canvas.width, canvas.height], '2fv'],
+    uMouse: [[0.0, 0.0, 0.0], '3fv'],
+    uTime: [tick, '1f'],
+};
+for (const program of programList) {
+    gl.useProgram(program);
+    Utils.prepareUniform(gl, program, globalUniforms);
+}
+
 // RENDER LOOP
 const render = () => {
+    // update time uniform
+    tick += 0.01;
+    gl.useProgram(canvasProgram);
+    gl.uniform1f(gl.getUniformLocation(canvasProgram, 'uTime'), tick);
+    
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(canvasProgram);
     gl.bindVertexArray(canvasVAO);
