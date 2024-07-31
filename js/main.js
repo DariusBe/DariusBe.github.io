@@ -10,6 +10,7 @@ import { Utils } from './Utils.js';
 /* GLOBALS */
 const canvas = document.getElementById('webgl-canvas');
 const gl = canvas.getContext('webgl2');
+gl.getExtension('EXT_color_buffer_float');
 var tick = performance.now() / 1000;
 const rootPath = 'js/src/';
 var programList = [];
@@ -35,8 +36,28 @@ Utils.prepareUniform(gl, canvasProgram, canvasUniforms);
 // prepare image
 //const testMap = await Utils.loadImage('src/misc/random_grid.png');
 var testMap = Utils.getRandomStartTexture(canvas.width, canvas.height, 0.5);
-
 var texture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
+
+// RULES PROGRAM
+const rulesProgramPaths = [ rootPath+'rulesShader/rulesVertSh.glsl', rootPath+'rulesShader/rulesFragSh.glsl' ];
+const rulesProgram = await Utils.prepareShaderProgram(gl, rulesProgramPaths[0], rulesProgramPaths[1]);
+rulesProgram.name = 'rulesProgram';
+programList.push(rulesProgram);
+
+// RULES ATTRIBUTES
+const rulesAttributes = {
+    'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
+    'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords],
+};
+const rulesVAO = Utils.prepareAttributes(gl, rulesProgram, rulesAttributes);
+
+// RULES UNIFORMS
+var rulesUniforms = {uSampler: [0, '1i']};
+Utils.prepareUniform(gl, rulesProgram, rulesUniforms);
+
+// RULES FRAMEBUFFER
+const fBOtexture = gl.createTexture();
+const rulesFBO = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_ATTACHMENT0, fBOtexture, canvas.width, canvas.height, gl.RGBA16F);
 
 // EVENT HANDLERS
 const onmousemove = (e) => {
@@ -79,7 +100,7 @@ window.addEventListener('resize', onresize);
 // UPDATE GLOBAL UNIFORMS FOR ALL PROGRAMS
 var globalUniforms = {
     uResolution: [[canvas.width, canvas.height], '2fv'],
-    uMouse: [[0.0, 0.0, 0.0], '3fv'],
+    uMouse: [[-0.5, -0.5, 0.0], '3fv'],
     uTime: [tick, '1f'],
 };
 for (const program of programList) {

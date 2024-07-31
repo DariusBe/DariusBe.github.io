@@ -148,7 +148,7 @@ export class Utils {
         for (const [uniformName, [value, type]] of Object.entries(uniforms)) {
             const uniformLocation = gl.getUniformLocation(program, uniformName);
             if (uniformLocation === null) {
-                console.warn(program.name, '\nuniform', uniformName,'not found or used');
+                console.warn(program.name, ":", 'uniform', uniformName ,'not found/used');
                 continue;
             } else { console.info(program.name, ":", 'uniform', uniformName ,'found'); }
             if (type === '1f') {
@@ -175,25 +175,27 @@ export class Utils {
         }
     }
 
-    static prepareFramebufferObject = (gl, program, textureData, textureSize, textureFormat = RGBA16F) => {
+    static prepareFramebufferObject = (gl, program, location=gl.COLOR_ATTACHMENT0, texture, width, height, textureFormat = gl.RGBA16F) => {
+        gl.useProgram(program);
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
         // create the texture to store the position data
-        gl.bindTexture(gl.TEXTURE_2D, textureData);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
         // params: target, mipmap-level, internalFormat, width, height
-        gl.texStorage2D(gl.TEXTURE_2D, 1, gl[textureFormat], textureSize.width, textureSize.height);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, [textureFormat], width, height);
 
         // create the renderbuffer for depth testing
+        const depthRenderBuffer = gl.createRenderbuffer();
         gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, textureWidth, textureHeight);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
 
         gl.framebufferTexture2D(
             gl.FRAMEBUFFER, // target
-            gl.COLOR_ATTACHMENT0, // attachment point == location of point locations in fragment shader
+            location, // attachment point == location of point locations in fragment shader
             gl.TEXTURE_2D, // texture target
-            positionTexture, // texture
-            0);
+            texture, // texture
+            0); // mipmap level
             
         // depth_testing requires a renderbuffer
         gl.framebufferRenderbuffer(
@@ -203,6 +205,11 @@ export class Utils {
             depthRenderBuffer // renderbuffer
         );
 
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+            console.error(program.name, ': Framebuffer is incomplete');
+        } else {
+            console.info(program.name, ': framebuffer is complete');
+        }
         // unbind
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 

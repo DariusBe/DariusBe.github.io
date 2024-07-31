@@ -34,6 +34,7 @@ void main() {
         points = vec3(1.0);
     }
 
-    fragColor = vec4(points + cursor, 1.0);
+    //fragColor = vec4(points + cursor, 1.0);
+    fragColor = vec4(vec3(1.0, 0.0, 0.0), 1.0);
 }
 
