@@ -12,29 +12,20 @@ out vec4 fragColor;
 
 void main() {
     float t = uTime;
-    
     vec2 uv = uResolution;
     // normalize moues position
     vec2 mouse = uMouse.xy;
     float mouseClick = uMouse.z;
 
-    vec3 cursor = vec3(0.0);
-    // show the mouse position
-    if (distance(gl_FragCoord.xy, mouse * uv) < 8.0) {
-        if (mouseClick == 1.0) {
-            cursor = vec3(0.0, 1.0, 0.0);
-        } else {
-            cursor = vec3(0.25, 0.25, 0.25);
-        }
-    }
-
-    vec3 points = vec3(0.0);
+    vec3 points = texture(uSampler, vTexCoord).rgb;
     float currentState = texelFetch(uSampler, ivec2(gl_FragCoord.xy), 0).r;
-    if (currentState < 0.0001) {
-        points = vec3(1.0);
+    if (currentState < 0.01) {
+        points = vec3(1.0, 1.0, 1.0);
+    } else {
+        // background color @TODO: replace with terrain texture?
+        points = vec3(0.0, 0.0, 0.0);
     }
 
-    //fragColor = vec4(points + cursor, 1.0);
-    fragColor = vec4(vec3(1.0, 0.0, 0.0), 1.0);
+    fragColor = vec4(points, 1.0);
 }
 

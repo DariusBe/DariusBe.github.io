@@ -12,7 +12,7 @@ out vec4 fragColor;
 
 void main() {
     float t = uTime;
-    
+
     vec2 uv = uResolution;
     // normalize moues position
     vec2 mouse = uMouse.xy;
@@ -22,18 +22,23 @@ void main() {
     // show the mouse position
     if (distance(gl_FragCoord.xy, mouse * uv) < 8.0) {
         if (mouseClick == 1.0) {
-            cursor = vec3(0.0, 1.0, 0.0);
+            cursor = vec3(0.0, 0.0, cos(t*10.)+0.5);
         } else {
-            cursor = vec3(0.25, 0.25, 0.25);
+            cursor = vec3(0.15, 0.15, 0.15);
         }
     }
 
-    vec3 points = vec3(0.0);
-    float currentState = texelFetch(uSampler, ivec2(gl_FragCoord.xy), 0).r;
-    if (currentState < 0.0001) {
-        points = vec3(1.0);
-    }
+    vec3 position = texture(uSampler, vTexCoord).rgb;
 
-    fragColor = vec4(points + cursor, 1.0);
+    // vec3 points = vec3(0.0, 0.0, 0.0); 
+    // float currentState = texelFetch(uSampler, ivec2(gl_FragCoord.xy), 0).r;
+    // if (currentState < 0.025) {
+    //     points = vec3(0.0, 0.0, 0.0);
+    // }
+
+    fragColor = vec4(position+cursor, 1.0);
+    // vec3 test = points + cursor;
+
+    // fragColor = vec4(cursor, 1.0);
 }
 

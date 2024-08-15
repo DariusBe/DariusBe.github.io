@@ -2,10 +2,10 @@ import { Utils } from './Utils.js';
 import { PhysarumManager } from './physarum.js';
 
 /* Prepare Shader Sources */
-const canvasVertexShaderSource = await Utils.readShaderFile('js/src/canvasShader/canvasVertexShader.glsl');
-const canvasFragmentShaderSource = await Utils.readShaderFile('js/src/canvasShader/canvasFragmentShader.glsl');
-const particleVertexShaderSource = await Utils.readShaderFile('js/src/particleShader/particleVertexShader.glsl');
-const particleFragmentShaderSource = await Utils.readShaderFile('js/src/particleShader/particleFragmentShader.glsl');
+const canvasVertexShaderSource = await Utils.readShaderFile('js/src/old/canvasShader/canvasVertexShader.glsl');
+const canvasFragmentShaderSource = await Utils.readShaderFile('js/src/old/canvasShader/canvasFragmentShader.glsl');
+const particleVertexShaderSource = await Utils.readShaderFile('js/src/old/particleShader/particleVertexShader.glsl');
+const particleFragmentShaderSource = await Utils.readShaderFile('js/src/old/particleShader/particleFragmentShader.glsl');
 
 
 
