@@ -6,6 +6,18 @@ export class Utils {
         img.src = src;
     });
 
+    static getEmptyStartTexture(width=512, height=512) {
+        var textureData = new Uint8Array(width * height * 4);
+        for (let i = 0; i < width * height; i++) {
+            textureData[i * 4 + 0] = (i%2==0) ? 0 : 255;  // r
+            textureData[i * 4 + 1] = 0;  // g
+            textureData[i * 4 + 2] = 0;  // b
+            textureData[i * 4 + 3] = 255;   // a
+        }
+        console.info('Generated empty start texture of size', width, 'x', height);
+        return new ImageData(new Uint8ClampedArray(textureData), width, height);
+    }
+
     static getRandomStartTexture(width=512, height=512) {
         var textureData = new Uint8Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
@@ -86,8 +98,11 @@ export class Utils {
             const attributeLocation = gl.getAttribLocation(program, attributeName);
             if (attributeLocation === -1) {
                 console.error('Attribute', attributeName, 'not found in', program.name);
-                continue;
-            } else { console.info(program.name, '\nAttribute', attributeName, 'found'); }
+            } else if (attributeLocation !== location) {
+                console.error('Attribute', attributeName, 'prepared for location', location, 'but is located at', attributeLocation);
+            } else { 
+                console.info(program.name, '\nAttribute', attributeName, 'found'); 
+            }
             const attribBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, attribBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, bufferData, gl.STATIC_DRAW);
@@ -104,6 +119,7 @@ export class Utils {
                 'Data:', bufferData
             );
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.useProgram(null);
             // gl.bindAttribLocation(program, location, attributeName);
         }
         return programVAO;
@@ -117,11 +133,13 @@ export class Utils {
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
         const texture = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE0);
+        // gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         // args: target, mipmap-level, internalFormat, format, type, data_source
+        
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureData);
         gl.generateMipmap(gl.TEXTURE_2D);
+    
 
         // set texture parameters, repeat 
         // set to closest pixel
@@ -186,24 +204,24 @@ export class Utils {
         gl.texStorage2D(gl.TEXTURE_2D, 1, [textureFormat], width, height);
 
         // create the renderbuffer for depth testing
-        const depthRenderBuffer = gl.createRenderbuffer();
-        gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+        // const depthRenderBuffer = gl.createRenderbuffer();
+        // gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
+        // gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
 
         gl.framebufferTexture2D(
             gl.FRAMEBUFFER, // target
             location, // attachment point == location of point locations in fragment shader
             gl.TEXTURE_2D, // texture target
             texture, // texture
-            0); // mipmap level
+            0); // mipmap level, always 0 in webgl
             
         // depth_testing requires a renderbuffer
-        gl.framebufferRenderbuffer(
-            gl.FRAMEBUFFER, // target
-            gl.DEPTH_ATTACHMENT, // attachment point
-            gl.RENDERBUFFER, // renderbuffer target
-            depthRenderBuffer // renderbuffer
-        );
+        // gl.framebufferRenderbuffer(
+        //     gl.FRAMEBUFFER, // target
+        //     gl.DEPTH_ATTACHMENT, // attachment point
+        //     gl.RENDERBUFFER, // renderbuffer target
+        //     depthRenderBuffer // renderbuffer
+        // );
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
             console.error(program.name, ': Framebuffer is incomplete');
@@ -212,6 +230,9 @@ export class Utils {
         }
         // unbind
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        // gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+        gl.useProgram(null);
 
         return fbo;
     }
