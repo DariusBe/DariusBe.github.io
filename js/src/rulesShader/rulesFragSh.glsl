@@ -8,24 +8,19 @@ uniform float uTime;
 uniform vec2 uResolution;
 uniform sampler2D uSampler;
 
-out vec4 fragColor;
+out vec4 nextTexel;
 
 void main() {
-    float t = uTime;
-    vec2 uv = uResolution;
-    // normalize moues position
-    vec2 mouse = uMouse.xy;
-    float mouseClick = uMouse.z;
+    // fetch the color from the texture
+    vec4 texel = texture(uSampler, vTexCoord);
 
-    vec3 points = texture(uSampler, vTexCoord).rgb;
-    float currentState = texelFetch(uSampler, ivec2(gl_FragCoord.xy), 0).r;
-    if (currentState < 0.01) {
-        points = vec3(1.0, 1.0, 1.0);
+    vec3 col = vec3(0.0, 0.0, 0.0);
+    float fetch = texelFetch(uSampler, ivec2(gl_FragCoord.xy), 0).r;
+    if (fetch < 0.01) {
+        col = vec3(0.0, 0.0, 0.0);
     } else {
-        // background color @TODO: replace with terrain texture?
-        points = vec3(0.0, 0.0, 0.0);
+        col = vec3(1.0, 1.0, 1.0);
     }
-
-    fragColor = vec4(points, 1.0);
+    nextTexel = vec4(col, 1.0);
 }
 

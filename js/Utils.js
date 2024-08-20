@@ -7,7 +7,7 @@ export class Utils {
     });
 
     static getEmptyStartTexture(width=512, height=512) {
-        var textureData = new Uint8Array(width * height * 4);
+        var textureData = new Float32Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
             textureData[i * 4 + 0] = (i%15==0) ? 255 : 0;  // r
             textureData[i * 4 + 1] = 0;  // g
@@ -15,21 +15,28 @@ export class Utils {
             textureData[i * 4 + 3] = 255;   // a
         }
         console.info('Generated empty start texture of size', width, 'x', height);
-        return new ImageData(new Uint8ClampedArray(textureData), width, height);
+        // return Imagedata as RGBA16F
+        return textureData
     }
 
     static getRandomStartTexture(width=512, height=512) {
-        var textureData = new Uint8Array(width * height * 4);
+        // Allocate a Float32Array instead of a Uint8ClampedArray.
+        // This is necessary because we're using floating point values.
+        var textureData = new Float32Array(width * height * 4);
+    
         for (let i = 0; i < width * height; i++) {
-            const fill = Math.random() * 255;
+            // Random value between 0 and 1 for each channel.
+            const fill = Math.random();
             textureData[i * 4 + 0] = fill;  // r
             textureData[i * 4 + 1] = fill;  // g
             textureData[i * 4 + 2] = fill;  // b
-            textureData[i * 4 + 3] = 255;   // a
+            textureData[i * 4 + 3] = 1.0;   // a (fully opaque)
         }
+    
         console.info('Generated random start texture of size', width, 'x', height);
-        return new ImageData(new Uint8ClampedArray(textureData), width, height);
+        return textureData;
     }
+    
 
     static readShaderFile = async (path) => {
         const response = await fetch(path);
@@ -113,7 +120,7 @@ export class Utils {
                 'Location:', attributeLocation, '\n',
                 'Size:', size, '\n',
                 'Type:', type, '\n',
-                'Normalized:', normalized, '\n',
+                'Normalized:', true, '\n',
                 'Stride:', stride, '\n',
                 'Offset:', offset, '\n',
                 'Data:', bufferData
@@ -125,7 +132,7 @@ export class Utils {
         return programVAO;
     }
 
-    static prepareImageTextureForProgram = (gl, program, programVAO, sampler = 'uSampler', textureData) => {
+    static prepareImageTextureForProgram = (gl, program, programVAO, sampler = 'uSampler', textureData, name='') => {
         gl.useProgram(program);
         gl.bindVertexArray(programVAO);
     
@@ -137,17 +144,15 @@ export class Utils {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         // args: target, mipmap-level, internalFormat, format, type, data_source
         
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureData);
-        gl.generateMipmap(gl.TEXTURE_2D);
-    
-
-        // set texture parameters, repeat 
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, 512, 512, 0, gl.RGBA, gl.FLOAT, textureData);        // mipmapping
+        // gl.generateMipmap(gl.TEXTURE_2D);
         // set to closest pixel
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         // set to repeat
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
 
         // bind texture to sampler
         const samplerLocation = gl.getUniformLocation(program, sampler);
@@ -157,7 +162,20 @@ export class Utils {
         gl.bindVertexArray(null);
         gl.useProgram(null);
 
+        texture.name = name;
+
         return texture;
+    }
+
+    static bindTextureToProgram(gl, program, programVAO, texture, sampler = 'uSampler') {
+        gl.useProgram(program);
+        gl.bindVertexArray(programVAO);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        const samplerLocation = gl.getUniformLocation(program, sampler);
+        gl.uniform1i(samplerLocation, 0);
+        gl.bindVertexArray(null);
+        gl.useProgram(null);
     }
 
     static prepareUniform = (gl, program, uniforms) => {
@@ -196,6 +214,7 @@ export class Utils {
     static prepareFramebufferObject = (gl, program, location=gl.COLOR_ATTACHMENT0, texture, width, height, textureFormat = gl.RGBA16F) => {
         gl.useProgram(program);
         const fbo = gl.createFramebuffer();
+        fbo.name = texture.name + 'FBO';
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
         // create the texture to store the position data
@@ -224,10 +243,11 @@ export class Utils {
         // );
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-            console.error(program.name, ': Framebuffer is incomplete');
+            console.error(program.name, ':', fbo.name, 'is incomplete');
         } else {
-            console.info(program.name, ': framebuffer is complete');
+            console.info(program.name, ':', fbo.name, 'with texture', texture.name, 'is complete');
         }
+
         // unbind
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.bindTexture(gl.TEXTURE_2D, null);

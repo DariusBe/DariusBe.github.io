@@ -11,10 +11,14 @@ import { Utils } from './Utils.js';
 const canvas = document.getElementById('webgl-canvas');
 const gl = canvas.getContext('webgl2');
 gl.getExtension('EXT_color_buffer_float');
-var tick = performance.now() / 1000;
+var tick = 0.0;
 const rootPath = 'js/src/';
 var programList = [];
 
+// set canvas size to window size
+canvas.width = 512;
+canvas.height = 512;
+gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 //* CANVAS PROGRAM *//
 const canvasProgramPaths = [ rootPath+'testShader/testVertSh.glsl', rootPath+'testShader/testFragSh.glsl' ]; 
 const canvasProgram = await Utils.prepareShaderProgram(gl, canvasProgramPaths[0], canvasProgramPaths[1]);
@@ -33,10 +37,6 @@ const canvasVAO = Utils.prepareAttributes(gl, canvasProgram, canvasAttributes);
 var canvasUniforms = {uSampler: [0, '1i']};
 Utils.prepareUniform(gl, canvasProgram, canvasUniforms);
 
-// CANVAS TEXTURE
-//const testMap = await Utils.loadImage('src/misc/random_grid.png');
-var testMap = Utils.getRandomStartTexture(canvas.width, canvas.height, 0.5);
-var randTexture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
 
 //* RULES PROGRAM *//
 const rulesProgramPaths = [ rootPath+'rulesShader/rulesVertSh.glsl', rootPath+'rulesShader/rulesFragSh.glsl' ];
@@ -49,21 +49,36 @@ const rulesAttributes = {
     'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
     'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords],
 };
-const rulesVAO = Utils.prepareAttributes(gl, rulesProgram, rulesAttributes);
+const rulesVAO_1 = Utils.prepareAttributes(gl, rulesProgram, rulesAttributes);
+const rulesVAO_2 = Utils.prepareAttributes(gl, rulesProgram, rulesAttributes);
 
 // RULES UNIFORMS
 var rulesUniforms = {uSampler: [0, '1i']};
 Utils.prepareUniform(gl, rulesProgram, rulesUniforms);
 
 // RULES TEXTURE
+// random texture
+var randMap = Utils.getRandomStartTexture(canvas.width, canvas.height, 0.5);
+var randTexture = Utils.prepareImageTextureForProgram(gl, rulesProgram, rulesVAO_1, 'uSampler', randMap, 'randMap');
 // empty texture
-var testMap2 = Utils.getEmptyStartTexture(canvas.width, canvas.height);
-var emptyTexture = Utils.prepareImageTextureForProgram(gl, rulesProgram, rulesVAO, 'uSampler', testMap2);
+var emptyMap = Utils.getEmptyStartTexture(canvas.width, canvas.height);
+var emptyTexture = Utils.prepareImageTextureForProgram(gl, rulesProgram, rulesVAO_2, 'uSampler', emptyMap, 'emptyMap');
 
 // RULES FRAMEBUFFER
-// const rulesFBO_full = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_ATTACHMENT0, randTexture, canvas.width, canvas.height, gl.RGBA16F);
+const rulesFBO_full = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_ATTACHMENT0, randTexture, canvas.width, canvas.height, gl.RGBA16F);
 const rulesFBO_empty = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_ATTACHMENT0, emptyTexture, canvas.width, canvas.height, gl.RGBA16F);
-gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+// PREPARING TEXTURES AND SAMPLERS
+var emptyMap = Utils.getRandomStartTexture(canvas.width, canvas.height);
+var emptyTexture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', emptyMap, 'emptyMap');
+gl.bindTexture(gl.TEXTURE_2D, randTexture);
+// bind texture to sampler
+gl.useProgram(canvasProgram);
+gl.bindVertexArray(canvasVAO);
+const samplerLocation = gl.getUniformLocation(canvasProgram, "uSampler");
+gl.uniform1i(samplerLocation, 0);
+gl.bindTexture(gl.TEXTURE_2D, null);
+gl.useProgram(null);
 
 // UPDATE GLOBAL UNIFORMS FOR ALL PROGRAMS
 var globalUniforms = {
@@ -77,72 +92,79 @@ for (const program of programList) {
     gl.useProgram(null);
 }
 
-// var FBO_full = rulesFBO_full;
-var FBO_empty = rulesFBO_empty;
+var FBO = rulesFBO_empty;
+var tex = randTexture;
+var rulesVAO = rulesVAO_2;
 
-// RENDER LOOP
-const render = () => {
-    requestAnimationFrame(render);
-
-    // update time uniform
-    tick += 0.01;
+function updateUniforms() {
+    tick += 1.0;
     gl.useProgram(canvasProgram);
     gl.uniform1f(gl.getUniformLocation(canvasProgram, 'uTime'), tick);
     gl.useProgram(rulesProgram);
     gl.uniform1f(gl.getUniformLocation(rulesProgram, 'uTime'), tick);
+}
 
-    // use framebuffer object to render into empty texture
+function renderToTexture() {
     gl.useProgram(rulesProgram);
     gl.bindVertexArray(rulesVAO);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, FBO_empty);
-    gl.bindTexture(gl.TEXTURE_2D, randTexture);
+    // update sampler uniform
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(gl.getUniformLocation(rulesProgram, 'uSampler'), 0);
+    // bind framebuffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.useProgram(null);
+}
 
-
-    // // update rules program
-    // gl.useProgram(rulesProgram);
-    // gl.bindVertexArray(rulesVAO);
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, currentFBO);
-    // gl.bindTexture(gl.TEXTURE_2D, nextFBO.texture);
-    // gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    // gl.bindVertexArray(null);
-
-
-    // render canvas
+function renderToScreen() {
     gl.useProgram(canvasProgram);
     gl.bindVertexArray(canvasVAO);
-    gl.bindTexture(gl.TEXTURE_2D, emptyTexture);
+    // update sampler uniform
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(gl.getUniformLocation(canvasProgram, 'uSampler'), 0);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindVertexArray(null);
+}
 
+function swapFBOsAndTextures() {
+    FBO = (FBO === rulesFBO_empty) ? rulesFBO_full : rulesFBO_empty;
+    tex = (tex === randTexture) ? emptyTexture : randTexture;
+    rulesVAO = (rulesVAO === rulesVAO_1) ? rulesVAO_2 : rulesVAO_1;
+}
 
+function updateSamplerUniform(program, tex, samplerName='uSampler') {
+    gl.useProgram(program);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(gl.getUniformLocation(program, samplerName), 0);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.useProgram(null);
+}
 
-    // // update rules program
-    // gl.useProgram(rulesProgram);
-    // gl.bindVertexArray(rulesVAO);
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, rulesFBO_1);
-    // gl.bindTexture(gl.TEXTURE_2D, nextTexture);
-    // gl.viewport(0,0, canvas.width, canvas.height);
-    // gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    // gl.bindVertexArray(null);
-    // gl.bindTexture(gl.TEXTURE_2D, null);
+function renderLoop() {
+    requestAnimationFrame(renderLoop);
 
-    // // render canvas program
-    // gl.useProgram(canvasProgram);
-    // gl.bindVertexArray(canvasVAO);
-    // gl.bindTexture(gl.TEXTURE_2D, currentTexture);
-    // gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-    // gl.bindTexture(gl.TEXTURE_2D, null);
-    // gl.bindVertexArray(null);
+    updateUniforms();
+    renderToTexture();
+    
+    gl.useProgram(canvasProgram);
+        if (tick % 150 == 0) {
+        swapFBOsAndTextures();
+        updateSamplerUniform(canvasProgram, tex);
+        console.debug(FBO.name, 'rendering into', tex.name);
+        renderToScreen();
+        }
+    gl.useProgram(null);
+    
+}
 
-};
-
+// Start the rendering loop
+renderLoop();
 
 // EVENT HANDLERS
 const onmousemove = (e) => {
@@ -169,17 +191,21 @@ const touchmove = (e) => {
 const onresize = (e) => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    gl.viewport(0, 0, window.innerWidth, window.innerHeight);
-    gl.useProgram(canvasProgram);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     for (const program of programList) {
         gl.useProgram(program);
         gl.uniform2fv(gl.getUniformLocation(program, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
     }
-    testMap = Utils.getRandomStartTexture(canvas.width, canvas.height, 0.5);
-    randTexture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', testMap);
+    randMap = Utils.getRandomStartTexture(canvas.width, canvas.height, 0.5);
+    gl.useProgram(canvasProgram);
+    gl.bindVertexArray(canvasVAO);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, 512, 512, 0, gl.RGBA, gl.FLOAT, textureData);    gl.uniform1i(gl.getUniformLocation(canvasProgram, 'uSampler'), 0);
+    gl.bindTexture(gl.TEXTURE_2D, null);
 }
 canvas.addEventListener('touchmove', touchmove);
 canvas.addEventListener('mousemove', onmousemove);
 window.addEventListener('resize', onresize);
 
-render();
+// render();
