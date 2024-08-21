@@ -4,6 +4,7 @@ export class Utils {
         const img = new Image();
         img.addEventListener('load', () => resolve(img));
         img.src = src;
+        return img;
     });
 
     static getEmptyStartTexture(width=512, height=512) {
@@ -137,14 +138,14 @@ export class Utils {
         gl.bindVertexArray(programVAO);
     
         // flip image vertically
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
         const texture = gl.createTexture();
         // gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         // args: target, mipmap-level, internalFormat, format, type, data_source
         
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, 512, 512, 0, gl.RGBA, gl.FLOAT, textureData);        // mipmapping
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, window.innerWidth, window.innerHeight, 0, gl.RGBA, gl.FLOAT, textureData);        // mipmapping
         // gl.generateMipmap(gl.TEXTURE_2D);
         // set to closest pixel
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -176,6 +177,7 @@ export class Utils {
         gl.uniform1i(samplerLocation, 0);
         gl.bindVertexArray(null);
         gl.useProgram(null);
+        return texture;
     }
 
     static prepareUniform = (gl, program, uniforms) => {
@@ -255,5 +257,17 @@ export class Utils {
         gl.useProgram(null);
 
         return fbo;
+    }
+
+    static readTextureData = (gl, texture, width, height) => {
+        const fb = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        const data = new Float32Array(width * height * 4);
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, data);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        console.debug('Read texture data:', data);
+        return data;
     }
 }
