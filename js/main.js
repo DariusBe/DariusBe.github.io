@@ -128,7 +128,7 @@ function renderToScreen() {
     gl.useProgram(canvasProgram);
     gl.bindVertexArray(canvasVAO);
     // update sampler uniform
-    gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.uniform1i(gl.getUniformLocation(canvasProgram, 'uSampler'), 0);
     // draw to screen
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
@@ -159,12 +159,12 @@ function renderLoop() {
     renderToTexture();
     
     gl.useProgram(canvasProgram);
-        // if (tick % 15 == 0) {
+        if (tick % 10 == 0) {
         swapFBOsAndTextures();
         updateSamplerUniform(canvasProgram, canvasTexture);
         console.debug(FBO.name, 'rendering into', canvasTexture.name);
         renderToScreen();
-        // }    
+        }    
 }
 
 // Start the rendering loop
