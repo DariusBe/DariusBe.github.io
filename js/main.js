@@ -70,8 +70,9 @@ const rulesFBO_full = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_
 const rulesFBO_empty = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_ATTACHMENT0, emptyTexture, canvas.width, canvas.height, gl.RGBA16F);
 
 // PREPARING TEXTURES AND SAMPLERS
-var canvasMap = new Float32Array(canvas.width * canvas.height * 4);
-canvasMap.fill(.5);
+var canvasMap = Utils.getRandomStartTexture(canvas.width, canvas.height);
+
+console.debug(canvasMap);
 var canvasTexture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', canvasMap, 'canvasMap');
 // UPDATE GLOBAL UNIFORMS FOR ALL PROGRAMS
 var globalUniforms = {
@@ -85,15 +86,15 @@ for (const program of programList) {
     gl.useProgram(null);
 }
 
-var FBO = rulesFBO_empty;
-canvasTexture = randTexture;
-var rulesVAO = rulesVAO_2;
+var FBO = rulesFBO_full;
+var tex = emptyTexture;
+var rulesVAO = rulesVAO_1;
 
 // bind tex to canvasVAO
 gl.useProgram(canvasProgram);
 gl.bindVertexArray(canvasVAO);
 gl.activeTexture(gl.TEXTURE0);
-gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
+gl.bindTexture(gl.TEXTURE_2D, randTexture);
 gl.uniform1i(gl.getUniformLocation(canvasProgram, 'uSampler'), 0);
 gl.bindTexture(gl.TEXTURE_2D, null);
 gl.bindVertexArray(null);
@@ -128,14 +129,18 @@ function renderToScreen() {
     gl.bindVertexArray(canvasVAO);
     // update sampler uniform
     gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
+    gl.uniform1i(gl.getUniformLocation(canvasProgram, 'uSampler'), 0);
+    // draw to screen
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindVertexArray(null);
+    gl.useProgram(null);
+    canvasTexture = tex;
 }
 
 function swapFBOsAndTextures() {
     FBO = (FBO === rulesFBO_empty) ? rulesFBO_full : rulesFBO_empty;
-    canvasTexture = (canvasTexture === randTexture) ? emptyTexture : randTexture;
+    tex = (tex === randTexture) ? emptyTexture : randTexture;
     rulesVAO = (rulesVAO === rulesVAO_1) ? rulesVAO_2 : rulesVAO_1;
 }
 
@@ -154,16 +159,20 @@ function renderLoop() {
     renderToTexture();
     
     gl.useProgram(canvasProgram);
-        if (tick % 15 == 0) {
+        // if (tick % 15 == 0) {
         swapFBOsAndTextures();
         updateSamplerUniform(canvasProgram, canvasTexture);
         console.debug(FBO.name, 'rendering into', canvasTexture.name);
         renderToScreen();
-        }    
+        // }    
 }
 
 // Start the rendering loop
 renderLoop();
+
+// renderToTexture();
+// swapFBOsAndTextures();
+// renderToScreen();
 
 // EVENT HANDLERS
 const onmousemove = (e) => {
