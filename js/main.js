@@ -18,7 +18,7 @@ var programList = [];
 /* Physarum Simulation Values */
 const particleCount = 1000;
 const distance = 12.0;
-const angle = 45.0;
+const angle = 22.5;
 
 // set canvas size to window size
 canvas.width = window.innerWidth;
@@ -165,7 +165,7 @@ function renderLoop() {
     requestAnimationFrame(renderLoop);
     updateUniforms();
     renderToTexture();
-    if (tick % 10 == 0) {
+    // if (tick % 10 == 0) {
         swapFBOsAndTextures();
         updateSamplerUniform(canvasProgram, canvasTexture);
         // console.debug(FBO.name, 'rendering into', canvasTexture.name);
@@ -173,7 +173,7 @@ function renderLoop() {
         if (tick % 100 == 0) {
             Utils.readTextureData(gl, tex, canvas.width, canvas.height);
         }
-    } 
+    // } 
 }
 
 // Start the rendering loop
