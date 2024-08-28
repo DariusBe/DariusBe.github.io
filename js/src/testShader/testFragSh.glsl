@@ -18,18 +18,18 @@ void main() {
     vec2 mouse = uMouse.xy;
     float mouseClick = uMouse.z;
 
-    vec3 cursor = vec3(0.0);
+    vec4 cursor = vec4(0.0);
     // show the mouse position
-    if (distance(gl_FragCoord.xy, mouse * uv) < 8.0) {
+    if (distance(gl_FragCoord.xy, mouse * uv) < 15.0) {
         if (mouseClick == 1.0) {
-            cursor = vec3(0.35, 0.35, 0.35);
+            cursor = vec4(0.4471, 0.4471, 0.4471, 0.1);
         } else {
-            cursor = vec3(0.15, 0.15, 0.15);
+            cursor = vec4(0.25);
         }
     }
 
     vec3 tex = texture(uSampler, vTexCoord).rgb;
 
-    fragColor = vec4(tex+cursor, 1.0);
+    fragColor = vec4(tex, 1.0)+cursor;
 }
 

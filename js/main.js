@@ -15,6 +15,11 @@ var tick = 0.0;
 const rootPath = 'js/src/';
 var programList = [];
 
+/* Physarum Simulation Values */
+const particleCount = 1000;
+const distance = 12.0;
+const angle = 45.0;
+
 // set canvas size to window size
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -47,19 +52,24 @@ programList.push(rulesProgram);
 // RULES ATTRIBUTES
 const rulesAttributes = {
     'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
-    'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords],
+    'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords]
 };
 const rulesVAO_1 = Utils.prepareAttributes(gl, rulesProgram, rulesAttributes);
 const rulesVAO_2 = Utils.prepareAttributes(gl, rulesProgram, rulesAttributes);
 
 // RULES UNIFORMS
-var rulesUniforms = {uSampler: [0, '1i']};
+var rulesUniforms = {
+    uSampler: [0, '1i'],
+    uParticleCount: [particleCount, '1f'],
+    uDistance: [distance, '1f'],
+    uAngle: [angle, '1f']
+};
 Utils.prepareUniform(gl, rulesProgram, rulesUniforms);
 
 // RULES TEXTURE
 // random texture from image using Utils.loadImage
 // before continuing, wait for image to load
-var randMap = await Utils.loadImage("../src/misc/testmap.png");
+var randMap = await Utils.loadImage("./src/misc/random_grid.png");
 var randTexture = Utils.prepareImageTextureForProgram(gl, rulesProgram, rulesVAO_1, 'uSampler', randMap, 'randMap');
 // empty texture
 var emptyMap = Utils.getEmptyStartTexture(canvas.width, canvas.height);
@@ -70,10 +80,9 @@ const rulesFBO_full = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_
 const rulesFBO_empty = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_ATTACHMENT0, emptyTexture, canvas.width, canvas.height, gl.RGBA16F);
 
 // PREPARING TEXTURES AND SAMPLERS
-var canvasMap = Utils.getRandomStartTexture(canvas.width, canvas.height);
-
-console.debug(canvasMap);
+var canvasMap = await Utils.loadImage("./src/misc/random_grid.png");
 var canvasTexture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', canvasMap, 'canvasMap');
+
 // UPDATE GLOBAL UNIFORMS FOR ALL PROGRAMS
 var globalUniforms = {
     uResolution: [[canvas.width, canvas.height], '2fv'],
@@ -154,17 +163,17 @@ function updateSamplerUniform(program, canvasTexture, samplerName='uSampler') {
 
 function renderLoop() {
     requestAnimationFrame(renderLoop);
-
     updateUniforms();
     renderToTexture();
     
-    gl.useProgram(canvasProgram);
-        if (tick % 10 == 0) {
+    if (tick % 10 == 0) {
         swapFBOsAndTextures();
         updateSamplerUniform(canvasProgram, canvasTexture);
-        console.debug(FBO.name, 'rendering into', canvasTexture.name);
+        // console.debug(FBO.name, 'rendering into', canvasTexture.name);
         renderToScreen();
-        }    
+        // Utils.readTextureData(gl, tex, canvas.width, canvas.height);
+    }
+     
 }
 
 // Start the rendering loop

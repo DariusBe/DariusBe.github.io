@@ -4,8 +4,17 @@ export class Utils {
         const img = new Image();
         img.addEventListener('load', () => resolve(img));
         img.src = src;
+        // resize image to 128 x 128
+        img.width = 128;
+        img.height = 128;
+
         return img;
     });
+
+    static async loadImageConcurrently(src) {
+        var img = await this.loadImage(src);
+        return img;
+    } 
 
     static getEmptyStartTexture(width=512, height=512) {
         var textureData = new Float32Array(width * height * 4);
@@ -149,10 +158,10 @@ export class Utils {
         // gl.generateMipmap(gl.TEXTURE_2D);
         // set to closest pixel
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         // set to repeat
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
 
         // bind texture to sampler
@@ -224,25 +233,12 @@ export class Utils {
         // params: target, mipmap-level, internalFormat, width, height
         gl.texStorage2D(gl.TEXTURE_2D, 1, [textureFormat], width, height);
 
-        // create the renderbuffer for depth testing
-        // const depthRenderBuffer = gl.createRenderbuffer();
-        // gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
-        // gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
-
         gl.framebufferTexture2D(
             gl.FRAMEBUFFER, // target
             location, // attachment point == location of point locations in fragment shader
             gl.TEXTURE_2D, // texture target
             texture, // texture
             0); // mipmap level, always 0 in webgl
-            
-        // depth_testing requires a renderbuffer
-        // gl.framebufferRenderbuffer(
-        //     gl.FRAMEBUFFER, // target
-        //     gl.DEPTH_ATTACHMENT, // attachment point
-        //     gl.RENDERBUFFER, // renderbuffer target
-        //     depthRenderBuffer // renderbuffer
-        // );
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
             console.error(program.name, ':', fbo.name, 'is incomplete');
@@ -253,7 +249,6 @@ export class Utils {
         // unbind
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.bindTexture(gl.TEXTURE_2D, null);
-        // gl.bindRenderbuffer(gl.RENDERBUFFER, null);
         gl.useProgram(null);
 
         return fbo;
@@ -264,6 +259,8 @@ export class Utils {
         gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
         const data = new Float32Array(width * height * 4);
+        
+        // args: target, x, y, width, height, format, type, data
         gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, data);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
