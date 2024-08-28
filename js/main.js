@@ -80,7 +80,7 @@ const rulesFBO_full = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_
 const rulesFBO_empty = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_ATTACHMENT0, emptyTexture, canvas.width, canvas.height, gl.RGBA16F);
 
 // PREPARING TEXTURES AND SAMPLERS
-var canvasMap = await Utils.loadImage("./src/misc/random_grid.png");
+var canvasMap = randMap;
 var canvasTexture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', canvasMap, 'canvasMap');
 
 // UPDATE GLOBAL UNIFORMS FOR ALL PROGRAMS
@@ -165,15 +165,15 @@ function renderLoop() {
     requestAnimationFrame(renderLoop);
     updateUniforms();
     renderToTexture();
-    
     if (tick % 10 == 0) {
         swapFBOsAndTextures();
         updateSamplerUniform(canvasProgram, canvasTexture);
         // console.debug(FBO.name, 'rendering into', canvasTexture.name);
         renderToScreen();
-        // Utils.readTextureData(gl, tex, canvas.width, canvas.height);
-    }
-     
+        if (tick % 100 == 0) {
+            Utils.readTextureData(gl, tex, canvas.width, canvas.height);
+        }
+    } 
 }
 
 // Start the rendering loop
