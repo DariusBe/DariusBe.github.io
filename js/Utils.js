@@ -103,6 +103,22 @@ export class Utils {
         0.0, 1.0
     ]);
 
+    static gaussKernel(size, sigma) {
+        const kernel = new Float32Array(size);
+        const center = (size - 1) / 2;
+        let sum = 0.0;
+        for (let i = 0; i < size; i++) {
+            kernel[i] = Math.exp(-Math.pow(i - center, 2) / (2 * Math.pow(sigma, 2)));
+            sum += kernel[i];
+        }
+        for (let i = 0; i < size; i++) {
+            kernel[i] /= sum;
+        }
+        console.info('Generated gaussian kernel of size', size, 'with sigma', sigma);
+        console.debug('Kernel:', kernel);
+        return kernel;
+    }
+
     static prepareAttributes = (gl, program, attributes) => {
         const programVAO = gl.createVertexArray();
         gl.bindVertexArray(programVAO);
@@ -156,7 +172,6 @@ export class Utils {
         
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, window.innerWidth, window.innerHeight, 0, gl.RGBA, gl.FLOAT, textureData);        // mipmapping
         // gl.generateMipmap(gl.TEXTURE_2D);
-        // set to closest pixel
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         // set to repeat
@@ -200,7 +215,9 @@ export class Utils {
             } else { console.info(program.name, ":", 'uniform', uniformName ,'found'); }
             if (type === '1f') {
                 gl.uniform1f(uniformLocation, value);
-            } else if (type === '2fv') {
+            } else if (type === '1fv') {
+                gl.uniform1fv(uniformLocation, value);
+            }  else if (type === '2fv') {
                 gl.uniform2fv(uniformLocation, value);
             } else if (type === '3fv') {
                 gl.uniform3fv(uniformLocation, value);

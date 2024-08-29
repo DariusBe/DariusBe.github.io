@@ -1,5 +1,5 @@
 #version 300 es
-precision mediump float;
+precision highp float;
 
 in vec2 vTexCoord;
 
@@ -34,14 +34,14 @@ float randomAngle() {
     return float(int(randomNum()*16.0))*uAngle;
 }
 
-vec4 prepareCursor() {
+vec4 prepareCursor(float radius) {
     // normalize moues position
     vec2 mouse = uMouse.xy;
     float mouseClick = uMouse.z;
 
     vec4 cursor = vec4(0.0);
     // show the mouse position
-    if (distance(gl_FragCoord.xy, mouse * uResolution) < 5.0) {
+    if (distance(gl_FragCoord.xy, mouse * uResolution) < radius) {
         if (mouseClick == 1.0) {
             cursor = vec4(1.0, 1.0, 1.0, 1.0);
         }
@@ -50,7 +50,7 @@ vec4 prepareCursor() {
 }
 
 void main() {
-    vec4 cursor = prepareCursor();
+    vec4 cursor = prepareCursor(2.0);
 
     vec2 texCoord = vTexCoord;
     vec4 lastTexel = texture(uSampler, texCoord);
@@ -67,7 +67,7 @@ void main() {
     vec2 newPos = texCoord + direction * acceleration / uResolution;
 
     // Wrap coordinates to stay within texture bounds
-    newPos = wrapCoords(newPos, uResolution);
+    // newPos = wrapCoords(newPos, uResolution);
 
     // Read the state of the new position
     vec4 newTexel = texture(uSampler, newPos);
@@ -85,5 +85,5 @@ void main() {
     }
 
     // Output the next state
-    nextTexel = vec4(nextOccupation, nextHeading,1.5, randomAngle())+cursor;
+    nextTexel = vec4(nextOccupation, nextHeading, nextAcceleration, randomAngle())-cursor;
 }

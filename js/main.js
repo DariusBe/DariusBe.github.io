@@ -19,17 +19,18 @@ var programList = [];
 const particleCount = 1000;
 const distance = 12.0;
 const angle = 22.5;
+const decayFactor = 0.85;
 
 // set canvas size to window size
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
 //* CANVAS PROGRAM *//
-const canvasProgramPaths = [ rootPath+'testShader/testVertSh.glsl', rootPath+'testShader/testFragSh.glsl' ]; 
+const canvasProgramPaths = [ rootPath+'canvasShader/canvasVertSh.glsl', rootPath+'canvasShader/canvasFragSh.glsl' ]; 
 const canvasProgram = await Utils.prepareShaderProgram(gl, canvasProgramPaths[0], canvasProgramPaths[1]);
 canvasProgram.name = 'canvasProgram';
 programList.push(canvasProgram);
-
 // CANVAS ATTRIBUTES
 const canvasAttributes = {
     // location, [size, type, normalized, stride, offset], data
@@ -37,7 +38,6 @@ const canvasAttributes = {
     'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords],
 };
 const canvasVAO = Utils.prepareAttributes(gl, canvasProgram, canvasAttributes);
-
 // CANVAS UNIFORMS
 var canvasUniforms = {uSampler: [0, '1i']};
 Utils.prepareUniform(gl, canvasProgram, canvasUniforms);
@@ -48,15 +48,12 @@ const rulesProgramPaths = [ rootPath+'rulesShader/rulesVertSh.glsl', rootPath+'r
 const rulesProgram = await Utils.prepareShaderProgram(gl, rulesProgramPaths[0], rulesProgramPaths[1]);
 rulesProgram.name = 'rulesProgram';
 programList.push(rulesProgram);
-
 // RULES ATTRIBUTES
 const rulesAttributes = {
     'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
     'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords]
 };
-const rulesVAO_1 = Utils.prepareAttributes(gl, rulesProgram, rulesAttributes);
-const rulesVAO_2 = Utils.prepareAttributes(gl, rulesProgram, rulesAttributes);
-
+const rulesVAO = Utils.prepareAttributes(gl, rulesProgram, rulesAttributes);
 // RULES UNIFORMS
 var rulesUniforms = {
     uSampler: [0, '1i'],
@@ -65,25 +62,47 @@ var rulesUniforms = {
     uAngle: [angle, '1f']
 };
 Utils.prepareUniform(gl, rulesProgram, rulesUniforms);
-
 // RULES TEXTURE
-// random texture from image using Utils.loadImage
-// before continuing, wait for image to load
 var randMap = await Utils.loadImage("./src/misc/random_grid.png");
-var randTexture = Utils.prepareImageTextureForProgram(gl, rulesProgram, rulesVAO_1, 'uSampler', randMap, 'randMap');
+var randTexture = Utils.prepareImageTextureForProgram(gl, rulesProgram, rulesVAO, 'uSampler', randMap, 'randMap');
 // empty texture
 var emptyMap = Utils.getEmptyStartTexture(canvas.width, canvas.height);
-var emptyTexture = Utils.prepareImageTextureForProgram(gl, rulesProgram, rulesVAO_2, 'uSampler', emptyMap, 'emptyMap');
-
-// RULES FRAMEBUFFER
+var emptyTexture = Utils.prepareImageTextureForProgram(gl, rulesProgram, rulesVAO, 'uSampler', emptyMap, 'emptyMap');
+// RULES FRAMEBUFFERS
 const rulesFBO_full = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_ATTACHMENT0, randTexture, canvas.width, canvas.height, gl.RGBA16F);
 const rulesFBO_empty = Utils.prepareFramebufferObject(gl, rulesProgram, gl.COLOR_ATTACHMENT0, emptyTexture, canvas.width, canvas.height, gl.RGBA16F);
 
-// PREPARING TEXTURES AND SAMPLERS
-var canvasMap = randMap;
-var canvasTexture = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', canvasMap, 'canvasMap');
 
-// UPDATE GLOBAL UNIFORMS FOR ALL PROGRAMS
+//* CONVOLUTION PROGRAM *//
+const blurProgramPaths = [ rootPath+'blurShader/blurVertSh.glsl', rootPath+'blurShader/blurFragSh.glsl' ];
+const blurProgram = await Utils.prepareShaderProgram(gl, blurProgramPaths[0], blurProgramPaths[1]);
+blurProgram.name = 'blurProgram';
+programList.push(blurProgram);
+// CONVOLUTION ATTRIBUTES
+const blurAttributes = {
+    'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
+    'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords]
+};
+const blurVAO = Utils.prepareAttributes(gl, blurProgram, blurAttributes);
+// CONVOLUTION UNIFORMS
+var blurUniforms = {
+    uSampler: [0, '1i'],
+    uResolution: [[canvas.width, canvas.height], '2fv'],
+    uKernel: [Utils.gaussKernel(5.0, 1.0), '1fv'],
+    uDecay: [decayFactor, '1f'],
+};
+Utils.prepareUniform(gl, blurProgram, blurUniforms);
+// CONVOLUTION TEXTURE
+var blurMap = Utils.getEmptyStartTexture(canvas.width, canvas.height);
+var blurTexture = Utils.prepareImageTextureForProgram(gl, blurProgram, blurVAO, 'uSampler', blurMap, 'blurMap');
+// CONVOLUTION FRAMEBUFFERS
+const blurFBO = Utils.prepareFramebufferObject(gl, blurProgram, gl.COLOR_ATTACHMENT0, blurTexture, canvas.width, canvas.height, gl.RGBA16F);
+
+/* PREPARING TEXTURES AND SAMPLERS */
+var FBO = rulesFBO_full;
+var tex = Utils.prepareImageTextureForProgram(gl, canvasProgram, canvasVAO, 'uSampler', randMap, 'canvasMap');
+
+/* UPDATE GLOBAL UNIFORMS FOR ALL PROGRAMS */
 var globalUniforms = {
     uResolution: [[canvas.width, canvas.height], '2fv'],
     uMouse: [[-0.5, -0.5, 0.0], '3fv'],
@@ -95,25 +114,28 @@ for (const program of programList) {
     gl.useProgram(null);
 }
 
-var FBO = rulesFBO_full;
-var tex = emptyTexture;
-var rulesVAO = rulesVAO_1;
-
-// bind tex to canvasVAO
-gl.useProgram(canvasProgram);
-gl.bindVertexArray(canvasVAO);
-gl.activeTexture(gl.TEXTURE0);
-gl.bindTexture(gl.TEXTURE_2D, randTexture);
-gl.uniform1i(gl.getUniformLocation(canvasProgram, 'uSampler'), 0);
-gl.bindTexture(gl.TEXTURE_2D, null);
-gl.bindVertexArray(null);
+/* Bind Tex to canvasVAO */
+// gl.useProgram(canvasProgram);
+// gl.bindVertexArray(canvasVAO);
+// gl.activeTexture(gl.TEXTURE0);
+// gl.bindTexture(gl.TEXTURE_2D, randTexture);
+// gl.uniform1i(gl.getUniformLocation(canvasProgram, 'uSampler'), 0);
+// gl.bindTexture(gl.TEXTURE_2D, null);
+// gl.bindVertexArray(null);
 
 function updateUniforms() {
     tick += 1.0;
-    gl.useProgram(canvasProgram);
-    gl.uniform1f(gl.getUniformLocation(canvasProgram, 'uTime'), tick);
-    gl.useProgram(rulesProgram);
-    gl.uniform1f(gl.getUniformLocation(rulesProgram, 'uTime'), tick);
+    for (const program of programList) {
+        gl.useProgram(program);
+        gl.uniform1f(gl.getUniformLocation(program, 'uTime'), tick);
+    }
+    gl.useProgram(null);
+}
+
+function swapFBOsAndTextures() {
+    // @TODO for better performance, remove conditional
+    FBO = (FBO === rulesFBO_empty) ? rulesFBO_full : rulesFBO_empty;
+    tex = (tex === randTexture) ? emptyTexture : randTexture;
 }
 
 function renderToTexture() {
@@ -121,7 +143,7 @@ function renderToTexture() {
     gl.bindVertexArray(rulesVAO);
     // update sampler uniform
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.uniform1i(gl.getUniformLocation(rulesProgram, 'uSampler'), 0);
     // bind framebuffer
     gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
@@ -131,6 +153,25 @@ function renderToTexture() {
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.useProgram(null);
+}
+
+function applyBlur() {
+    gl.useProgram(blurProgram);
+    gl.bindVertexArray(blurVAO);
+    // update sampler uniform
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(gl.getUniformLocation(blurProgram, 'uSampler'), 0);
+    // bind framebuffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, blurFBO);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+    // unbind
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindVertexArray(null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.useProgram(null);
+    // swap textures
+    tex = blurTexture;
 }
 
 function renderToScreen() {
@@ -144,44 +185,19 @@ function renderToScreen() {
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.bindVertexArray(null);
     gl.useProgram(null);
-    canvasTexture = tex;
 }
 
-function swapFBOsAndTextures() {
-    FBO = (FBO === rulesFBO_empty) ? rulesFBO_full : rulesFBO_empty;
-    tex = (tex === randTexture) ? emptyTexture : randTexture;
-    rulesVAO = (rulesVAO === rulesVAO_1) ? rulesVAO_2 : rulesVAO_1;
-}
 
-function updateSamplerUniform(program, canvasTexture, samplerName='uSampler') {
-    gl.useProgram(program);
-    gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
-    gl.uniform1i(gl.getUniformLocation(program, samplerName), 0);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.useProgram(null);
-}
 
 function renderLoop() {
     requestAnimationFrame(renderLoop);
     updateUniforms();
     renderToTexture();
-    // if (tick % 10 == 0) {
-        swapFBOsAndTextures();
-        updateSamplerUniform(canvasProgram, canvasTexture);
-        // console.debug(FBO.name, 'rendering into', canvasTexture.name);
-        renderToScreen();
-        if (tick % 100 == 0) {
-            Utils.readTextureData(gl, tex, canvas.width, canvas.height);
-        }
-    // } 
+    swapFBOsAndTextures();
+    applyBlur();
+    renderToScreen();
 }
-
-// Start the rendering loop
 renderLoop();
-
-// renderToTexture();
-// swapFBOsAndTextures();
-// renderToScreen();
 
 // EVENT HANDLERS
 const onmousemove = (e) => {
