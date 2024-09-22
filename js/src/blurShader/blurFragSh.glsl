@@ -34,11 +34,12 @@ vec4 applyKernel(sampler2D sampler, vec2 texCoord, float kernel[5]) {
 }
 
 void main() {
+    float decay = uDecay * 0.00001;
     vec4 blurred = applyKernel(uSampler, vTextureCoord, uKernel);
     vec4 original = texture(uSampler, vTextureCoord);
     // softly combine the original and blurred image
-    vec4 combinedPass = mix(original, blurred, 1.0-uDecay);
+    float r_combined = mix(original.r, blurred.r, decay);
 
-    fragColor = combinedPass;
+    fragColor = vec4(r_combined, original.g, original.b, original.a);
 }
 

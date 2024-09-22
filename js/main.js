@@ -63,7 +63,7 @@ var rulesUniforms = {
 };
 Utils.prepareUniform(gl, rulesProgram, rulesUniforms);
 // RULES TEXTURE
-var randMap = await Utils.loadImage("./src/misc/random_grid.png");
+var randMap = await Utils.loadImage("./src/misc/testmap2.png");
 var randTexture = Utils.prepareImageTextureForProgram(gl, rulesProgram, rulesVAO, 'uSampler', randMap, 'randMap');
 // empty texture
 var emptyMap = Utils.getEmptyStartTexture(canvas.width, canvas.height);
@@ -88,7 +88,7 @@ const blurVAO = Utils.prepareAttributes(gl, blurProgram, blurAttributes);
 var blurUniforms = {
     uSampler: [0, '1i'],
     uResolution: [[canvas.width, canvas.height], '2fv'],
-    uKernel: [Utils.gaussKernel(5.0, 1.0), '1fv'],
+    uKernel: [Utils.gaussKernel(5, 1), '1fv'],
     uDecay: [decayFactor, '1f'],
 };
 Utils.prepareUniform(gl, blurProgram, blurUniforms);
@@ -193,9 +193,12 @@ function renderLoop() {
     requestAnimationFrame(renderLoop);
     updateUniforms();
     renderToTexture();
+    if (tick % 100 === 0) {
+        Utils.readTextureData(gl, tex, canvas.width, canvas.height);
+    }
     swapFBOsAndTextures();
-    applyBlur();
     renderToScreen();
+    applyBlur();
 }
 renderLoop();
 
@@ -240,5 +243,3 @@ const onresize = (e) => {
 canvas.addEventListener('touchmove', touchmove);
 canvas.addEventListener('mousemove', onmousemove);
 window.addEventListener('resize', onresize);
-
-// render();

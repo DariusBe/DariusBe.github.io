@@ -545,7 +545,7 @@ optional:
     bindTransformFeedback(TRANSFORM_FEEDBACK, tfo)  // to then bind it
 bindBufferBase(TRANSFORM_FEEDBACK_BUFFER, 0, buffer) // to bind buffer to TFO
 - here, index is 0/1/2 ... for each of the outValues with SEPARATE_ATTRIBS, or 0 for INTERLEAVED_ATTRIBS
-beginTransformFeedback(GL_PRIMITIVES) // PRIMITIVES are either POINTS, LINES, TRIANGLES and must be sane as in draw-call
+beginTransformFeedback(GL_PRIMITIVES) // PRIMITIVES are either POINTS, LINES, TRIANGLES and must be same as in draw-call
 endTransformFeedback() // end the feedback
 - TF can also be paused and resumed, e.g. to continue writing to the same buffer with other shaders
 - most common sources of error are wrongly bound buffers:

@@ -1,6 +1,10 @@
 #version 300 es
 precision highp float;
 
+// R: Occupation
+// G: Heading
+// B: Acceleration 
+// A: Age
 in vec2 vTexCoord;
 
 uniform sampler2D uSampler;
@@ -50,10 +54,15 @@ vec4 prepareCursor(float radius) {
 }
 
 void main() {
-    vec4 cursor = prepareCursor(2.0);
-
+    vec4 cursor = prepareCursor(6.0);
     vec2 texCoord = vTexCoord;
-    vec4 lastTexel = texture(uSampler, texCoord);
+
+    if (uTime <= 1.0) {
+        vec4 tex = texture(uSampler, texCoord);
+        float r = randomNum();
+        nextTexel = vec4(r, randomAngle(), tex.b, tex.a);
+        return;
+    }
     vec4 currentTexel = texture(uSampler, texCoord);
 
     // { occupation, heading, acceleration, age }
@@ -78,12 +87,86 @@ void main() {
     float nextAcceleration = acceleration;
     float nextAge = age + 1.0;
 
-    // Handle collisions and maintain particle count
-    if (nextOccupation > 0.0) {
-        // Collision detected, handle it (e.g., change heading)
-        nextHeading += randomSign()*randomAngle(); // Simple example: reverse direction
+    /* [Motor stage]
+    - Attempt move forwards in current direction
+    - If (moved forwards successfully):
+        Deposit trail in new location
+    - Else:
+        Choose random new orientation
+    */
+    if (nextOccupation <= 0.0) {
+        // Deposit trail in new location
+        nextOccupation = 1.0;
+    } else {
+        // Choose random new orientation
+        nextHeading = randomAngle();
+        if (nextHeading < 0.0) {
+            nextHeading += 180.0;
+        } else if (nextHeading >= 180.0) {
+            nextHeading -= 180.0;
+        }
+    }
+    
+    /*[Sensory stage]*/
+    //Sample trail map values
+    vec4 FL = texture(uSampler, texCoord + vec2(cos(heading + uAngle), sin(heading + uAngle)));
+    vec4 F = texture(uSampler, texCoord + direction);
+    vec4 FR = texture(uSampler, texCoord + vec2(cos(heading - uAngle), sin(heading - uAngle)));
+    /*
+    - if (F > FL) && (F > FR):
+        Stay facing same direction
+        Return
+    - Else if (F < FL) && (F < FR):
+        Rotate randomly left or right by RA
+    - Else if (FL < FR):
+        Rotate right by RA
+    - Else if (FR < FL):
+        Rotate left by RA
+    - Else:
+        Continue facing same direction
+    */
+    if (nextOccupation > FL.r) {
+        // Stay facing same direction
+    } else if (nextOccupation < FL.r) {
+        // Rotate randomly left or right by RA
+        nextHeading += randomSign() * uAngle;
+    } else if (FL.r < FR.r) {
+        // Rotate right by RA
+        nextHeading += uAngle;
+    } else if (FR.r < FL.r) {
+        // Rotate left by RA
+        nextHeading -= uAngle;
+    } else {
+        // Continue facing same direction
     }
 
     // Output the next state
-    nextTexel = vec4(nextOccupation, nextHeading, nextAcceleration, randomAngle())-cursor;
+    // clamp nextHeading to 0-360
+    nextHeading = mod(nextHeading, 360.0);
+    // return acceleration as difference between current and next heading
+    nextAcceleration = nextHeading - heading;
+    nextTexel = vec4(nextOccupation, nextHeading, nextAcceleration, nextAge)-cursor;
 }
+
+/*
+[Motor stage]
+- Attempt move forwards in current direction
+- If (moved forwards successfully):
+    Deposit trail in new location
+- Else:
+    Choose random new orientation
+
+[Sensory stage]
+- Sample trail map values
+- if (F > FL) && (F > FR):
+    Stay facing same direction
+    Return
+- Else if (F < FL) && (F < FR):
+    Rotate randomly left or right by RA
+- Else if (FL < FR):
+    Rotate right by RA
+- Else if (FR < FL):
+    Rotate left by RA
+- Else:
+    Continue facing same direction
+*/

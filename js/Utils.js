@@ -20,8 +20,8 @@ export class Utils {
         var textureData = new Float32Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
             textureData[i * 4 + 0] = (i%15==0) ? 255 : 0;  // r
-            textureData[i * 4 + 1] = 0;  // g
-            textureData[i * 4 + 2] = 0;  // b
+            textureData[i * 4 + 1] = 0;     // g
+            textureData[i * 4 + 2] = 0;     // b
             textureData[i * 4 + 3] = 255;   // a
         }
         console.info('Generated empty start texture of size', width, 'x', height);
@@ -54,54 +54,28 @@ export class Utils {
         return shaderCode;
     }
 
-    static prepareShaderProgram = async (gl, vertexShaderPath, fragmentShaderPath, TF_enabled = false, TF_varyings = [], TF_mode = gl.SEPARATE_ATTRIBS) => {
-        const vertexShaderCode = await Utils.readShaderFile(vertexShaderPath);
-        const fragmentShaderCode = await Utils.readShaderFile(fragmentShaderPath);
-
-        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-        vertexShader.name = vertexShaderPath.split('/').pop();
-        gl.shaderSource(vertexShader, vertexShaderCode);
-        gl.compileShader(vertexShader);
-        if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-            console.error('Error compiling ', vertexShader.name, gl.getShaderInfoLog(vertexShader));
-            return;
-        }
-
-        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-        fragmentShader.name = fragmentShaderPath.split('/').pop();
-        gl.shaderSource(fragmentShader, fragmentShaderCode);
-        gl.compileShader(fragmentShader);
-        if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-            console.error('Error compiling ', fragmentShader.name, gl.getShaderInfoLog(fragmentShader));
-            return;
-        }
-
-        const shaderProgram = gl.createProgram();
-        gl.attachShader(shaderProgram, vertexShader);
-        gl.attachShader(shaderProgram, fragmentShader);
-
-        // before linking, set up transform feedback varyings if enabled
-        if (TF_enabled) {
-            gl.transformFeedbackVaryings(shaderProgram, TF_varyings, TF_mode);
-        }
-
-        gl.linkProgram(shaderProgram);
-
-        return shaderProgram;
-    }
-
     static canvasPoints = new Float32Array([
         -1.0, -1.0,
         1.0, -1.0,
         1.0, 1.0,
         -1.0, 1.0
     ]);
+
     static quadTextCoords = new Float32Array([
         0.0, 0.0,
         1.0, 0.0,
         1.0, 1.0,
         0.0, 1.0
     ]);
+
+    static randomCoords = (count) => {
+        const coors = new Float32Array(count * 2);
+        for (let i = 0; i < count; i++) {
+            coors[i * 2] = Math.random() * 2 - 1;
+            coors[i * 2 + 1] = Math.random() * 2 - 1;
+        }
+        return coors;
+    }
 
     static gaussKernel(size, sigma) {
         const kernel = new Float32Array(size);
@@ -114,82 +88,17 @@ export class Utils {
         for (let i = 0; i < size; i++) {
             kernel[i] /= sum;
         }
-        console.info('Generated gaussian kernel of size', size, 'with sigma', sigma);
-        console.debug('Kernel:', kernel);
+        console.info('Generated Gaussian kernel of size', size, 'with sigma', sigma,':', kernel);
         return kernel;
     }
 
-    static prepareAttributes = (gl, program, attributes) => {
-        const programVAO = gl.createVertexArray();
-        gl.bindVertexArray(programVAO);
-
-        gl.useProgram(program);
-        // name: [location_in_shader, [size, type, normalized, stride, offset], [...]] 
-        // 'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], data_array]
-        
-        for (const [attributeName, [location, [size, type, normalized, stride, offset], bufferData]] of Object.entries(attributes)) {
-            const attributeLocation = gl.getAttribLocation(program, attributeName);
-            if (attributeLocation === -1) {
-                console.error('Attribute', attributeName, 'not found in', program.name);
-            } else if (attributeLocation !== location) {
-                console.error('Attribute', attributeName, 'prepared for location', location, 'but is located at', attributeLocation);
-            } else { 
-                console.info(program.name, '\nAttribute', attributeName, 'found'); 
-            }
-            const attribBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, attribBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, bufferData, gl.STATIC_DRAW);
-            gl.enableVertexAttribArray(attributeLocation);
-            gl.vertexAttribPointer(attributeLocation, size, gl[type], normalized, stride, offset);
-            console.info(
-                program.name, 'bound attribute:', attributeName, '\n',
-                'Location:', attributeLocation, '\n',
-                'Size:', size, '\n',
-                'Type:', type, '\n',
-                'Normalized:', true, '\n',
-                'Stride:', stride, '\n',
-                'Offset:', offset, '\n',
-                'Data:', bufferData
-            );
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            gl.useProgram(null);
-            // gl.bindAttribLocation(program, location, attributeName);
+    static boxKernel(size) {
+        const kernel = new Float32Array(size);
+        for (let i = 0; i < size; i++) {
+            kernel[i] = 1.0;
         }
-        return programVAO;
-    }
-
-    static prepareImageTextureForProgram = (gl, program, programVAO, sampler = 'uSampler', textureData, name='') => {
-        gl.useProgram(program);
-        gl.bindVertexArray(programVAO);
-    
-        // flip image vertically
-        // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-
-        const texture = gl.createTexture();
-        // gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        // args: target, mipmap-level, internalFormat, format, type, data_source
-        
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, window.innerWidth, window.innerHeight, 0, gl.RGBA, gl.FLOAT, textureData);        // mipmapping
-        // gl.generateMipmap(gl.TEXTURE_2D);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        // set to repeat
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-
-        // bind texture to sampler
-        const samplerLocation = gl.getUniformLocation(program, sampler);
-        gl.uniform1i(samplerLocation, 0);
-
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.bindVertexArray(null);
-        gl.useProgram(null);
-
-        texture.name = name;
-
-        return texture;
+        console.info('Generated box kernel of size', size,':', kernel);
+        return kernel;
     }
 
     static bindTextureToProgram(gl, program, programVAO, texture, sampler = 'uSampler') {
@@ -271,17 +180,22 @@ export class Utils {
         return fbo;
     }
 
-    static readTextureData = (gl, texture, width, height) => {
+    static readTextureData = (gl, texture, width, height, logAllValues=false) => {
         const fb = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
         const data = new Float32Array(width * height * 4);
-        
         // args: target, x, y, width, height, format, type, data
         gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, data);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-        console.debug('Read texture data:', data);
-        return data;
+        if (logAllValues) {
+            console.debug('Read texture data:', data);
+        }
+        console.debug(  ' Fill:\t\t', data[0], '\n',
+                        'Heading:\t', data[1], '\n',
+                        'Acc.:\t\t', data[2], '\n',
+                        'Age:\t\t', data[3]);
     }
 }
