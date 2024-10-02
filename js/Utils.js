@@ -198,4 +198,26 @@ export class Utils {
                         'Acc.:\t\t', data[2], '\n',
                         'Age:\t\t', data[3]);
     }
+
+    static readXYZMapToTexture = (path) => {
+        const data = fetch(path)
+            .then(response => response.json())
+            .then(data => {
+                console.info('Read XYZ map from', path);
+                return data;
+            });
+        
+        // image from data
+        // width x height as square
+        const width = Math.sqrt(data.length);
+        const height = Math.sqrt(data.length);
+        const texture = new Float32Array(width * height * 4);
+        for (let i = 0; i < data.length; i++) {
+            texture[i * 4 + 0] = data[i].x; // r
+            texture[i * 4 + 1] = data[i].y; // g
+            texture[i * 4 + 2] = data[i].z; // b
+            texture[i * 4 + 3] = 1.0;       // a
+        }
+        return texture;
+    }
 }

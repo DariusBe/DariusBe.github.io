@@ -1,6 +1,6 @@
 import { Utils } from './Utils.js';
 
-export class Shader{
+export class Shader {
     gl;
     name;
     textureList = [];

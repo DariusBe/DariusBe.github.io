@@ -11,7 +11,7 @@ if (!gl) {
 }
 
 // define global variables
-const PARTICLE_COUNT = 10000;
+const PARTICLE_COUNT = 5000;
 const BUFFSIZE = PARTICLE_COUNT * 4 * 2;
 var programList = [];
 var tick = 0.0;
@@ -86,37 +86,37 @@ function swapTFBuffers() {
 const animate = () => {
     updateUniforms();
 
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(tf_Shader.program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_1)
-    gl.bindVertexArray(tf_Shader.vao);
-    gl.enable(gl.RASTERIZER_DISCARD);
-    if (tf_Shader.tfBuffer !== null) {
-        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, TF_BUFF_2);
-    }
-    gl.beginTransformFeedback(gl.POINTS);
-    gl.drawArrays(gl.POINTS, 0, PARTICLE_COUNT);
-    gl.endTransformFeedback();
-    gl.bindVertexArray(null);
-    gl.useProgram(null);
-    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
+    // gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    // gl.clear(gl.COLOR_BUFFER_BIT);
+    // gl.useProgram(tf_Shader.program);
+    // gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_1)
+    // gl.bindVertexArray(tf_Shader.vao);
+    // gl.enable(gl.RASTERIZER_DISCARD);
+    // if (tf_Shader.tfBuffer !== null) {
+    //     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, TF_BUFF_2);
+    // }
+    // gl.beginTransformFeedback(gl.POINTS);
+    // gl.drawArrays(gl.POINTS, 0, PARTICLE_COUNT);
+    // gl.endTransformFeedback();
+    // gl.bindVertexArray(null);
+    // gl.useProgram(null);
+    // gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
 
-    gl.disable(gl.RASTERIZER_DISCARD);
-
-
-    // fill canvas buffer with transformed points
-    gl.useProgram(canvas_Shader.program);
-    gl.bindVertexArray(canvas_Shader.vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_2);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.POINTS, 0, PARTICLE_COUNT);
-    gl.bindVertexArray(null);
-    gl.useProgram(null);
+    // gl.disable(gl.RASTERIZER_DISCARD);
 
 
-    swapTFBuffers();
+    // // fill canvas buffer with transformed points
+    // gl.useProgram(canvas_Shader.program);
+    // gl.bindVertexArray(canvas_Shader.vao);
+    // gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_2);
+    // gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    // gl.drawArrays(gl.POINTS, 0, PARTICLE_COUNT);
+    // gl.bindVertexArray(null);
+    // gl.useProgram(null);
 
+
+    // swapTFBuffers();
+    
     requestAnimationFrame(animate);
 }
 
