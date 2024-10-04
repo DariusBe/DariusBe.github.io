@@ -198,26 +198,59 @@ export class Utils {
                         'Acc.:\t\t', data[2], '\n',
                         'Age:\t\t', data[3]);
     }
+    
+    /**
+     * Read a text file from the server and parse it into a Float32Array.
+     * @param {string} path - The path to the XYZ file
+     * @returns {Promise<Float32Array>} - The parsed XYZ data with the last element being the number of rows
+     */
+    static readXYZMapToTexture = (path, rows=null) => new Promise(resolve => {
+        // load and parse text file column by column
+        // measure time difference
 
-    static readXYZMapToTexture = (path) => {
-        const data = fetch(path)
-            .then(response => response.json())
-            .then(data => {
-                console.info('Read XYZ map from', path);
-                return data;
+
+        var data = fetch(path)
+            .then(response => response.text())
+            .then(text => {
+                var max_x = 0;
+                var max_y = 0;
+                var max_z = 0;
+
+                const lines = text.split('\n');
+                const data = new Float32Array((1+lines.length * 4));
+                for (let i = 0; i < lines.length; i++) {
+                    const values = lines[i].split(',');
+                    data[i * 4 + 0] = parseFloat(values[0]);
+                    data[i * 4 + 1] = parseFloat(values[1]);
+                    data[i * 4 + 2] = parseFloat(values[2]);
+                    if (parseFloat(values[0]) > max_x) {
+                        max_x = parseFloat(values[0]);
+                    }
+                    if (parseFloat(values[1]) > max_y) {
+                        max_y = parseFloat(values[1]);
+                    }
+                    if (parseFloat(values[2]) > max_z) {
+                        max_z = parseFloat(values[2]);
+                    }
+                    data[i * 4 + 3] = 1.0;
+                }
+
+                // normalize values
+                for (let i = 0; i < lines.length; i++) {
+                    data[i * 4 + 0] /= max_x;
+                    data[i * 4 + 1] /= max_y;
+                    data[i * 4 + 2] /= max_z;
+                }
+
+                if (rows != null) {
+                    // set last to sqrt of rows
+                    data[lines.length * 4] = rows;
+                } else {
+                    // set last to sqrt of lines
+                    data[lines.length * 4] = Math.sqrt(lines.length);
+                }
+                resolve(data);
             });
-        
-        // image from data
-        // width x height as square
-        const width = Math.sqrt(data.length);
-        const height = Math.sqrt(data.length);
-        const texture = new Float32Array(width * height * 4);
-        for (let i = 0; i < data.length; i++) {
-            texture[i * 4 + 0] = data[i].x; // r
-            texture[i * 4 + 1] = data[i].y; // g
-            texture[i * 4 + 2] = data[i].z; // b
-            texture[i * 4 + 3] = 1.0;       // a
-        }
-        return texture;
-    }
+            return (data);
+        });
 }

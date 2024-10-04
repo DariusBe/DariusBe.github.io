@@ -1,2 +1,5 @@
-*.txt
-homebrew/
+<<<<<<< HEAD
+=======
+*4.xyz
+*5.xyz
+>>>>>>> 2c72f88 (re-add xyz files 1,2,3)

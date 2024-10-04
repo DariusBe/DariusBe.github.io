@@ -4,6 +4,7 @@ precision highp float;
 in vec2 vTexCoord;
 in vec2 vPosition;
 
+uniform sampler2D uParticleTexture;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform vec3 uMouse;
@@ -26,5 +27,5 @@ vec4 prepareCursor(float radius, vec4 color) {
 }
 
 void main() {
-    fragColor = vec4(sin(uTime), 0.0, 0.0, 1.0);
+    fragColor = texture(uParticleTexture, vTexCoord);
 }
