@@ -14,12 +14,12 @@ export class Utils {
     static async loadImageConcurrently(src) {
         var img = await this.loadImage(src);
         return img;
-    } 
+    }
 
-    static getEmptyStartTexture(width=512, height=512) {
+    static getEmptyStartTexture(width = 512, height = 512) {
         var textureData = new Float32Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
-            textureData[i * 4 + 0] = (i%15==0) ? 255 : 0;  // r
+            textureData[i * 4 + 0] = (i % 15 == 0) ? 255 : 0;  // r
             textureData[i * 4 + 1] = 0;     // g
             textureData[i * 4 + 2] = 0;     // b
             textureData[i * 4 + 3] = 255;   // a
@@ -29,11 +29,11 @@ export class Utils {
         return textureData
     }
 
-    static getRandomStartTexture(width=512, height=512) {
+    static getRandomStartTexture(width = 512, height = 512) {
         // Allocate a Float32Array instead of a Uint8ClampedArray.
         // This is necessary because we're using floating point values.
         var textureData = new Float32Array(width * height * 4);
-    
+
         for (let i = 0; i < width * height; i++) {
             // Random value between 0 and 1 for each channel.
             const fill = Math.random();
@@ -42,11 +42,11 @@ export class Utils {
             textureData[i * 4 + 2] = fill;  // b
             textureData[i * 4 + 3] = 1.0;   // a (fully opaque)
         }
-    
+
         console.info('Generated random start texture of size', width, 'x', height);
         return textureData;
     }
-    
+
 
     static readShaderFile = async (path) => {
         const response = await fetch(path);
@@ -88,7 +88,7 @@ export class Utils {
         for (let i = 0; i < size; i++) {
             kernel[i] /= sum;
         }
-        console.info('Generated Gaussian kernel of size', size, 'with sigma', sigma,':', kernel);
+        console.info('Generated Gaussian kernel of size', size, 'with sigma', sigma, ':', kernel);
         return kernel;
     }
 
@@ -97,7 +97,7 @@ export class Utils {
         for (let i = 0; i < size; i++) {
             kernel[i] = 1.0;
         }
-        console.info('Generated box kernel of size', size,':', kernel);
+        console.info('Generated box kernel of size', size, ':', kernel);
         return kernel;
     }
 
@@ -119,14 +119,14 @@ export class Utils {
         for (const [uniformName, [value, type]] of Object.entries(uniforms)) {
             const uniformLocation = gl.getUniformLocation(program, uniformName);
             if (uniformLocation === null) {
-                console.warn(program.name, ":", 'uniform', uniformName ,'not found/used');
+                console.warn(program.name, ":", 'uniform', uniformName, 'not found/used');
                 continue;
-            } else { console.info(program.name, ":", 'uniform', uniformName ,'found'); }
+            } else { console.info(program.name, ":", 'uniform', uniformName, 'found'); }
             if (type === '1f') {
                 gl.uniform1f(uniformLocation, value);
             } else if (type === '1fv') {
                 gl.uniform1fv(uniformLocation, value);
-            }  else if (type === '2fv') {
+            } else if (type === '2fv') {
                 gl.uniform2fv(uniformLocation, value);
             } else if (type === '3fv') {
                 gl.uniform3fv(uniformLocation, value);
@@ -148,7 +148,7 @@ export class Utils {
         }
     }
 
-    static prepareFramebufferObject = (gl, program, location=gl.COLOR_ATTACHMENT0, texture, width, height, textureFormat = gl.RGBA16F) => {
+    static prepareFramebufferObject = (gl, program, location = gl.COLOR_ATTACHMENT0, texture, width, height, textureFormat = gl.RGBA16F) => {
         gl.useProgram(program);
         const fbo = gl.createFramebuffer();
         fbo.name = texture.name + 'FBO';
@@ -180,7 +180,7 @@ export class Utils {
         return fbo;
     }
 
-    static readTextureData = (gl, texture, width, height, logAllValues=false) => {
+    static readTextureData = (gl, texture, width, height, logAllValues = false) => {
         const fb = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
@@ -193,64 +193,154 @@ export class Utils {
         if (logAllValues) {
             console.debug('Read texture data:', data);
         }
-        console.debug(  ' Fill:\t\t', data[0], '\n',
-                        'Heading:\t', data[1], '\n',
-                        'Acc.:\t\t', data[2], '\n',
-                        'Age:\t\t', data[3]);
+        console.debug(' Fill:\t\t', data[0], '\n',
+            'Heading:\t', data[1], '\n',
+            'Acc.:\t\t', data[2], '\n',
+            'Age:\t\t', data[3]);
     }
-    
+
     /**
-     * Read a text file from the server and parse it into a Float32Array.
-     * @param {string} path - The path to the XYZ file
-     * @returns {Promise<Float32Array>} - The parsed XYZ data with the last element being the number of rows
-     */
-    static readXYZMapToTexture = (path, rows=null) => new Promise(resolve => {
-        // load and parse text file column by column
-        // measure time difference
+      * Read a text file from the server and parse it into a Float32Array.
+      * @param {string} path - The path to the XYZ file
+      * @returns {Promise<Float32Array>} - The parsed XYZ data with the last element being the number of rows
+      */
+    static readXYZMapToTexture = (path, rows = null) => new Promise(resolve => {
+        // measure time until promise is resolved
 
-
-        var data = fetch(path)
+        var map = fetch(path)
             .then(response => response.text())
             .then(text => {
                 var max_x = 0;
                 var max_y = 0;
                 var max_z = 0;
 
-                const lines = text.split('\n');
-                const data = new Float32Array((1+lines.length * 4));
-                for (let i = 0; i < lines.length; i++) {
-                    const values = lines[i].split(',');
-                    data[i * 4 + 0] = parseFloat(values[0]);
-                    data[i * 4 + 1] = parseFloat(values[1]);
-                    data[i * 4 + 2] = parseFloat(values[2]);
-                    if (parseFloat(values[0]) > max_x) {
-                        max_x = parseFloat(values[0]);
-                    }
-                    if (parseFloat(values[1]) > max_y) {
-                        max_y = parseFloat(values[1]);
-                    }
-                    if (parseFloat(values[2]) > max_z) {
-                        max_z = parseFloat(values[2]);
-                    }
-                    data[i * 4 + 3] = 1.0;
-                }
+                var min_x = 1;
+                var min_y = 1;
+                var min_z = 1;
 
-                // normalize values
+                var lines = text.split('\n');
+                var data = new Float32Array((1 + lines.length * 4));
+                var empty_lines = 0;
                 for (let i = 0; i < lines.length; i++) {
-                    data[i * 4 + 0] /= max_x;
-                    data[i * 4 + 1] /= max_y;
-                    data[i * 4 + 2] /= max_z;
+                    // split by comma, space or semicolon
+                    var values = lines[i].split(',');
+                    if (values.length < 3) {
+                        values = lines[i].split(' ');
+                    }
+                    if (values.length < 3) {
+                        values = lines[i].split(';');
+                    }
+                    // skip if line is empty
+                    if (values.length == 3) {
+                        data[i * 4 + 0] = parseFloat(values[0]);
+                        data[i * 4 + 1] = parseFloat(values[1]);
+                        data[i * 4 + 2] = parseFloat(values[2]);
+
+                        // max
+                        if (parseFloat(values[0]) > max_x) {
+                            max_x = parseFloat(values[0]);
+                        }
+                        if (parseFloat(values[1]) > max_y) {
+                            max_y = parseFloat(values[1]);
+                        }
+                        if (parseFloat(values[2]) > max_z) {
+                            max_z = parseFloat(values[2]);
+                        }
+                        // min
+                        if (parseFloat(values[0]) < min_x) {
+                            min_x = parseFloat(values[0]);
+                        }
+                        if (parseFloat(values[1]) < min_y) {
+                            min_y = parseFloat(values[1]);
+                        }
+                        if (parseFloat(values[2]) < min_z) {
+                            min_z = parseFloat(values[2]);
+                        }
+                        data[i * 4 + 3] = 1.0;
+                    } else {
+                        empty_lines += 1;
+                    }
+                }
+                // remove trailing empty lines
+                lines = lines.slice(0, lines.length - empty_lines);
+                map = data.slice(0, 1 + lines.length * 4);
+                // normalize all values: lowest mapped to 0, highest to 1
+                for (let i = 0; i < lines.length; i++) {
+                    map[i * 4 + 0] = (map[i * 4 + 0] - min_x) / (max_x - min_x);
+                    map[i * 4 + 1] = (map[i * 4 + 1] - min_y) / (max_y - min_y);
+                    map[i * 4 + 2] = (map[i * 4 + 2] - min_z) / (max_z - min_z);
                 }
 
                 if (rows != null) {
                     // set last to sqrt of rows
-                    data[lines.length * 4] = rows;
+                    map[lines.length * 4] = rows;
                 } else {
                     // set last to sqrt of lines
-                    data[lines.length * 4] = Math.sqrt(lines.length);
+                    map[lines.length * 4] = Math.sqrt(lines.length);
                 }
-                resolve(data);
+                resolve(map);
             });
-            return (data);
-        });
+        return (map);
+    });
+
+    static normalizePointCloud = (pointCloud) => {
+        // min should be 0, max should be 1
+        var max_x = 0;
+        var max_y = 0;
+        var max_z = 0;
+        var min_x = 1;
+        var min_y = 1;
+        var min_z = 1;
+
+        for (let i = 0; i < pointCloud.length; i += 4) {
+            // max
+            if (pointCloud[i] > max_x) {
+                max_x = pointCloud[i];
+            }
+            if (pointCloud[i + 1] > max_y) {
+                max_y = pointCloud[i + 1];
+            }
+            if (pointCloud[i + 2] > max_z) {
+                max_z = pointCloud[i + 2];
+            }
+            // min
+            if (pointCloud[i] < min_x) {
+                min_x = pointCloud[i];
+            }
+            if (pointCloud[i + 1] < min_y) {
+                min_y = pointCloud[i + 1];
+            }
+            if (pointCloud[i + 2] < min_z) {
+                min_z = pointCloud[i + 2];
+            }
+        }
+        // normalize all values
+        for (let i = 0; i < pointCloud.length; i += 4) {
+            pointCloud[i] = (pointCloud[i] - min_x) / (max_x - min_x);
+            pointCloud[i + 1] = (pointCloud[i + 1] - min_y) / (max_y - min_y);
+            pointCloud[i + 2] = (pointCloud[i + 2] - min_z) / (max_z - min_z);
+        }
+        return pointCloud;
+    }
+
+    static saveArrayToImageFile = (data, filename, width, height) => {
+        // save XYZ data array as png with (RGB)
+        var canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        var ctx = canvas.getContext('2d');
+        var imgData = ctx.createImageData(width, height);
+        for (let i = 0; i < data.length; i += 4) {
+            imgData.data[i] = data[i] * 255;
+            imgData.data[i + 1] = data[i + 1] * 255;
+            imgData.data[i + 2] = data[i + 2] * 255;
+            imgData.data[i + 3] = 255;
+        }
+        ctx.putImageData(imgData, 0, 0);
+        var a = document.createElement('a');
+        a.href = canvas.toDataURL();
+        a.download = filename;
+        a.click();
+
+    }
 }
