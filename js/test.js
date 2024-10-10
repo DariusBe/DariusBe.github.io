@@ -9,6 +9,9 @@ gl.getExtension('EXT_color_buffer_float');
 if (!gl) {
     console.error('WebGL2 is not supported in your browser');
 }
+//GL_FRAGMENT_SHADER_DERIVATIVE_HINT
+// set to lowest quality
+gl.hint(gl.FRAGMENT_SHADER_DERIVATIVE_HINT, gl.FASTEST);
 
 // define global variables
 const PARTICLE_COUNT = 5000;
@@ -83,12 +86,18 @@ const xyz_Shader = new Shader(
 );
 
 const start = performance.now();
-var xyz_map = await Utils.readXYZMapToTexture(basePath+'testShader/xyz/testmap2.xyz');
+var xyz_map = await Utils.readXYZMapToTexture(basePath+'testShader/xyz/testmap6.xyz');
 // print time difference
 const end = performance.now();
-console.info('Read and parsed in', end - start, 'ms');
+
 const size = xyz_map[xyz_map.length-1];
 xyz_map = xyz_map.slice(0, xyz_map.length-1);
+xyz_map = Utils.normalizePointCloud(xyz_map);
+
+// save to file
+//Utils.saveArrayToImageFile(xyz_map, 'xyz_map.png', size, size);
+
+console.info('Read and parsed map in', end - start, 'ms');
 
 xyz_Shader.prepareImageTextureForProgram("uSampler", xyz_map, 'XYZ_Texture', size, size);
 
