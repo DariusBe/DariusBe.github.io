@@ -1,17 +1,10 @@
 import { Utils } from "./Utils.js";
 import { Shader } from './Shader.js';
 
-// main
-// const webGLRenderer = new WebGLRenderer('webgl-canvas');
-const canvas = document.getElementById('webgl-canvas');
+let canvas = document.getElementById('webgl-canvas');
 const gl = canvas.getContext('webgl2');
-gl.getExtension('EXT_color_buffer_float');
-if (!gl) {
-    console.error('WebGL2 is not supported in your browser');
-}
-//GL_FRAGMENT_SHADER_DERIVATIVE_HINT
 // set to lowest quality
-gl.hint(gl.FRAGMENT_SHADER_DERIVATIVE_HINT, gl.FASTEST);
+gl.hint(gl.FRAGMENT_SHADER_DERIVATIVE_HINT, gl.NICEST);
 
 // define global variables
 const PARTICLE_COUNT = 5000;
@@ -19,12 +12,14 @@ const BUFFSIZE = PARTICLE_COUNT * 4 * 2;
 var programList = [];
 var tick = 0.0;
 const basePath = 'js/src/';
-let canvas_vertSource = basePath+'testShader/canvas/canv_vert.glsl';
-let canvas_fragSource = basePath+'testShader/canvas/canv_frag.glsl';
-let tf_vertSource = basePath+'testShader/tf/tf_vert.glsl';
-let tf_fragSource = basePath+'testShader/tf/tf_frag.glsl';
-let xyz_vertSource = basePath+'testShader/xyz/xyz_vert.glsl';
-let xyz_fragSource = basePath+'testShader/xyz/xyz_frag.glsl';
+let canvas_vertSource = basePath+'testShader/canvas/canv.vert';
+let canvas_fragSource = basePath+'testShader/canvas/canv.frag';
+
+let tf_vertSource = basePath+'testShader/tf/tf.vert';
+let tf_fragSource = basePath+'testShader/tf/tf.frag';
+
+let topoVertSource = basePath+'testShader/topo/topo.vert';
+let topoFragSource = basePath+'testShader/topo/topo.frag';
 
 // global uniforms
 const uniforms = {
@@ -74,34 +69,45 @@ const uniforms = {
 // programList.push(canvas_Shader.program);
 
 // XYZ Texture Shader
-const xyz_Shader = new Shader(
+// const topoShader = new Shader(
+//     gl,
+//     name='TopoShader',
+//     await Utils.readShaderFile(topoVertSource),
+//     await Utils.readShaderFile(topoFragSource),
+//     {   'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
+//         'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords],
+//     },
+//     uniforms
+// );
+
+// const start = performance.now();
+var topoMap = await Utils.readXYZMapToTexture(basePath+'testShader/topo/testmap6.xyz');
+// // print time difference
+// const end = performance.now();
+
+const size = topoMap[topoMap.length-1];
+topoMap = topoMap.slice(0, topoMap.length-1);
+topoMap = Utils.normalizePointCloud(topoMap);
+
+const topoShader = new Shader(
     gl,
-    name='XYZ_Shader',
-    await Utils.readShaderFile(xyz_vertSource),
-    await Utils.readShaderFile(xyz_fragSource),
+    name='TopoShader',
+    await Utils.readShaderFile(topoVertSource),
+    await Utils.readShaderFile(topoFragSource),
     {   'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
         'aTexCoord': [ 1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords],
     },
     uniforms
 );
 
-const start = performance.now();
-var xyz_map = await Utils.readXYZMapToTexture(basePath+'testShader/xyz/testmap6.xyz');
-// print time difference
-const end = performance.now();
-
-const size = xyz_map[xyz_map.length-1];
-xyz_map = xyz_map.slice(0, xyz_map.length-1);
-xyz_map = Utils.normalizePointCloud(xyz_map);
-
 // save to file
-//Utils.saveArrayToImageFile(xyz_map, 'xyz_map.png', size, size);
+//Utils.saveArrayToImageFile(topoMap, 'topoMap.png', size, size);
 
-console.info('Read and parsed map in', end - start, 'ms');
+//console.info('Read and parsed map in', end - start, 'ms');
+// save image file to local storage
+topoShader.prepareImageTexture("uSampler", topoMap, 'TopoTexture', size, size);
 
-xyz_Shader.prepareImageTextureForProgram("uSampler", xyz_map, 'XYZ_Texture', size, size);
-
-programList.push(xyz_Shader.program);
+programList.push(topoShader.program);
 
 function updateUniforms() {
     tick += 0.01;
@@ -117,6 +123,8 @@ function updateUniforms() {
 //     TF_DATA_1 = TF_DATA_2;
 //     TF_DATA_2 = T;
 // }
+
+
 
 // animate
 const animate = () => {
@@ -154,10 +162,10 @@ const animate = () => {
 
     // render XYZ texture
     
-    gl.useProgram(xyz_Shader.program);
-    gl.bindVertexArray(xyz_Shader.vao);
+    gl.useProgram(topoShader.program);
+    gl.bindVertexArray(topoShader.vao);
 
-    gl.bindTexture(gl.TEXTURE_2D, xyz_Shader.textureList[0]);
+    gl.bindTexture(gl.TEXTURE_2D, topoShader.textureList[0]);
 
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     gl.bindVertexArray(null);
@@ -191,22 +199,15 @@ const touchmove = (e) => {
         gl.uniform3fv(gl.getUniformLocation(program, 'uMouse'), mouse);
     }
 }
-// const onresize = (e) => {
-//     canvas.width = window.innerWidth;
-//     canvas.height = window.innerHeight;
-//     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-//     for (const program of programList) {
-//         gl.useProgram(program);
-//         gl.uniform2fv(gl.getUniformLocation(program, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
-//     }
-//     randMap = Utils.getRandomStartTexture(canvas.width, canvas.height, 0.5);
-//     gl.useProgram(canvasProgram);
-//     gl.bindVertexArray(canvasVAO);
-//     gl.activeTexture(gl.TEXTURE0);
-//     gl.bindTexture(gl.TEXTURE_2D, tex);
-//     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, window.innerWidth, window.innerHeight, 0, gl.RGBA, gl.FLOAT, textureData);    gl.uniform1i(gl.getUniformLocation(canvasProgram, 'uSampler'), 0);
-//     gl.bindTexture(gl.TEXTURE_2D, null);
-// }
+const onresize = () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    for (const program of programList) {
+        gl.useProgram(program);
+        gl.uniform2fv(gl.getUniformLocation(program, 'uResolution'), new Float32Array([window.innerWidth, window.innerHeight]));
+    }
+}
 canvas.addEventListener('touchmove', touchmove);
 canvas.addEventListener('mousemove', onmousemove);
 window.addEventListener('resize', onresize);
