@@ -1,8 +1,6 @@
 #version 300 es
-#extension GL_OES_standard_derivatives : enable
 precision highp sampler2D;
 precision highp float;
-
 
 in vec2 vTexCoord;
 
@@ -10,6 +8,8 @@ uniform sampler2D uSampler;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform vec3 uMouse;
+uniform bool uShowCursor;
+uniform bool uCheckbox;
 
 out vec4 fragColor;
 
@@ -46,10 +46,9 @@ float calculateCostSurfaceDerivative(vec2 texCoord) {
     return slope;
 }
 
-// Function to create a color gradient based on z value
 vec4 colorGradient(float z) {
     // Define colors for the gradient
-    vec3 color1 = vec3(1.0, 0.0, 0.0); // Red
+    vec3 color1 = vec3(1.0f, 0.0f, 0.0f); // Red
     vec3 color2 = vec3(0.0, 1.0, 0.0); // Green
     vec3 color3 = vec3(0.0, 0.0, 1.0); // Blue
 
@@ -59,40 +58,40 @@ vec4 colorGradient(float z) {
     } else {
         return vec4(mix(color2, color3, (z - 0.5) * 2.0), 1.0);
     }
+    // transform color 
 }
-
-vec4 prepareCursor(float radius, vec4 color, vec4 inputColor) {
-    // normalize moues position
-    vec2 mouse = uMouse.xy;
-    float mouseClick = uMouse.z;
-
-    vec4 cursor = inputColor;
-    // show the mouse position
-    if (distance(gl_FragCoord.xy, mouse * uResolution) < radius) {
-        if (mouseClick == 1.0) {
-            cursor = color;
-        }
-    }
-    return cursor;
-}
-
 
 void main() {
     vec4 xyz = texture(uSampler, vTexCoord);
-    vec4 trad = colorGradient(1.0-xyz.z);
+    vec4 terrain = colorGradient(1.0-xyz.z);
 
-    vec4 new = colorGradient(1.0-calculateCostSurfaceDerivative(vTexCoord)*50.0);
+    float slopeFactor = 35.0;
+    float slope = 1.0-calculateCostSurfaceDerivative(vTexCoord)*slopeFactor;
+    vec4 derrivative = colorGradient(slope);
 
     float t = sin(uTime)*sin(uTime);
 
-    fragColor = vec4(vec3(mix(trad.xyz, new.xyz, t)), 1.0);
-        vec2 mouse = uMouse.xy;
+    // fragColor = vec4(terrain.xyz, 1.0);
+    vec2 mouse = uMouse.xy;
     float mouseClick = uMouse.z;
 
-    if (distance(gl_FragCoord.xy, mouse * uResolution) < 50.0) {
-        if (mouseClick == 1.0) {
-            fragColor = new;
+    if (uShowCursor) {
+        float dist = smoothstep(0.0, 50.0, distance(gl_FragCoord.xy, mouse * uResolution));
+        if (mouseClick == 1.0 && dist < 1.0 && dist > 0.9) {
+            fragColor = mix(terrain, derrivative, dist);
+            fragColor.w *= 0.95;
+        } else {
+            fragColor = derrivative;
         }
+    } else {
+        fragColor = derrivative;
     }
 
+    if (!uCheckbox) {
+        fragColor = terrain;
+        float dist = smoothstep(0.0, 100.0, distance(gl_FragCoord.xy, mouse * uResolution));
+        if (mouseClick == 1.0 && dist < 1.0) {
+            fragColor = mix(terrain, derrivative, 1.0-(dist*dist));
+        }
+    }
 }

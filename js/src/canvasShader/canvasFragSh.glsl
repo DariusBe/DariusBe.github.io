@@ -3,7 +3,7 @@ precision highp float;
 
 in vec2 vTexCoord;
 
-uniform sampler2D uParticleTexture;
+uniform sampler2D uSampler;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform vec3 uMouse;
@@ -26,14 +26,13 @@ vec4 prepareCursor(float radius, vec4 color) {
 }
 
 void main() {
-    vec4 cursor = prepareCursor(5.0, vec4(0.4471, 0.4471, 0.4471, 0.5));
+    vec4 cursor = prepareCursor(15.0, vec4(0.4471, 0.4471, 0.4471, 0.5));
 
-    vec4 particles = texture(uParticleTexture, vTexCoord);
+    vec4 tex = texture(uSampler, vTexCoord);
     // if (particles.r > 0.1) {
     //     particles = vec4(1.0, 1.0, 1.0, 1.0);
     // } else {
     //     particles = vec4(0.0, 0.0, 0.0, 1.0);
     // }
-    fragColor = vec4(vec3(particles.r), 1.0);
-
+    fragColor = tex;
 }
