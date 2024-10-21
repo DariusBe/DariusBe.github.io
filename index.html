@@ -1,23 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebGL2 Test</title>
     <link rel="stylesheet" href="css/main.css">
-    <script type="module" src="js/test.js"></script>
+    <script type="module" src="js/main.js"></script>
     <link rel="icon" href="data:,"> <!-- Prevents favicon request -->
 </head>
+
 <body>
+    <!-- Add Canvas of max size -->
     <canvas id="webgl-canvas"></canvas>
 
-    <!-- Add Canvas of max size -->
+    <!-- Add Sliders -->
+    <div class="controls">
+        <div class="checkboxpanel">
+            <label for="checkbox" class="labeltext">Cost Landscape</label>
+            <input type="checkbox" value="0" id="cost_checkbox" class="checkbox">
+        </div>
+        <div class="sliderpanel">
+            <label for="slider" class="labeltext">Convolution</label>
+            <input type="range" step="0.25" min="0" max="5.0" value="1.0" id="conv_slider" class="slider">
+            <div id="sliderlabel" class="labeltext"></div>
+        </div>
+    </div>
+
     <script>
+        var slider = document.getElementById("conv_slider");
+        var output = document.getElementById("sliderlabel");
+        output.innerHTML = slider.value; // Display the default slider value
+        slider.oninput = function () {
+            output.innerHTML = slider.value;
+        }
+
         const canvas = document.getElementById('webgl-canvas');
         canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        canvas.height = window.innerHeight - 70;
     </script>
-    
+
+
 </body>
+
 </html>

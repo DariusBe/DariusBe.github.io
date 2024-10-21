@@ -5,3 +5,57 @@ body {
 canvas {
     display: block;
 }
+
+.controls {
+  display: flex;
+  height: max-content;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 10px;
+}
+
+.labeltext {
+    text-align: center;
+    color: #333;
+    padding: 10px;
+}
+
+.sliderpanel {
+    display: flex;
+    float: center;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 50%;
+  height: 15px;
+  border-radius: 15px;  
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.8;
+  -webkit-transition: .2s;
+  transition: opacity 1s;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%; 
+  background: #04AA6D;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #007aff;
+  cursor: pointer;
+  border: rgb(255, 255, 255) 2px solid;
+}
