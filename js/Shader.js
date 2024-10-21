@@ -12,14 +12,6 @@ export class Shader {
     tfBuffer;
     attributeList = {};
     uniformList = {};
-
-    uniformList2 = [
-        new Uniform('uSampler', '1i', 0),
-        new Uniform('uResolution', '2fv', new Float32Array([window.innerWidth, window.innerHeight])),
-        new Uniform('uTime', '1f', 0.0),
-        new Uniform('uMouse', '3fv', new Float32Array([0.0, 0.0, 0.0])),
-    ];
-    
     /**
      * Creates a new Shader object.
      * @param {WebGL2RenderingContext} gl The WebGL2 rendering context
@@ -555,42 +547,5 @@ export class Shader {
             'Heading:\t', data[1], '\n',
             'Acc.:\t\t', data[2], '\n',
             'Age:\t\t', data[3]);
-    }
-}
-
-/**
- * A class to represent a uniform variable in a shader program.
- * @param {string} name The name of the uniform variable
- * @param {string} type The type of the uniform variable
- * @param {*} value The value of the uniform variable
- */
-export class Uniform {
-    constructor(name, type, value) {
-        this.name = name;
-        this.type = type;
-        this.value = value;
-    }
-
-    registerUniform = (gl, program) => {
-        gl.useProgram(program);
-        const uniformLocation = gl.getUniformLocation(program, this.name);
-        if (uniformLocation === null) {
-            console.warn('Uniform', this.name, 'not found in', program.name);
-            return;
-        }
-        switch (this.type) {
-            case 'bool': gl.uniform1i(uniformLocation, this.value); break;
-            case '1f': gl.uniform1f(uniformLocation, this.value); break;
-            case '1fv': gl.uniform1fv(uniformLocation, this.value); break;
-            case '2fv': gl.uniform2fv(uniformLocation, this.value); break;
-            case '3fv': gl.uniform3fv(uniformLocation, this.value); break;
-            case '4fv': gl.uniform4fv(uniformLocation, this.value); break;
-            case '1i': gl.uniform1i(uniformLocation, this.value); break;
-            case '1iv': gl.uniform1iv(uniformLocation, this.value); break;
-            case '2iv': gl.uniform2iv(uniformLocation, this.value); break;
-            case '3iv': gl.uniform3iv(uniformLocation, this.value); break;
-            case '4iv': gl.uniform4iv(uniformLocation, this.value); break;
-            default: console.error('Unknown uniform type:', this.type); break;
-        }
     }
 }
