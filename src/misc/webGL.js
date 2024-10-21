@@ -1,5 +1,5 @@
-import { Utils } from './Utils.js';
-import { PhysarumManager } from './physarum.js';
+import { Utils } from '../../js/Utils.js';
+import { PhysarumManager } from '../../js/physarum.js';
 
 /* Prepare Shader Sources */
 const canvasVertexShaderSource = await Utils.readShaderFile('./src/misc/old_shaders/canvasShader/canvasVertexShader.glsl');
