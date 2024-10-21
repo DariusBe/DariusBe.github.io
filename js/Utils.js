@@ -1,5 +1,10 @@
 export class Utils {
 
+    /**
+     * Load an image.
+     * @param {string} src The path to the image
+     * @returns {HTMLImageElement} The loaded image
+     */
     static loadImage = (src) => new Promise(resolve => {
         const img = new Image();
         img.addEventListener('load', () => resolve(img));
@@ -11,27 +16,42 @@ export class Utils {
         return img;
     });
 
+    /**
+     * Load an image concurrently.
+     * @param {string} src The path to the image
+     * @returns {HTMLImageElement} The loaded image
+     */
     static async loadImageConcurrently(src) {
         var img = await this.loadImage(src);
         return img;
     }
 
+    /**
+     * Generate a texture with a test strip pattern.
+     * @param {*} width The width of the texture.
+     * @param {*} height The height of the texture.
+     * @returns {Float32Array} A test strip texture with RGBA16F. Alpha is always 1.
+     */
     static getEmptyStartTexture(width = 512, height = 512) {
         var textureData = new Float32Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
             textureData[i * 4 + 0] = (i % 15 == 0) ? 255 : 0;  // r
             textureData[i * 4 + 1] = 0;     // g
             textureData[i * 4 + 2] = 0;     // b
-            textureData[i * 4 + 3] = 255;   // a
+            textureData[i * 4 + 3] = 1;     // a
         }
         console.info('Generated empty start texture of size', width, 'x', height);
         // return Imagedata as RGBA16F
         return textureData
     }
 
-    static getRandomStartTexture(width = 512, height = 512) {
-        // Allocate a Float32Array instead of a Uint8ClampedArray.
-        // This is necessary because we're using floating point values.
+    /**
+     * Generate a random texture.
+     * @param {number} width The width of the texture
+     * @param {number} height The height of the texture
+     * @returns {Float32Array} A random texture with RGBA16F values ranging from 0 to 1. Alpha is always 1.
+     */
+    static getRandomStartTexture(width = 512, height = 512, verbose = false) {
         var textureData = new Float32Array(width * height * 4);
 
         for (let i = 0; i < width * height; i++) {
@@ -43,17 +63,25 @@ export class Utils {
             textureData[i * 4 + 3] = 1.0;   // a (fully opaque)
         }
 
-        console.info('Generated random start texture of size', width, 'x', height);
+        if (verbose) {
+            console.info('Generated random start texture of size', width, 'x', height);
+        }
         return textureData;
     }
 
-
+    /**
+     * @param {string} path The path to a GLSL shader file
+     * @returns {Promise<string>} The shader code as a string
+     */
     static readShaderFile = async (path) => {
         const response = await fetch(path);
         const shaderCode = await response.text();
         return shaderCode;
     }
 
+    /**
+     * Positions for a quad covering the entire canvas. 
+     */
     static canvasPoints = new Float32Array([
         -1.0, -1.0,
         1.0, -1.0,
@@ -61,6 +89,9 @@ export class Utils {
         -1.0, 1.0
     ]);
 
+    /**
+     * Quad texture coordinates for a full screen quad.
+     */
     static quadTextCoords = new Float32Array([
         0.0, 0.0,
         1.0, 0.0,
@@ -68,6 +99,11 @@ export class Utils {
         0.0, 1.0
     ]);
 
+    /**
+     * Generate random 2D-coordinates in the range [-1, 1].
+     * @param {number} count The number of coordinates to generate
+     * @returns {Float32Array} The generated 2D-coordinates as a Float32Array
+     */
     static randomCoords = (count) => {
         const coors = new Float32Array(count * 2);
         for (let i = 0; i < count; i++) {
@@ -77,7 +113,14 @@ export class Utils {
         return coors;
     }
 
-    static gaussKernel(size, sigma) {
+    /**
+     * Generate a Gaussian kernel of a given size and sigma.
+     * @param {number} size The size of the kernel, must be odd
+     * @param {number} sigma The standard deviation of the Gaussian, higher values result in more blur
+     * @param {boolean} verbose A flag to print the kernel to the console
+     * @returns {Float32Array} The generated kernel
+     */
+    static gaussKernel(size, sigma, verbose = false) {
         const kernel = new Float32Array(size);
         const center = (size - 1) / 2;
         let sum = 0.0;
@@ -88,122 +131,43 @@ export class Utils {
         for (let i = 0; i < size; i++) {
             kernel[i] /= sum;
         }
-        console.info('Generated Gaussian kernel of size', size, 'with sigma', sigma, ':', kernel);
+        if (verbose) {
+            console.info('Generated Gaussian kernel of size', size, 'with sigma', sigma, ':', kernel);
+        }
+        if (sigma == 0) {
+            // no blur
+            kernel.fill(0);
+            kernel[center] = 1;
+        }
         return kernel;
     }
 
-    static boxKernel(size) {
+    /**
+     * Generate a box kernel of a given size.
+     * @param {number} size The size of the kernel, must be odd
+     * @param {boolean} verbose A flag to print the kernel to the console
+     * @returns {Float32Array} The generated kernel
+    **/
+    static boxKernel(size, verbose = false) {
         const kernel = new Float32Array(size);
         for (let i = 0; i < size; i++) {
             kernel[i] = 1.0;
         }
-        console.info('Generated box kernel of size', size, ':', kernel);
+        if (verbose) {
+            console.info('Generated box kernel of size', size, ':', kernel);
+        }
         return kernel;
-    }
-
-    static bindTextureToProgram(gl, program, programVAO, texture, sampler = 'uSampler') {
-        gl.useProgram(program);
-        gl.bindVertexArray(programVAO);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        const samplerLocation = gl.getUniformLocation(program, sampler);
-        gl.uniform1i(samplerLocation, 0);
-        gl.bindVertexArray(null);
-        gl.useProgram(null);
-        return texture;
-    }
-
-    static prepareUniform = (gl, program, uniforms) => {
-        gl.useProgram(program);
-
-        for (const [uniformName, [value, type]] of Object.entries(uniforms)) {
-            const uniformLocation = gl.getUniformLocation(program, uniformName);
-            if (uniformLocation === null) {
-                console.warn(program.name, ":", 'uniform', uniformName, 'not found/used');
-                continue;
-            } else { console.info(program.name, ":", 'uniform', uniformName, 'found'); }
-            if (type === '1f') {
-                gl.uniform1f(uniformLocation, value);
-            } else if (type === '1fv') {
-                gl.uniform1fv(uniformLocation, value);
-            } else if (type === '2fv') {
-                gl.uniform2fv(uniformLocation, value);
-            } else if (type === '3fv') {
-                gl.uniform3fv(uniformLocation, value);
-            } else if (type === '4fv') {
-                gl.uniform4fv(uniformLocation, value);
-            } else if (type === '1i') {
-                gl.uniform1i(uniformLocation, value);
-            } else if (type === '1iv') {
-                gl.uniform1iv(uniformLocation, value);
-            } else if (type === '2iv') {
-                gl.uniform2iv(uniformLocation, value);
-            } else if (type === '3iv') {
-                gl.uniform3iv(uniformLocation, value);
-            } else if (type === '4iv') {
-                gl.uniform4iv(uniformLocation, value);
-            } else {
-                console.error('Unknown uniform type:', type);
-            }
-        }
-    }
-
-    static prepareFramebufferObject = (gl, program, location = gl.COLOR_ATTACHMENT0, texture, width, height, textureFormat = gl.RGBA16F) => {
-        gl.useProgram(program);
-        const fbo = gl.createFramebuffer();
-        fbo.name = texture.name + 'FBO';
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-
-        // create the texture to store the position data
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        // params: target, mipmap-level, internalFormat, width, height
-        gl.texStorage2D(gl.TEXTURE_2D, 1, [textureFormat], width, height);
-
-        gl.framebufferTexture2D(
-            gl.FRAMEBUFFER, // target
-            location, // attachment point == location of point locations in fragment shader
-            gl.TEXTURE_2D, // texture target
-            texture, // texture
-            0); // mipmap level, always 0 in webgl
-
-        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-            console.error(program.name, ':', fbo.name, 'is incomplete');
-        } else {
-            console.info(program.name, ':', fbo.name, 'with texture', texture.name, 'is complete');
-        }
-
-        // unbind
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.useProgram(null);
-
-        return fbo;
-    }
-
-    static readTextureData = (gl, texture, width, height, logAllValues = false) => {
-        const fb = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-
-        const data = new Float32Array(width * height * 4);
-        // args: target, x, y, width, height, format, type, data
-        gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, data);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-        if (logAllValues) {
-            console.debug('Read texture data:', data);
-        }
-        console.debug(' Fill:\t\t', data[0], '\n',
-            'Heading:\t', data[1], '\n',
-            'Acc.:\t\t', data[2], '\n',
-            'Age:\t\t', data[3]);
     }
 
     /**
       * Read a text file from the server and parse it into a Float32Array.
-      * @param {string} path - The path to the XYZ file
-      * @returns {Promise<Float32Array>} - The parsed XYZ data with the last element being the number of rows
-      */
+      * @param {string} path The path to the XYZ file
+      * @returns {Promise<Float32Array>} The parsed XYZ data with the last element being the number of rows
+      * @example 
+      * var topoMap = await Utils.readXYZMapToTexture('topo.xyz');
+      * const size = topoMap[topoMap.length-1];
+      * topoMap = topoMap.slice(0, topoMap.length-1);
+    **/
     static readXYZMapToTexture = (path, rows = null) => new Promise(resolve => {
         // measure time until promise is resolved
 
@@ -283,6 +247,11 @@ export class Utils {
         return (map);
     });
 
+    /**
+     * Normalizes a point cloud to the range [0, 1].
+     * @param {Float32Array} pointCloud The array storing a point cloud
+     * @returns {Float32Array} The normalized point cloud array
+     */
     static normalizePointCloud = (pointCloud) => {
         // min should be 0, max should be 1
         var max_x = 0;
@@ -323,6 +292,13 @@ export class Utils {
         return pointCloud;
     }
 
+    /**
+     * Creates a download prompt for the PNG image of a Float32Array.
+     * @param {Float32Array} data The data to save
+     * @param {string} filename The name of the file to save
+     * @param {number} width The width of the image
+     * @param {number} height The height of the image
+     */
     static saveArrayToImageFile = (data, filename, width, height) => {
         // save XYZ data array as png with (RGB)
         var canvas = document.createElement('canvas');
