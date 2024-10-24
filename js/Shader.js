@@ -506,20 +506,20 @@ export class Shader {
             return arr;
         }
 
-        console.info(
-            'SHADER DETAILS:',
-            '\nname:', this.name, 
-            '\nvao:', vao.name, 
-            '\nfbos:', ...this.fbo.reduce((acc, fbo) => { acc.push('\n •',fbo.name); return acc; }, []),
-            '\ntextures:', ...this.textureList.reduce((acc, tex) => { acc.push('\n •',tex.name); return acc; }, []),
-            '\nbuffers:', ...this.bufferList.reduce((acc, buff) => { acc.push('\n •',buff.name); return acc; }, []),
-            '\nattribs:', '(', gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES), 'active )',
-            ...listToArray(this.attributeList),
-            '\nuniforms:', '(', gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS), 'active )',
-            ...listToArray(this.uniformList)
-        );
+        console.groupCollapsed('Shader Details:', this.name);
+            console.log('VAO:', vao.name);
+            console.log('FBOs:', this.fbo.length == 0 ? 'none' : ' ',...this.fbo.reduce((acc, fbo) => {
+                    acc.push('\n •', fbo.name, gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE ? '[complete]' : '[incomplete]');
+                    return acc;
+                }, []));
+            console.log('Textures:', ...this.textureList.reduce((acc, tex) => { acc.push('\n •', tex.name); return acc; }, []));
+            console.log('Buffers:', ...this.bufferList.reduce((acc, buff) => { acc.push('\n •', buff.name); return acc; }, []));
+            console.log('Attributes:', '(', gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES), 'active )', ...listToArray(this.attributeList));
+            console.log('Uniforms:', '(', gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS), 'active )', ...listToArray(this.uniformList));
+        console.groupEnd();
     }
 
+    /* SHADER UTILS: */
     /**
      * A function to log the values of a WebGLTexture to the console
      * @param {WebGL2RenderingContext} gl The WebGL2 rendering context
