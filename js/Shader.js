@@ -8,7 +8,7 @@ export class Shader {
     textureList = [];
     bufferList = [];
     fbo = [];
-    tfBufferSize=0;
+    tfBufferSize = 0;
     tfBuffer;
     attributeList = {};
     uniformList = {};
@@ -21,39 +21,43 @@ export class Shader {
      * @param {Object} attributes An object containing the attributes as { attributeName: [location, [size, type, normalized, stride, offset], bufferData] }
      * @param {Object} uniforms An object containing the uniforms as { uniformName: [type, value] }
      * @param {Object} tf_description An object containing the transform feedback description as { TF_varyings=['vPoints'], TF_mode=gl.SEPARATE_ATTRIBS, TF_bufferSize=BUFFSIZE }
+     * @param {boolean} verbose If true, the console will output detailed information about uniforms, attributes and transform feedback
     */
-    constructor(gl, name='', vertexShaderCode, fragmentShaderCode, attributes, uniforms, tf_description=null) {
+    constructor(gl, name = '', vertexShaderCode, fragmentShaderCode, attributes, uniforms, tf_description = null, verbose = false) {
         this.gl = gl;
         this.name = name;
         this.program = this.prepareShaderProgram(
-            gl, 
-            vertexShaderCode, 
-            fragmentShaderCode, 
-            tf_description !== null ? tf_description : null
+            gl,
+            vertexShaderCode,
+            fragmentShaderCode,
+            tf_description !== null ? tf_description : null,
+            verbose
         );
 
-        this.prepareUniform(uniforms);
-        this.vao = this.prepareAttributes(attributes);
+        this.prepareUniform(uniforms, verbose);
+        this.vao = this.prepareAttributes(attributes, verbose);
         if (tf_description !== null) {
             // seperate tf_description into args { TF_varyings: ['vPoints'], TF_mode: gl.SEPARATE_ATTRIBS, TF_buffer: TF_BUFF_1, TF_bufferSize: BUFFSIZE }
             const buffer = tf_description.TF_buffer;
             const bufferSize = tf_description.TF_bufferSize;
-            this.prepareTransformFeedback(buffer, bufferSize);
+            this.prepareTransformFeedback(buffer, bufferSize, verbose);
         }
     }
 
     /**
     * Creates a shader program from vertex and fragment shader code
+     * 
      * @param {WebGL2RenderingContext} gl The WebGL2 rendering context
      * @param {String} vertexShaderCode A string containing the vertex shader code
      * @param {String} fragmentShaderCode A string containing the fragment shader code
      * @param {Object} tf_description An object containing the transform feedback description as { TF_varyings=['vPoints'], TF_mode=gl.SEPARATE_ATTRIBS, TF_bufferSize=BUFFSIZE }
+     * @param {boolean} verbose If true, the console will output detailed information about the shader program
      * @returns {WebGLProgram} A WebGLProgram object
      * @throws {Error} If the shader program cannot be created
-     */
-    prepareShaderProgram(gl, vertexShaderCode, fragmentShaderCode, tf_description) {
+    */
+    prepareShaderProgram(gl, vertexShaderCode, fragmentShaderCode, tf_description, verbose = false) {
         this.vertexShader = gl.createShader(gl.VERTEX_SHADER);
-        this.vertexShader.name = this.name+'VertShader';
+        this.vertexShader.name = this.name + 'VertShader';
         gl.shaderSource(this.vertexShader, vertexShaderCode);
         gl.compileShader(this.vertexShader);
         if (!gl.getShaderParameter(this.vertexShader, gl.COMPILE_STATUS)) {
@@ -62,7 +66,7 @@ export class Shader {
         }
 
         this.fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-        this.fragmentShader.name = this.name+'FragShader';
+        this.fragmentShader.name = this.name + 'FragShader';
         gl.shaderSource(this.fragmentShader, fragmentShaderCode);
         gl.compileShader(this.fragmentShader);
         if (!gl.getShaderParameter(this.fragmentShader, gl.COMPILE_STATUS)) {
@@ -78,7 +82,9 @@ export class Shader {
         if (tf_description !== null) {
             const { TF_varyings, TF_mode, tf_bufferSize } = tf_description;
             this.tfBufferSize = tf_bufferSize;
-            console.info('Transform feedback enabled with varyings:', TF_varyings, ', buffer size:', tf_bufferSize);
+            if (verbose) {
+                console.info('Transform feedback enabled with varyings:', TF_varyings, ', buffer size:', tf_bufferSize);
+            }
             gl.transformFeedbackVaryings(shaderProgram, TF_varyings, TF_mode);
         }
 
@@ -88,19 +94,19 @@ export class Shader {
             console.error('Error linking program', gl.getProgramInfoLog(shaderProgram));
             return;
         }
-
         return shaderProgram;
     }
 
     /**
      * Prepares the uniforms for the shader program
      * @param {Object} uniforms An object containing the uniforms as { uniformName: [type, value] }
+     * @param {boolean} verbose if true, success message is printed
      * @returns {void}
     */
-    prepareUniform = (uniforms) => {
+    prepareUniform = (uniforms, verbose = false) => {
         const gl = this.gl;
         const program = this.program;
-        
+
         gl.useProgram(program);
 
         var usedUniforms = [];
@@ -118,7 +124,7 @@ export class Shader {
                 gl.uniform1f(uniformLocation, value);
             } else if (type === '1fv') {
                 gl.uniform1fv(uniformLocation, value);
-            }  else if (type === '2fv') {
+            } else if (type === '2fv') {
                 gl.uniform2fv(uniformLocation, value);
             } else if (type === '3fv') {
                 gl.uniform3fv(uniformLocation, value);
@@ -139,19 +145,22 @@ export class Shader {
             }
             this.uniformList[type] = uniformName;
         }
-        console.info(
-            'Prepared uniforms for', this.name, '\n',
-            'USED:', ...usedUniforms
-            .reduce((acc, used) => { 
-                acc.push('\n  •', used[0].concat(':'), used[1][0].concat(','), used[1][1].constructor.name == ('Float32Array' || 'Array') ? used[1][1].slice(0, 2).map(num => parseFloat(Number(num).toFixed(2))) + ', ...' : used[1][1]); 
-                return acc; }, []
-            ),'\n',
-            'UNUSED:', ...unusedUniforms
-            .reduce((acc, unused) => { 
-                acc.push('\n  •', unused[0].concat(':'), unused[1][0].concat(','), unused[1][1].constructor.name === ('Float32Array' || 'Array') ? unused[1][1].slice(0, 2) + ', ...' : unused[1][1]); 
-                return acc; 
-            }, [])
-        );
+        if (verbose) {
+            console.info(
+                'Prepared uniforms for', this.name, '\n',
+                'USED:', ...usedUniforms
+                    .reduce((acc, used) => {
+                        acc.push('\n  •', used[0].concat(':'), used[1][0].concat(','), used[1][1].constructor.name == ('Float32Array' || 'Array') ? used[1][1].slice(0, 2).map(num => parseFloat(Number(num).toFixed(2))) + ', ...' : used[1][1]);
+                        return acc;
+                    }, []
+                    ), '\n',
+                'UNUSED:', ...unusedUniforms
+                    .reduce((acc, unused) => {
+                        acc.push('\n  •', unused[0].concat(':'), unused[1][0].concat(','), unused[1][1].constructor.name === ('Float32Array' || 'Array') ? unused[1][1].slice(0, 2) + ', ...' : unused[1][1]);
+                        return acc;
+                    }, [])
+            );
+        }
     }
 
     /**
@@ -159,7 +168,7 @@ export class Shader {
      * @param {Object} attributes An object containing the attributes as { attributeName: [location, [size, type, normalized, stride, offset], bufferData] }
      * @returns {WebGLVertexArrayObject} A WebGLVertexArrayObject
      */
-    prepareAttributes = (attributes) => {
+    prepareAttributes = (attributes, verbose = false) => {
         const gl = this.gl;
         const program = this.program;
         const programVAO = gl.createVertexArray();
@@ -172,7 +181,7 @@ export class Shader {
 
         var foundAttributes = [[]];
         var notFoundAttributes = [[]];
-        
+
         for (const [attributeName, [location, [size, type, normalized, stride, offset], bufferData]] of Object.entries(attributes)) {
             const attributeLocation = gl.getAttribLocation(program, attributeName);
             if (attributeLocation === -1) {
@@ -180,7 +189,7 @@ export class Shader {
                 notFoundAttributes.push([attributeName, [location, [size, type, normalized, stride, offset], bufferData]]);
             } else if (attributeLocation !== location) {
                 console.error('Attribute', attributeName, 'prepared for location', location, 'but is located at', attributeLocation);
-            } else { 
+            } else {
                 // console.info(this.name, '\nAttribute', attributeName, 'found'); 
                 foundAttributes.push([attributeName, [location, [size, type, normalized, stride, offset], bufferData]]);
             }
@@ -195,36 +204,38 @@ export class Shader {
             this.attributeList[attributeLocation] = attributeName;
         }
 
-        console.info(
-            'Prepared attributes for', this.name, '\n',
-            'FOUND:', ...foundAttributes
-            .reduce((acc, found) => {
-                acc.push('\n  •', found[0], 
-                    '\n\tLocation:', found[1][0],
-                    '\n\tSize:', found[1][1][0],
-                    '\n\tType:', found[1][1][1],
-                    '\n\tNormalized:', found[1][1][2],
-                    '\n\tStride:', found[1][1][3],
-                    '\n\tOffset:', found[1][1][4],
-                    '\n\tData:', found[1][2].slice(0, 3) + ', ...'
-                );
-                return acc; 
-            }
-            ),
-            notFoundAttributes.length>1 ? '\n NOT FOUND:' : ' ', ...notFoundAttributes
-            .reduce((acc, notFound) => {
-                acc.push('\n  •', notFound[0], 
-                '\n\tLocation:', notFound[1][0],
-                '\n\tSize:', notFound[1][1][0],
-                '\n\tType:', notFound[1][1][1],
-                '\n\tNormalized:', notFound[1][1][2],
-                '\n\tStride:', notFound[1][1][3],
-                '\n\tOffset:', notFound[1][1][4],
-                '\n\tData:', notFound[1][2].slice(0, 3) + ', ...'
-                );
-                return acc;
-            })
-        );
+        if (verbose) {
+            console.info(
+                'Prepared attributes for', this.name, '\n',
+                'FOUND:', ...foundAttributes
+                    .reduce((acc, found) => {
+                        acc.push('\n  •', found[0],
+                            '\n\tLocation:', found[1][0],
+                            '\n\tSize:', found[1][1][0],
+                            '\n\tType:', found[1][1][1],
+                            '\n\tNormalized:', found[1][1][2],
+                            '\n\tStride:', found[1][1][3],
+                            '\n\tOffset:', found[1][1][4],
+                            '\n\tData:', found[1][2].slice(0, 3) + ', ...'
+                        );
+                        return acc;
+                    }
+                    ),
+                notFoundAttributes.length > 1 ? '\n NOT FOUND:' : ' ', ...notFoundAttributes
+                    .reduce((acc, notFound) => {
+                        acc.push('\n  •', notFound[0],
+                            '\n\tLocation:', notFound[1][0],
+                            '\n\tSize:', notFound[1][1][0],
+                            '\n\tType:', notFound[1][1][1],
+                            '\n\tNormalized:', notFound[1][1][2],
+                            '\n\tStride:', notFound[1][1][3],
+                            '\n\tOffset:', notFound[1][1][4],
+                            '\n\tData:', notFound[1][2].slice(0, 3) + ', ...'
+                        );
+                        return acc;
+                    })
+            );
+        }
 
         return programVAO;
     }
@@ -236,10 +247,12 @@ export class Shader {
      * @param {string} texName name of the texture
      * @param {number} width width of the texture
      * @param {number} height height of the texture
-     * @param {boolean} silent if true, no console output is generated
+     * @param {string} interpolation texture interpolation mode: 'LINEAR' (default) or 'NEAREST'
+     * @param {string} clamping texture clamping mode: CLAMP_TO_EDGE (default), REPEAT or MIRRORED_REPEAT
+     * @param {boolean} verbose if true, success message is printed
      * @returns {WebGLTexture} texture object
     */
-    prepareImageTexture = (sampler = 'uSampler', textureData, texName='', width=0, height=0, silent=true) => {
+    prepareImageTexture = (sampler = 'uSampler', textureData, texName = '', width = 0, height = 0, interpolation = 'LINEAR', clamping = 'CLAMP_TO_EDGE', verbose = false) => {
         const gl = this.gl;
         const program = this.program;
         program.name = this.name;
@@ -247,13 +260,13 @@ export class Shader {
 
         gl.useProgram(program);
         gl.bindVertexArray(programVAO);
-    
+
         // flip image vertically
         // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         const texture = gl.createTexture();
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        
+
         var texWidth = 0;
         var texHeight = 0;
         if (width >= 0 && height >= 0) {
@@ -267,10 +280,12 @@ export class Shader {
         // args: target, mipmap level, internal format, width, height, border, format, type, data
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, texWidth, texHeight, 0, gl.RGBA, gl.FLOAT, textureData);        // mipmapping
         gl.generateMipmap(gl.TEXTURE_2D);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[interpolation]);
+
+
         // set to non-repeat
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl[clamping]);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl[clamping]);
 
 
         // bind texture to sampler
@@ -287,7 +302,7 @@ export class Shader {
         }
         this.textureList.push(texture);
 
-        if (!silent) {
+        if (verbose) {
             console.info('Prepared texture:', texture.name, 'with size:', texWidth, texHeight);
         }
 
@@ -298,10 +313,10 @@ export class Shader {
      * Creates a buffer object and binds it to the shader program
      * @param {Float32Array} bufferData an array buffer
      * @param {string?} bufferName if provided, the buffer is named
-     * @param {boolean} silent if true, no console output is generated
+     * @param {boolean} verbose if true, success message is printed
      * @returns {WebGLBuffer} buffer object
      */
-    prepareBuffer = (bufferData, bufferName='', silent=true) => {
+    prepareBuffer = (bufferData, bufferName = '', verbose = false) => {
         const gl = this.gl;
         const program = this.program;
         const programVAO = this.vao;
@@ -320,7 +335,7 @@ export class Shader {
         buffer.name = bufferName;
         this.bufferList.push(buffer);
 
-        if (!silent) {
+        if (verbose) {
             console.info('Prepared buffer:', buffer.name, 'with size:', bufferData.length);
         }
 
@@ -330,15 +345,15 @@ export class Shader {
     /**
      * Creates a framebuffer object (FBO) with a texture attached to it.
      * @param {number?} location color attachment position matching the output location in fragment shader (default: gl.COLOR_ATTACHMENT0)
-     * @param {WebGLTexture} texture   A WebGLTexture
+     * @param {WebGLTexture} texture   A WebGLTexture texture to render into
      * @param {number} width     Width of texture
      * @param {number} height    Height of texture
      * @param {number} textureFormat represents the internal format of the texture (default: gl.RGBA16F)
      * @param {boolean} withRenderBuffer if true, a render buffer is created and attached to the FBO
-     * @param {boolean} silent    If true, no console output is generated, if resulting FBO is complete
+     * @param {boolean} verbose    if true, success message is printed
      * @returns {WebGLFramebuffer?} if successful: a complete framebuffer object, else null
      */
-    prepareFramebufferObject = (location=gl.COLOR_ATTACHMENT0, texture, width, height, textureFormat=gl.RGBA16F, withRenderBuffer=false, silent=true) => {
+    prepareFramebufferObject = (location = gl.COLOR_ATTACHMENT0, texture, width, height, textureFormat = gl.RGBA16F, withRenderBuffer = false, verbose = false) => {
         const gl = this.gl;
 
         const program = this.program;
@@ -353,7 +368,7 @@ export class Shader {
         fbo.name = texture.name + 'FBO';
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
-        gl.activeTexture(gl.TEXTURE0+this.fbo.length);
+        gl.activeTexture(gl.TEXTURE0 + this.fbo.length);
         // create the texture to store the position data
         gl.bindTexture(gl.TEXTURE_2D, texture);
         // params: target, mipmap-level, internalFormat, width, height
@@ -365,11 +380,11 @@ export class Shader {
             gl.TEXTURE_2D,  // texture target
             texture,        // texture
             0               // mipmap level, always 0 in webgl
-        ); 
+        );
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
             console.error(program.name, ':', fbo.name, 'is incomplete');
-        } else if (!silent) {
+        } else if (verbose) {
             console.info(program.name, ':', fbo.name, 'with texture', texture.name, 'is complete');
         }
 
@@ -400,23 +415,26 @@ export class Shader {
      * Creates a transform feedback buffer object and binds it to the shader program.
      * @param {WebGLBuffer} buffer a buffer object
      * @param {number} bufferSize size of the buffer
+     * @param {string} usage usage pattern of the buffer, e.g. 'DYNAMIC_DRAW' (default), 'STATIC_DRAW', 'STREAM_DRAW'
+     * @param {boolean} verbose if true, success message is printed
      * @returns {WebGLBuffer} buffer object
     */
-    prepareTransformFeedback(buffer, bufferSize) {
+    prepareTransformFeedback(buffer, bufferSize, usage = 'DYNAMIC_DRAW', verbose = false) {
         // set to use program and get attached program name
         const gl = this.gl;
         const program = this.program;
         const vao = this.vao;
-        
+
         gl.useProgram(program);
         this.tfBuffer = buffer;
         this.tfBufferSize = bufferSize;
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.tfBufferSize, this.gl.DYNAMIC_DRAW);
-        console.info('Transform feedback buffer created with size:', bufferSize);
+        gl.bufferData(gl.ARRAY_BUFFER, this.tfBufferSize, gl[usage]);
+        if (verbose) {
+            console.info('Transform feedback buffer created with size:', bufferSize);
+        }
         // this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 3*4, 0);
-
-        this.gl.enableVertexAttribArray(0);
+        this.gl.enableVertexAttribArray(0);   // means that the buffer is bound to location 0
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.bindVertexArray(null);
 
@@ -437,7 +455,7 @@ export class Shader {
 
         const uniformLocation = gl.getUniformLocation(program, uniformName);
         if (uniformLocation === null) {
-            console.warn(this.name, ":", 'attempt to update uniform', uniformName ,'failed - not found/used');
+            console.warn(this.name, ":", 'attempt to update uniform', uniformName, 'failed - not found/used');
             return;
         }
 
@@ -447,7 +465,7 @@ export class Shader {
             gl.uniform1f(uniformLocation, value);
         } else if (type === '1fv') {
             gl.uniform1fv(uniformLocation, value);
-        }  else if (type === '2fv') {
+        } else if (type === '2fv') {
             gl.uniform2fv(uniformLocation, value);
         } else if (type === '3fv') {
             gl.uniform3fv(uniformLocation, value);
@@ -466,8 +484,7 @@ export class Shader {
         } else {
             console.error('Unknown uniform type:', type);
         }
-    }  
-
+    }
 
     /**
      * Fetches the data from a buffer object and returns it as a Float32Array.
@@ -490,7 +507,7 @@ export class Shader {
     /**
      * Logs the details of the shader program, including VAO, FBOs, textures, buffers, attributes, and uniforms.
     */
-    getShaderDetails(verbose=false) {
+    getShaderDetails() {
         const gl = this.gl;
         const program = this.program;
         const vao = this.vao;
