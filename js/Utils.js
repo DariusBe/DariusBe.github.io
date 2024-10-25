@@ -120,7 +120,7 @@ export class Utils {
      * @param {boolean} verbose A flag to print the kernel to the console
      * @returns {Float32Array} The generated kernel
      */
-    static gaussKernel(size, sigma, verbose = false) {
+    static gaussKernel1D(size, sigma=size/6, verbose = false) {
         const kernel = new Float32Array(size);
         const center = (size - 1) / 2;
         let sum = 0.0;
@@ -128,11 +128,16 @@ export class Utils {
             kernel[i] = Math.exp(-Math.pow(i - center, 2) / (2 * Math.pow(sigma, 2)));
             sum += kernel[i];
         }
+        var total = 0.0;
         for (let i = 0; i < size; i++) {
             kernel[i] /= sum;
+            total += kernel[i];
         }
         if (verbose) {
-            console.info('Generated Gaussian kernel of size', size, 'with sigma', sigma, ':', kernel);
+            console.groupCollapsed('Generated Gaussian kernel');
+            console.log('Size:', size+', Sigma:', sigma+', Total:', total);
+            console.log(kernel);
+            console.groupEnd();
         }
         if (sigma == 0) {
             // no blur

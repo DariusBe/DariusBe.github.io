@@ -88,7 +88,7 @@ const blurVAO = Utils.prepareAttributes(gl, blurProgram, blurAttributes);
 var blurUniforms = {
     uSampler: [0, '1i'],
     uResolution: [[canvas.width, canvas.height], '2fv'],
-    uKernel: [Utils.gaussKernel(5, 1), '1fv'],
+    uKernel: [Utils.gaussKernel1D(5, 1), '1fv'],
     uDecay: [decayFactor, '1f'],
 };
 Utils.prepareUniform(gl, blurProgram, blurUniforms);

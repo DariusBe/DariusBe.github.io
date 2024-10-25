@@ -145,21 +145,24 @@ export class Shader {
             }
             this.uniformList[type] = uniformName;
         }
-        if (verbose) {
-            console.info(
-                'Prepared uniforms for', this.name, '\n',
+        if (verbose && (usedUniforms.length > 0 || unusedUniforms.length > 0)) {
+            console.groupCollapsed(this.name, '- prepared uniforms:');
+            console.log(
                 'USED:', ...usedUniforms
                     .reduce((acc, used) => {
                         acc.push('\n  •', used[0].concat(':'), used[1][0].concat(','), used[1][1].constructor.name == ('Float32Array' || 'Array') ? used[1][1].slice(0, 2).map(num => parseFloat(Number(num).toFixed(2))) + ', ...' : used[1][1]);
                         return acc;
                     }, []
-                    ), '\n',
+                    )
+            );
+            console.log(
                 'UNUSED:', ...unusedUniforms
                     .reduce((acc, unused) => {
                         acc.push('\n  •', unused[0].concat(':'), unused[1][0].concat(','), unused[1][1].constructor.name === ('Float32Array' || 'Array') ? unused[1][1].slice(0, 2) + ', ...' : unused[1][1]);
                         return acc;
                     }, [])
             );
+            console.groupEnd();
         }
     }
 
@@ -179,8 +182,8 @@ export class Shader {
         // name: [location_in_shader, [size, type, normalized, stride, offset], [...]] 
         // 'aPosition': [ 0, [2, 'FLOAT', false, 0, 0], data_array]
 
-        var foundAttributes = [[]];
-        var notFoundAttributes = [[]];
+        var foundAttributes = [];
+        var notFoundAttributes = [];
 
         for (const [attributeName, [location, [size, type, normalized, stride, offset], bufferData]] of Object.entries(attributes)) {
             const attributeLocation = gl.getAttribLocation(program, attributeName);
@@ -201,40 +204,47 @@ export class Shader {
             gl.enableVertexAttribArray(attributeLocation);
             gl.vertexAttribPointer(attributeLocation, size, gl[type], normalized, stride, offset);
             this.bufferList.push(attribBuffer);
-            this.attributeList[attributeLocation] = attributeName;
+            this.attributeList[attributeName] = [attributeLocation, [size, type, normalized, stride, offset], bufferData];
         }
 
-        if (verbose) {
-            console.info(
-                'Prepared attributes for', this.name, '\n',
-                'FOUND:', ...foundAttributes
-                    .reduce((acc, found) => {
-                        acc.push('\n  •', found[0],
-                            '\n\tLocation:', found[1][0],
-                            '\n\tSize:', found[1][1][0],
-                            '\n\tType:', found[1][1][1],
-                            '\n\tNormalized:', found[1][1][2],
-                            '\n\tStride:', found[1][1][3],
-                            '\n\tOffset:', found[1][1][4],
-                            '\n\tData:', found[1][2].slice(0, 3) + ', ...'
-                        );
-                        return acc;
-                    }
-                    ),
-                notFoundAttributes.length > 1 ? '\n NOT FOUND:' : ' ', ...notFoundAttributes
-                    .reduce((acc, notFound) => {
-                        acc.push('\n  •', notFound[0],
-                            '\n\tLocation:', notFound[1][0],
-                            '\n\tSize:', notFound[1][1][0],
-                            '\n\tType:', notFound[1][1][1],
-                            '\n\tNormalized:', notFound[1][1][2],
-                            '\n\tStride:', notFound[1][1][3],
-                            '\n\tOffset:', notFound[1][1][4],
-                            '\n\tData:', notFound[1][2].slice(0, 3) + ', ...'
-                        );
-                        return acc;
-                    })
-            );
+        if (verbose && (foundAttributes.length > 0 || notFoundAttributes.length > 0)) {
+            console.groupCollapsed(this.name, '- prepared attributes:');
+            if (foundAttributes.length > 0) {
+                console.log(
+                    'FOUND:', ...foundAttributes
+                        .reduce((acc, found) => {
+                            acc.push('\n  •', found[0],
+                                '\n\tLocation:', found[1][0],
+                                '\n\tSize:', found[1][1][0],
+                                '\n\tType:', found[1][1][1],
+                                '\n\tNormalized:', found[1][1][2],
+                                '\n\tStride:', found[1][1][3],
+                                '\n\tOffset:', found[1][1][4],
+                                '\n\tData:', found[1][2].slice(0, 3) + ', ...'
+                            );
+                            return acc;
+                        }
+                        )
+                );
+            }
+            if (notFoundAttributes.length > 0) {
+                console.warn(
+                    '\n NOT FOUND:', ...notFoundAttributes
+                        .reduce((acc, notFound) => {
+                            acc.push('\n  •', notFound[0],
+                                '\n\tLocation:', notFound[1][0],
+                                '\n\tSize:', notFound[1][1][0],
+                                '\n\tType:', notFound[1][1][1],
+                                '\n\tNormalized:', notFound[1][1][2],
+                                '\n\tStride:', notFound[1][1][3],
+                                '\n\tOffset:', notFound[1][1][4],
+                                '\n\tData:', notFound[1][2].slice(0, 3) + ', ...'
+                            );
+                            return acc;
+                        })
+                );
+            }
+            console.groupEnd();
         }
 
         return programVAO;
@@ -346,6 +356,7 @@ export class Shader {
      * Creates a framebuffer object (FBO) with a texture attached to it.
      * @param {number?} location color attachment position matching the output location in fragment shader (default: gl.COLOR_ATTACHMENT0)
      * @param {WebGLTexture} texture   A WebGLTexture texture to render into
+     * @param {string} name     Name of the FBO
      * @param {number} width     Width of texture
      * @param {number} height    Height of texture
      * @param {number} textureFormat represents the internal format of the texture (default: gl.RGBA16F)
@@ -353,7 +364,7 @@ export class Shader {
      * @param {boolean} verbose    if true, success message is printed
      * @returns {WebGLFramebuffer?} if successful: a complete framebuffer object, else null
      */
-    prepareFramebufferObject = (location = gl.COLOR_ATTACHMENT0, texture, width, height, textureFormat = gl.RGBA16F, withRenderBuffer = false, verbose = false) => {
+    prepareFramebufferObject = (location = gl.COLOR_ATTACHMENT0, texture, name = texture.name, width, height, textureFormat = gl.RGBA16F, withRenderBuffer = false, verbose = false) => {
         const gl = this.gl;
 
         const program = this.program;
@@ -365,11 +376,16 @@ export class Shader {
         }
 
         const fbo = gl.createFramebuffer();
-        fbo.name = texture.name + 'FBO';
+        if (name === null) {
+            fbo.name = texture.name + 'FBO';
+            if (this.fbo.length > 0) {
+                fbo.name += '_' + this.fbo.length;
+            }
+        } else {
+            fbo.name = name;
+        }
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-
-        gl.activeTexture(gl.TEXTURE0 + this.fbo.length);
-        // create the texture to store the position data
+        // gl.activeTexture(gl.TEXTURE0 + this.fbo.length);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         // params: target, mipmap-level, internalFormat, width, height
         gl.texStorage2D(gl.TEXTURE_2D, 1, [textureFormat], width, height);
@@ -378,7 +394,7 @@ export class Shader {
             gl.FRAMEBUFFER, // target
             location, // attachment point == location of point locations in fragment shader
             gl.TEXTURE_2D,  // texture target
-            texture,        // texture
+            texture,        // texture we rendered into
             0               // mipmap level, always 0 in webgl
         );
 
@@ -516,23 +532,37 @@ export class Shader {
             const arr = [];
             for (const [key, value] of Object.entries(list)) {
                 arr.push('\n •');
-                arr.push(key);
-                arr.push('-');
+                arr.push(key+':');
                 arr.push(value);
             }
             return arr;
         }
 
+        const getFBOTextureName = (program, fbo) => {
+            if (fbo === null) {
+                return 'none';
+            } else {
+                gl.useProgram(program);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                const tex = gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+                return tex.name;
+            }
+        }
+
         console.groupCollapsed('Shader Details:', this.name);
-            console.log('VAO:', vao.name);
-            console.log('FBOs:', this.fbo.length == 0 ? 'none' : ' ',...this.fbo.reduce((acc, fbo) => {
-                    acc.push('\n •', fbo.name, gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE ? '[complete]' : '[incomplete]');
-                    return acc;
-                }, []));
-            console.log('Textures:', ...this.textureList.reduce((acc, tex) => { acc.push('\n •', tex.name); return acc; }, []));
-            console.log('Buffers:', ...this.bufferList.reduce((acc, buff) => { acc.push('\n •', buff.name); return acc; }, []));
-            console.log('Attributes:', '(', gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES), 'active )', ...listToArray(this.attributeList));
-            console.log('Uniforms:', '(', gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS), 'active )', ...listToArray(this.uniformList));
+        console.log('VAO:', vao.name);
+        console.log('FBOs:', this.fbo.length == 0 ? 'none' : ' ', ...this.fbo.reduce((acc, fbo) => {
+            acc.push(
+                '\n •', gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE ? '[COMPLETE]' : '[INCOMPLETE]',
+                fbo.name,
+                '\n\t→ bound to', getFBOTextureName(program, fbo)
+            );
+            return acc;
+        }, []));
+        console.log('Textures:', ...this.textureList.reduce((acc, tex) => { acc.push('\n •', tex.name); return acc; }, []));
+        console.log('Buffers:', ...this.bufferList.reduce((acc, buff) => { acc.push('\n •', buff.name); return acc; }, []));
+        console.log('Attributes:', '(' + gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES) + ' active)', ...listToArray(this.attributeList));
+        console.log('Uniforms:', '(' + gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS) + ' active)', ...listToArray(this.uniformList));
         console.groupEnd();
     }
 
