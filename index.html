@@ -22,19 +22,18 @@
             <input type="checkbox" value="0" id="cost_checkbox" class="checkbox">
         </div>
         <div class="sliderpanel">
-            <label for="slider" class="labeltext">Convolution</label>
-            <input type="range" step="0.25" min="0" max="5.0" value="1.0" id="conv_slider" class="slider">
-            <div id="sliderlabel" class="labeltext"></div>
+            <label for="slider" class="labeltext">Convolution-Kernel</label>
+            <input type="range" step="1" min="1" max="30" value="1" id="conv_slider" class="slider">
+            <div id="sliderlabel" class="labeltext">off</div>
         </div>
     </div>
 
     <script>
         var slider = document.getElementById("conv_slider");
+        var sliderLabel = document.getElementById("sliderlabel");
         var output = document.getElementById("sliderlabel");
-        output.innerHTML = slider.value; // Display the default slider value
-        slider.oninput = function () {
-            output.innerHTML = slider.value;
-        }
+        const val = Math.abs(slider.value*2-1);
+        sliderLabel.innerHTML = val == 1 ? 'off' : val;
 
         const canvas = document.getElementById('webgl-canvas');
         canvas.width = window.innerWidth;
