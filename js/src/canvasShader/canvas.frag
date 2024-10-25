@@ -34,5 +34,5 @@ void main() {
     // } else {
     //     particles = vec4(0.0, 0.0, 0.0, 1.0);
     // }
-    fragColor = tex;
+    fragColor = tex + cursor;
 }
