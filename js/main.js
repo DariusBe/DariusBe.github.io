@@ -3,8 +3,8 @@ import { Shader } from './Shader.js';
 import { Utils } from './Utils.js';
 
 /* FILES */
-const topoVertCode = await Utils.readShaderFile('js/src/testShader/topo/topo.vert');
-const topoFragCode = await Utils.readShaderFile('js/src/testShader/topo/topo.frag');
+const topoVertCode = await Utils.readShaderFile('js/src/topoShader/topo.vert');
+const topoFragCode = await Utils.readShaderFile('js/src/topoShader/topo.frag');
 const blurVertCode = await Utils.readShaderFile('js/src/blurShader/blur.vert');
 const blurFragCode = await Utils.readShaderFile('js/src/blurShader/blur.frag');
 const canvasVertCode = await Utils.readShaderFile('js/src/canvasShader/canvas.vert');
@@ -25,17 +25,17 @@ const shaderList = glContext.shaderList;
 var tick = 0.0;
 var decayFactor = 0.95;
 const mapFile = 'testmap6.xyz';
-var kernelSize = Math.abs(slider.value*2-1);
-var sigma = kernelSize/3;
+var kernelSize = Math.abs(slider.value * 2 - 1);
+var sigma = kernelSize / 3;
 var uIsHorizontal = true;
 
 /* Event Listeners */
 slider.oninput = function () {
     hasSliderChanged = true;
-    const val = Math.abs(this.value*2-1);
+    const val = Math.abs(this.value * 2 - 1);
     sliderLabel.innerHTML = val == 1 ? 'off' : val;
     kernelSize = val;
-    sigma = val/3;
+    sigma = val / 3;
 }
 checkbox.onchange = function () {
     hasCheckboxChanged = true;
@@ -64,9 +64,9 @@ const topoUniforms = Object.assign({}, globalUniforms, {
 const topoShader = new Shader(
     gl,
     name = 'TopoShader',
-    topoVertCode, 
-    topoFragCode, 
-    globalAttributes, 
+    topoVertCode,
+    topoFragCode,
+    globalAttributes,
     topoUniforms
 );
 
@@ -102,7 +102,7 @@ shaderList.push(canvasShader);
 
 /* Prepare Textures */
 // Prepare Topography Map from Point Cloud
-var topoMap = await Utils.readXYZMapToTexture('js/src/testShader/topo/maps/' + mapFile);
+var topoMap = await Utils.readXYZMapToTexture('js/src/topoShader/maps/' + mapFile);
 const size = topoMap[topoMap.length - 1];
 topoMap = topoMap.slice(0, topoMap.length - 1);
 topoMap = Utils.normalizePointCloud(topoMap);
@@ -193,12 +193,9 @@ function swapBlurDirectionUniform() {
     blurShader.updateUniform('uIsHorizontal', '1i', uIsHorizontal);
     // swap textures
 }
-
-const animate = () => {
-    updateUniforms();
+const renderLandscapes = () => {
     gl.clearColor(0.0, 1.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-
 
     // render TOPOGRAPHY into texture; in: topoSurfaceTexture --> out: costSurfaceTex
     gl.useProgram(topoShader.program);
@@ -230,7 +227,11 @@ const animate = () => {
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);
+}
 
+const animate = () => {
+    updateUniforms();
+    renderLandscapes();
     requestAnimationFrame(animate);
 }
 
