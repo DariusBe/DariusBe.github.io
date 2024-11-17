@@ -13,6 +13,7 @@ export class Shader {
     attributeList = {};
     AttributesPoolBuffer;
     uniformList = {};
+    uniformBlockIndex = 'GlobalUniforms';
     /**
      * Creates a new Shader object.
      * @param {WebGL2RenderingContext} gl The WebGL2 rendering context
@@ -228,7 +229,6 @@ export class Shader {
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, bufferData);
             gl.enableVertexAttribArray(attributeLocation);
             gl.vertexAttribPointer(attributeLocation, size, gl[type], normalized, stride, offset);
-            this.bufferList.push(attribBuffer);
             this.attributeList[attributeName] = [attributeLocation, [size, type, normalized, stride, offset], bufferData];
         }
 
