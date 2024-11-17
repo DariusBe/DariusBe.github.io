@@ -11,6 +11,7 @@ export class Shader {
     tfBufferSize = 0;
     tfBuffer;
     attributeList = {};
+    AttributesPoolBuffer;
     uniformList = {};
     /**
      * Creates a new Shader object.
@@ -18,7 +19,7 @@ export class Shader {
      * @param {string} name The name of the shader program
      * @param {string} vertexShaderCode The vertex shader code
      * @param {string} fragmentShaderCode The fragment shader code
-     * @param {Object} attributes An object containing the attributes as { attributeName: [location, [size, type, normalized, stride, offset], bufferData] }
+     * @param {Object} attributes An object containing the attributes as { attributeName: [location, [size, type, normalized, stride, offset], bufferData, separate] }
      * @param {Object} uniforms An object containing the uniforms as { uniformName: [type, value] }
      * @param {Object} tf_description An object containing the transform feedback description as { TF_varyings=['vPoints'], TF_mode=gl.SEPARATE_ATTRIBS, TF_bufferSize=BUFFSIZE }
      * @param {boolean} verbose If true, the console will output detailed information about uniforms, attributes and transform feedback
@@ -168,7 +169,16 @@ export class Shader {
 
     /**
      * Prepares the attributes for the shader program
-     * @param {Object} attributes An object containing the attributes as { attributeName: [location, [size, type, normalized, stride, offset], bufferData] }
+     * @param {Object} attributes An object containing the attributes as { attributeName: [location, [size, type, normalized, stride, offset], bufferData, separate] }
+     *                              * **attributeName**: A string passed for semantic identification.
+     *                              * **location**:     Layout signifier, corresponding to attribute location in shader
+     *                              * **size**:         Number of array elements composing one attribute unit (e.g. 2 for a vec2 inside the shader).
+     *                              * **type**:         The OpenGL datatype (e.g. 'FLOAT' for GL_FLOAT)
+     *                              * **normalized**:   0/1 representing whether the buffer should be normalized before passing it into shader.
+     *                              * **stride**:       Stride window: "Of the array, every x'th element belongs to this attribute."
+     *                              * **offset**:       Offset from start of array: The first element for this attribute is located at x'th position in the array." 
+     *                              * **bufferData**:   The array that is passed into a buffer.
+     *                              * **separate**:     true/false representing whether multiple attributes should stored in separate buffers.
      * @returns {WebGLVertexArrayObject} A WebGLVertexArrayObject
      */
     prepareAttributes = (attributes, verbose = false) => {
@@ -184,8 +194,11 @@ export class Shader {
 
         var foundAttributes = [];
         var notFoundAttributes = [];
+        this.AttributesPoolBuffer = gl.createBuffer();
+        this.AttributesPoolBuffer.name = 'AttributesPool_Buffer';
+        this.bufferList.push(this.AttributesPoolBuffer)
 
-        for (const [attributeName, [location, [size, type, normalized, stride, offset], bufferData]] of Object.entries(attributes)) {
+        for (const [attributeName, [location, [size, type, normalized, stride, offset], bufferData, separate = false]] of Object.entries(attributes)) {
             const attributeLocation = gl.getAttribLocation(program, attributeName);
             if (attributeLocation === -1) {
                 // console.error('Attribute', attributeName, 'not found in', this.name);
@@ -196,10 +209,22 @@ export class Shader {
                 // console.info(this.name, '\nAttribute', attributeName, 'found'); 
                 foundAttributes.push([attributeName, [location, [size, type, normalized, stride, offset], bufferData]]);
             }
-            const attribBuffer = gl.createBuffer();
-            attribBuffer.name = attributeName + '_Buffer';
-            gl.bindBuffer(gl.ARRAY_BUFFER, attribBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, bufferData, gl.DYNAMIC_DRAW);
+            if (separate == true) {
+                const separateAttributeBuffer = gl.createBuffer();
+                separateAttributeBuffer.name = attributeName + '_Buffer';
+                this.bufferList.push(separateAttributeBuffer);
+                gl.bindBuffer(gl.ARRAY_BUFFER, separateAttributeBuffer);
+                if (verbose) {
+                    console.info('Prepared separate buffer for', attributeName + '.')
+                }
+            } else {
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.AttributesPoolBuffer);
+                if (verbose) {
+                    console.info('Added', attributeName, 'to pool buffer.');
+                }
+            }
+
+            gl.bufferData(gl.ARRAY_BUFFER, bufferData, gl.STATIC_DRAW);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, bufferData);
             gl.enableVertexAttribArray(attributeLocation);
             gl.vertexAttribPointer(attributeLocation, size, gl[type], normalized, stride, offset);
@@ -532,7 +557,7 @@ export class Shader {
             const arr = [];
             for (const [key, value] of Object.entries(list)) {
                 arr.push('\n •');
-                arr.push(key+':');
+                arr.push(key + ':\n');
                 arr.push(value);
             }
             return arr;
@@ -560,7 +585,12 @@ export class Shader {
             return acc;
         }, []));
         console.log('Textures:', ...this.textureList.reduce((acc, tex) => { acc.push('\n •', tex.name); return acc; }, []));
-        console.log('Buffers:', ...this.bufferList.reduce((acc, buff) => { acc.push('\n •', buff.name); return acc; }, []));
+        console.log('Buffers:', ...this.bufferList.reduce((acc, buff) => {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buff);
+            const buffSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            acc.push('\n •', buff.name + ':', buffSize, 'Byte'); return acc;
+        }, []));
         console.log('Attributes:', '(' + gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES) + ' active)', ...listToArray(this.attributeList));
         console.log('Uniforms:', '(' + gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS) + ' active)', ...listToArray(this.uniformList));
         console.groupEnd();
