@@ -1,42 +1,76 @@
 body {
-    margin: 0px;
-    height: 100vh;
-}
-canvas {
-    display: block;
+  margin: 0px;
+  height: 100vh;
 }
 
-.controls {
+canvas {
+  display: block;
+}
+
+.bottombar {
   display: flex;
-  height: max-content;
-  justify-content: center;
-  align-items: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #EEEEEE;
+  height: 70px;
+  justify-content: left;
+  align-items: top;
   text-align: center;
   padding: 10px;
 }
 
+.checkboxpanel {
+  /* vertical flow */
+  display: flex;
+  flex-direction: column;
+  justify-content: top;
+  align-items: top;
+  align-items: top;
+  text-align: left;
+}
+
+.checkboxrow {
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  align-items: top;
+  text-align: left;
+  padding: 5px;
+}
+
+
 .labeltext {
-    text-align: center;
-    color: #333;
-    padding: 5px;
-    width: 90px;
-    font-size: 13px;
+  text-align: left;
+  color: #333;
+  padding: 5px;
+  width: 90px;
+  font-size: 13px;
 }
 
 .sliderpanel {
-    display: flex;
-    float: center;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+  display: flex;
+  float: center;
+  align-items: top;
+  text-align: center;
+}
+
+.sliderrow {
+  display: flex;
+  flex-direction: row;
+  justify-content: left;
+  align-items: top;
+  text-align: left;
+  padding: 5px;
 }
 
 .slider {
   -webkit-appearance: none;
   width: 50%;
   height: 15px;
-  border-radius: 15px;  
-  background: #d3d3d3;
+  border-radius: 15px;
+  background: #8f8f8f;
   outline: none;
   opacity: 0.8;
   -webkit-transition: .2s;
@@ -48,7 +82,7 @@ canvas {
   appearance: none;
   width: 25px;
   height: 25px;
-  border-radius: 50%; 
+  border-radius: 50%;
   background: #04AA6D;
   cursor: pointer;
 }
@@ -57,7 +91,48 @@ canvas {
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  background: #007aff;
+  background: #ffffff;
   cursor: pointer;
-  border: rgb(255, 255, 255) 2px solid;
+  border: rgb(91, 91, 91) 2px solid;
+}
+
+.matrix {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-family: 'Roboto', sans-serif;
+  border: 1px solid #d3d3d3;
+  padding: 0px;
+  width: 50%;
+  margin: 0px;
+}
+
+.matrixelems {
+  width: 12px;
+  font-weight: 100;
+  font-family: 'Roboto', sans-serif;
+  font-size: 12px;
+}
+
+.matrixpanel {
+  visibility: visible;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 100px;
+  font-weight: 100;
+  font-family: 'Roboto', sans-serif;
+}
+
+.matrixgrid {
+  /* in grid of 3 */
+  display: grid;
+  /* grid-template-columns: 1fr 1fr 1fr 1fr; 4 columns, fr means 1 fraction */
+  grid-template-columns: repeat(4, 0fr);
+  grid-gap: 2px;
+  padding: 0px;
+  margin: 0px;
+  justify-content: center;
 }

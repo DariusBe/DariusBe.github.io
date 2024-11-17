@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="css/main.css">
     <script type="module" src="js/main.js"></script>
     <link rel="icon" href="data:,"> <!-- Prevents favicon request -->
+    <!-- Use gl-matrix-min -->
+    <script src="gl-matrix-min.js"></script>
 </head>
 
 <body>
@@ -16,15 +18,89 @@
     <canvas id="webgl-canvas"></canvas>
 
     <!-- Add Sliders -->
-    <div class="controls">
+    <div class="bottombar">
         <div class="checkboxpanel">
-            <label for="checkbox" class="labeltext">Cost Landscape</label>
-            <input type="checkbox" value="0" id="cost_checkbox" class="checkbox">
+            <div class="checkboxrow">
+                <label for="checkbox" class="labeltext">Cost Landscape</label>
+                <input type="checkbox" value="0" id="cost_checkbox" class="checkbox">
+            </div>
+            <div class="checkboxrow">
+                <label for="checkbox2" class="labeltext">Matrices</label>
+                <input type="checkbox" value="0" id="matrix_checkbox" class="checkbox">
+            </div>
         </div>
+
         <div class="sliderpanel">
-            <label for="slider" class="labeltext">Convolution-Kernel</label>
-            <input type="range" step="1" min="1" max="30" value="1" id="conv_slider" class="slider">
-            <div id="sliderlabel" class="labeltext">off</div>
+            <div class="sliderrow">
+                <label for="slider" class="labeltext">Convolution-Kernel</label>
+                <input type="range" step="1" min="1" max="30" value="1" id="conv_slider" class="slider">
+                <div id="sliderlabel" class="labeltext">off</div>
+            </div>
+        </div>
+        <div class="matrixpanel">
+            <div class="matrix" id="matrix_1">
+                <label for="matrix_1" class="labeltext">Model matrix</label>
+                <div class="matrixgrid">
+                    <input type="text" id="matrix_M_1_1" class="matrixelems" value="1">
+                    <input type="text" id="matrix_M_1_2" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_1_3" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_1_4" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_2_1" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_2_2" class="matrixelems" value="1">
+                    <input type="text" id="matrix_M_2_3" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_2_4" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_3_1" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_3_2" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_3_3" class="matrixelems" value="1">
+                    <input type="text" id="matrix_M_3_4" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_4_1" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_4_2" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_4_3" class="matrixelems" value="0">
+                    <input type="text" id="matrix_M_4_4" class="matrixelems" value="1">
+                </div>
+            </div>
+            <div class="matrix" id="matrix_2">
+                <label for="matrix_2" class="labeltext">View matrix</label>
+                <div class="matrixgrid">
+                    <input type="text" id="matrix_V_1_1" class="matrixelems" value="1">
+                    <input type="text" id="matrix_V_1_2" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_1_3" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_1_4" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_2_1" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_2_2" class="matrixelems" value="1">
+                    <input type="text" id="matrix_V_2_3" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_2_4" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_3_1" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_3_2" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_3_3" class="matrixelems" value="1">
+                    <input type="text" id="matrix_V_3_4" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_4_1" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_4_2" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_4_3" class="matrixelems" value="0">
+                    <input type="text" id="matrix_V_4_4" class="matrixelems" value="1">
+                </div>
+            </div>
+            <div class="matrix" id="matrix_3">
+                <label for="matrix_3" class="labeltext">Persp. matrix</label>
+                <div class="matrixgrid">
+                    <input type="text" id="matrix_P_1_1" class="matrixelems" value="1">
+                    <input type="text" id="matrix_P_1_2" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_1_3" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_1_4" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_2_1" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_2_2" class="matrixelems" value="1">
+                    <input type="text" id="matrix_P_2_3" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_2_4" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_3_1" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_3_2" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_3_3" class="matrixelems" value="1">
+                    <input type="text" id="matrix_P_3_4" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_4_1" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_4_2" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_4_3" class="matrixelems" value="0">
+                    <input type="text" id="matrix_P_4_4" class="matrixelems" value="1">
+                </div>
+            </div>
         </div>
     </div>
 
@@ -32,14 +108,31 @@
         var slider = document.getElementById("conv_slider");
         var sliderLabel = document.getElementById("sliderlabel");
         var output = document.getElementById("sliderlabel");
-        const val = Math.abs(slider.value*2-1);
+        const val = Math.abs(slider.value * 2 - 1);
         sliderLabel.innerHTML = val == 1 ? 'off' : val;
 
         const canvas = document.getElementById('webgl-canvas');
         canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight - 70;
-    </script>
+        canvas.height = window.innerHeight - 65;
 
+        // Add event listener to checkbox_2
+        const matrix_checkbox = document.getElementById('matrix_checkbox');
+        matrix_checkbox.checked = false;
+        // hide matrix when checkbox is unchecked
+        const bottombar = document.querySelector('.bottombar');
+        const matrixpanel = document.querySelector('.matrixpanel');
+        const sliderpanel = document.querySelector('.sliderpanel');
+        matrixpanel.style.visibility = matrix_checkbox.checked ? 'visible' : 'hidden';
+        matrixpanel.style.display = matrix_checkbox.checked ? 'none' : 'flex';
+        sliderpanel.style.display = matrix_checkbox.checked ? 'none' : 'block';
+
+        matrix_checkbox.addEventListener('change', (event) => {
+            bottombar.style.height = event.target.checked ? '150px' : '70px';
+            matrixpanel.style.visibility = matrix_checkbox.checked ? 'visible' : 'hidden';
+            sliderpanel.style.display = event.target.checked ? 'none' : 'block';
+        });
+
+    </script>
 
 </body>
 
