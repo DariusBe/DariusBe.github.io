@@ -7,14 +7,23 @@ precision highp float;
 in vec2 vTexCoord;
 uniform sampler2D uSampler; // texture unit 0
 
-uniform float uTime;
-uniform vec3 uMouse;
-uniform bool uShowCursor;
-uniform vec2 uResolution;
+layout(std140) uniform GlobalUniforms {
+    mat4 uProjection;
+    mat4 uView;
+    mat4 uModel;
+    vec2 uResolution;
+    float uTime;
+    float uShowCursor;
+    vec4 uMouse;
+};
+
+// uniform float uTime;
+// uniform vec3 uMouse;
+// uniform bool uShowCursor;
+// uniform vec2 uResolution;
 uniform int uKernelSize;
 uniform float uKernel[64];
 uniform bool uIsHorizontal;
-uniform float uDecay;
 
 out vec4 fragColor;
 
@@ -47,7 +56,7 @@ void main() {
     float mouseClick = uMouse.z;
     float dist = smoothstep(80.0, 100.0, distance(gl_FragCoord.xy, mouse * uResolution));
 
-    if (uShowCursor) {
+    if (uShowCursor == 0.0) {
         if (mouseClick == 1.0) {
             fragColor = mix(original, blurred, dist);
             if (dist > 0.9 && dist < 1.0) {

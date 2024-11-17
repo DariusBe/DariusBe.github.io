@@ -4,12 +4,22 @@ precision highp float;
 
 in vec2 vTexCoord;
 
+layout(std140) uniform GlobalUniforms {
+    mat4 uProjection;
+    mat4 uView;
+    mat4 uModel;
+    vec2 uResolution;
+    float uTime;
+    float uShowCursor;
+    vec4 uMouse;
+};
+
 uniform sampler2D uSampler;
-uniform vec2 uResolution;
-uniform float uTime;
-uniform vec3 uMouse;
-uniform bool uShowCursor;
 uniform bool uCheckbox;
+// uniform vec2 uResolution;
+// uniform float uTime;
+// uniform vec3 uMouse;
+// uniform bool uShowCursor;
 
 out vec4 fragColor;
 
@@ -75,7 +85,7 @@ void main() {
     vec2 mouse = uMouse.xy;
     float mouseClick = uMouse.z;
 
-    if (uShowCursor) {
+    if (uShowCursor == 1.0) {
         float dist = smoothstep(0.0, 50.0, distance(gl_FragCoord.xy, mouse * uResolution));
         if (mouseClick == 1.0 && dist < 1.0 && dist > 0.9) {
             fragColor = mix(terrain, derrivative, dist);

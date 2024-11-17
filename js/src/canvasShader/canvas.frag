@@ -4,9 +4,17 @@ precision highp float;
 in vec2 vTexCoord;
 
 uniform sampler2D uSampler;
-uniform vec2 uResolution;
-uniform float uTime;
-uniform vec3 uMouse;
+
+// uniform binding index = 0
+layout(std140) uniform GlobalUniforms {
+    mat4 uProjection;
+    mat4 uView;
+    mat4 uModel;
+    vec2 uResolution;
+    float uTime;
+    float uShowCursor;
+    vec4 uMouse;
+};
 
 out vec4 fragColor;
 
