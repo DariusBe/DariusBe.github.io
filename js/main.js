@@ -1,6 +1,8 @@
 import { GLContext } from './GLContext.js';
 import { Shader } from './Shader.js';
 import { Utils } from './Utils.js';
+import { ModelOBJ } from './ModelOBJ.js';
+import '../gl-matrix-min.js';
 
 /* FILES */
 const topoVertCode = await Utils.readShaderFile('js/src/topoShader/topo.vert');
@@ -9,6 +11,8 @@ const blurVertCode = await Utils.readShaderFile('js/src/blurShader/blur.vert');
 const blurFragCode = await Utils.readShaderFile('js/src/blurShader/blur.frag');
 const canvasVertCode = await Utils.readShaderFile('js/src/canvasShader/canvas.vert');
 const canvasFragCode = await await Utils.readShaderFile('js/src/canvasShader/canvas.frag');
+const mapFile = 'testmap6.xyz';
+var topoMap = await Utils.readXYZMapToTexture('js/src/topoShader/maps/' + mapFile);
 
 /* DOM Elements */
 const slider = document.getElementById('conv_slider');
@@ -20,14 +24,14 @@ var hasCheckboxChanged = false;
 /* Globals */
 const glContext = new GLContext();
 const gl = glContext.gl;
-// glContext.listContextCapabilities();
+glContext.listContextStats();
 const shaderList = glContext.shaderList;
 var tick = 0.0;
 var decayFactor = 0.95;
-const mapFile = 'testmap6.xyz';
 var kernelSize = Math.abs(slider.value * 2 - 1);
-var sigma = kernelSize / 3;
+var sigma = kernelSize / 4;
 var uIsHorizontal = true;
+const BYTE = 4;
 
 /* Event Listeners */
 slider.oninput = function () {
@@ -35,25 +39,23 @@ slider.oninput = function () {
     const val = Math.abs(this.value * 2 - 1);
     sliderLabel.innerHTML = val == 1 ? 'off' : val;
     kernelSize = val;
-    sigma = val / 3;
+    sigma = val / 4;
 }
 checkbox.onchange = function () {
     hasCheckboxChanged = true;
 }
 
-
 // global uniforms
 const globalUniforms = {
     uSampler: ['1i', 0],
-    uResolution: ['2fv', [canvas.width, canvas.height]],
-    uTime: ['1f', tick],
-    uShowCursor: ['bool', false],
-    uMouse: ['3fv', new Float32Array([0.0, 0.0, 0.0])],
     uSlider: ['1f', 0.5],
 };
+
+// console.error();
+
 const globalAttributes = {
-    'aPosition': [0, [2, 'FLOAT', false, 0, 0], Utils.canvasPoints],
-    'aTexCoord': [1, [2, 'FLOAT', false, 0, 0], Utils.quadTextCoords],
+    'aPosition': [0, [3, 'FLOAT', false, 5 * BYTE, 0], Utils.canvasAttribs],
+    'aTexCoord': [1, [2, 'FLOAT', false, 5 * BYTE, 3 * BYTE], Utils.canvasAttribs],
 };
 
 /* Topography Shader Definition */
@@ -96,13 +98,12 @@ const canvasShader = new Shader(
     globalAttributes,
     globalUniforms
 );
-shaderList.push(topoShader);
-shaderList.push(blurShader);
-shaderList.push(canvasShader);
+glContext.setShaderGlobal(canvasShader);
+glContext.setShaderGlobal(topoShader);
+glContext.setShaderGlobal(blurShader);
 
 /* Prepare Textures */
 // Prepare Topography Map from Point Cloud
-var topoMap = await Utils.readXYZMapToTexture('js/src/topoShader/maps/' + mapFile);
 const size = topoMap[topoMap.length - 1];
 topoMap = topoMap.slice(0, topoMap.length - 1);
 topoMap = Utils.normalizePointCloud(topoMap);
@@ -168,14 +169,58 @@ for (const shader of shaderList) {
     shader.getShaderDetails();
 }
 
+/* Prepare Matrix */
+
+var uModel = glMatrix.mat4.create();
+var uView = glMatrix.mat4.create();
+var uProjection = glMatrix.mat4.create();
+
+// populate uView matrix
+glMatrix.mat4.lookAt(
+    uView,
+    [0, 0, 4],  // viewer's position (4 units away from center)
+    [0, 0, 0],  // position viewer is looking at
+    [0, 1, 0],  // up-axis
+);
+
+// populate uProjection matrix
+const aspectRatio = gl.canvas.width / gl.canvas.height;
+// args: in_matrix, fovy (vertical FoV in rad, smaller --> 'tele'), aspect_ratio, near, far (resp. distances of camera to near/far planes)
+// glMatrix.mat4.perspective(
+//     uProjection,
+//     Math.PI / 6, // 90 degrees --> PI = 180, PI/1.5 = 120, PI/2 = 90 deg...
+//     aspectRatio,
+//     0.01,
+//     8
+// );
+glMatrix.mat4.ortho(
+    uProjection,
+    // perspective defined as a bounding box
+    // distance to.. left, right, bottom, top, near, far plane
+    -1, 1, -1, 1,   0, 5 // bounding box as a unit cube that is stretched by factor 5 along z axis
+);
+
+function cameraTransform() {
+    // populate uModel
+    // glMatrix.mat4.rotate(uModel, uModel, 0.01, [0, 0.53, 0.25]);
+    // glMatrix.mat4.scale(uModel, uModel, [.999, .999, .999]);
+}
+
 function updateUniforms() {
     tick += 0.01;
-    for (const shader of shaderList) {
-        gl.useProgram(shader.program);
-        gl.uniform1f(gl.getUniformLocation(shader.program, 'uTime'), tick);
+    cameraTransform();
+    glContext.updateGlobalUniform('uTime', tick);
+    gl.bindBuffer(gl.UNIFORM_BUFFER, glContext.globalUniformBuffer);
+    glContext.updateGlobalUniform('uTime', tick);
+    glContext.updateGlobalUniform('uModel', uModel);
+    glContext.updateGlobalUniform('uView', uView);
+    glContext.updateGlobalUniform('uProjection', uProjection);
 
+    for (const shader of shaderList) {
+        // glContext.updateGlobalUniform('uTime', tick);
         if (hasSliderChanged) {
-            blurShader.updateUniform('uKernel', '1fv', Utils.gaussKernel1D(kernelSize, sigma, true));
+            const kernel = Utils.gaussKernel1D(kernelSize, sigma, true);
+            blurShader.updateUniform('uKernel', '1fv', kernel);
             blurShader.updateUniform('uKernelSize', '1i', kernelSize);
             hasSliderChanged = false;
         }
@@ -194,7 +239,7 @@ function swapBlurDirectionUniform() {
     // swap textures
 }
 const renderLandscapes = () => {
-    gl.clearColor(0.0, 1.0, 0.0, 1.0);
+    gl.clearColor(1.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     // render TOPOGRAPHY into texture; in: topoSurfaceTexture --> out: costSurfaceTex
@@ -228,7 +273,6 @@ const renderLandscapes = () => {
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);
 }
-
 const animate = () => {
     updateUniforms();
     renderLandscapes();
