@@ -275,10 +275,10 @@ export class Utils {
      * Positions for a quad covering the entire canvas. 
      */
     static canvasPoints = new Float32Array([
-        -1.0, -1.0,
-        1.0, -1.0,
-        1.0, 1.0,
-        -1.0, 1.0
+        -1.0,   -1.0,   0.0,
+        1.0,    -1.0,   0.0,
+        1.0,    1.0,    0.0,
+        -1.0,   1.0,    0.0
     ]);
 
     /**
@@ -289,6 +289,20 @@ export class Utils {
         1.0, 0.0,
         1.0, 1.0,
         0.0, 1.0
+    ]);
+
+    /**
+     * #### A Float32Array containing a the coordinates of a flat canvas plane and their texture coordinates in the following layout:
+     * test
+     * ---
+     * [x][y][z]-[u][v] (5 BYTES per line (Stride), 3 BYTE Offset for aTexCoords)
+     */ 
+    static canvasAttribs = new Float32Array([
+        // vec3 aPosition,  vec2 aTexCoord
+        -1.0, -1.0, 0.0,    0.0, 0.0,
+        1.0,  -1.0, 0.0,    1.0, 0.0,
+        1.0,   1.0, 0.0,    1.0, 1.0,
+        -1.0,  1.0, 0.0,    0.0, 1.0
     ]);
 
     /**
