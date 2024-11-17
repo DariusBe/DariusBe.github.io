@@ -193,6 +193,7 @@ export class Utils {
     /**
      * Load an image.
      * @param {string} src The path to the image
+     * @param {boolean?} verbose A flag to to print info
      * @returns {HTMLImageElement} The loaded image
      */
     static loadImage = (src) => new Promise(resolve => {
@@ -202,7 +203,6 @@ export class Utils {
         // resize image to 128 x 128
         img.width = 128;
         img.height = 128;
-
         return img;
     });
 
@@ -222,7 +222,7 @@ export class Utils {
      * @param {*} height The height of the texture.
      * @returns {Float32Array} A test strip texture with RGBA16F. Alpha is always 1.
      */
-    static getEmptyStartTexture(width = 512, height = 512) {
+    static getEmptyStartTexture(width = 512, height = 512, verbose = false) {
         var textureData = new Float32Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
             textureData[i * 4 + 0] = (i % 15 == 0) ? 255 : 0;  // r
@@ -230,7 +230,9 @@ export class Utils {
             textureData[i * 4 + 2] = 0;     // b
             textureData[i * 4 + 3] = 1;     // a
         }
-        console.info('Generated empty start texture of size', width, 'x', height);
+        if (verbose) {
+            console.info('Generated empty start texture of size', width, 'x', height);
+        }
         // return Imagedata as RGBA16F
         return textureData
     }
@@ -310,7 +312,7 @@ export class Utils {
      * @param {boolean} verbose A flag to print the kernel to the console
      * @returns {Float32Array} The generated kernel
      */
-    static gaussKernel1D(size, sigma=size/6, verbose = false) {
+    static gaussKernel1D(size, sigma = size / 6, verbose = false) {
         const kernel = new Float32Array(size);
         const center = (size - 1) / 2;
         let sum = 0.0;
@@ -325,7 +327,7 @@ export class Utils {
         }
         if (verbose) {
             console.groupCollapsed('Generated Gaussian kernel');
-            console.log('Size:', size+', Sigma:', sigma+', Total:', total);
+            console.log('Size:', size + ', Sigma:', sigma + ', Total:', total);
             console.log(kernel);
             console.groupEnd();
         }
@@ -353,6 +355,32 @@ export class Utils {
         }
         return kernel;
     }
+
+    /**
+     * Prepares a Float32Array to be logged to the console in a readable format.
+     * 
+     * @param {Float32Array} array The array to prepare
+     * @param {number} rows The width of the array
+     * @param {number?} cols The height of the array (can be omitted if the array is square)
+     * @param {number?} precision The number of decimal places to show
+     * @returns {string} The formatted string
+    */
+    static printMatrix = (matrix, cols, rows = cols, precision = 0) => {
+        const maxLength = Math.max(...matrix.map(num => num.toFixed(precision).length));
+        var str = '';
+        for (let i = 0; i < rows; i++) {
+            str += '[ ';
+            for (let j = 0; j < cols; j++) {
+                str += matrix[i * cols + j].toFixed(precision).padStart(maxLength, ' ');
+                if (j < cols - 1) {
+                    str += ', ';
+                }
+            }
+            str += i < rows - 1 ? ' ]' + '\n ' : ' ]';
+        }
+        return str;
+    }
+
 
     /**
       * Read a text file from the server and parse it into a Float32Array.
