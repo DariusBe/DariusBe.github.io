@@ -17,13 +17,18 @@ export class GLContext {
     globalUniformLocation = {};
 
     // global uniforms
-    uModel = new glMatrix.mat4.create();
-    uView = new glMatrix.mat4.create();
-    uProjection = new glMatrix.mat4.create();
+    uModel;
+    uView;
+    uProjection;
     uResolution;
     uTime = 5.0;
     uShowCursor;
     uMouse;
+
+    // perspective matrices
+    lookAt;
+    ortho;
+    perspective;
 
     constructor(context = 'webgl-canvas') {
         // initialize the canvas and WebGL2 context
@@ -39,18 +44,33 @@ export class GLContext {
         this.gl.getExtension('EXT_color_buffer_float');
         this.gl.hint(this.gl.FRAGMENT_SHADER_DERIVATIVE_HINT, this.gl.NICEST);
 
+        this.uModel = new glMatrix.mat4.create();
+        this.uView = new glMatrix.mat4.create();
+        this.uProjection = new glMatrix.mat4.create();
+
+        this.lookAt = glMatrix.mat3.fromValues(
+            0, 0, 4,  // viewer's position (4 units away from center)
+            0, 0, 0,  // position viewer is looking at
+            0, 1, 0   // up-axis);
+        )
+        this.ortho = new glMatrix.mat3.create();
+        this.perspective = new glMatrix.mat3.create();
+
+
         // initialize global uniforms
         this.fillGlobalUniformBuffer();
         this.prepareGlobalUniforms();
-        // this.showMatrixGuides();
+        this.preparePerspective();
 
         this.canvas.addEventListener('touchmove', this.touchmove);
         this.canvas.addEventListener('mousemove', this.onmousemove);
         window.addEventListener('resize', this.onresize);
 
+
         /* get all inputs with id starting with 'matrix_' and setup event listeners */
         this.inputs = document.querySelectorAll('input[id^="matrix_"]');
         const inputMatrix = [];
+
         for (const input of this.inputs) {
             inputMatrix.push(input);
         }
@@ -68,6 +88,48 @@ export class GLContext {
                 }
             }
         }
+
+
+    }
+
+    /**
+     * Sets up the glViewport to have a perspective based on uView and uProjection
+     * @param {glMatrix.mat3} lookAtMatrix An optional 3-dimensional lookAt-matrix (otherwise default)
+     */
+    preparePerspective = (lookAtMatrix = this.lookAt) => {
+        const row1 = new Float32Array([lookAtMatrix[0], lookAtMatrix[1], lookAtMatrix[2]]);
+        const row2 = new Float32Array([lookAtMatrix[3], lookAtMatrix[4], lookAtMatrix[5]]);
+        const row3 = new Float32Array([lookAtMatrix[6], lookAtMatrix[7], lookAtMatrix[8]]);
+
+
+        glMatrix.mat4.lookAt(
+            this.uView,
+            row1,  // viewer's position (4 units away from center)
+            row2,  // position viewer is looking at
+            row3,  // up-axis
+        );
+
+        // const aspectRatio = this.canvas.width / this.canvas.height;
+        // // args: in_matrix, fovy (vertical FoV in rad, smaller --> 'tele'), aspect_ratio, near, far (resp. distances of camera to near/far planes)
+        // glMatrix.mat4.perspective(
+        //     this.uProjection,
+        //     Math.PI / 6, // 90 degrees --> PI = 180, PI/1.5 = 120, PI/2 = 90 deg...
+        //     aspectRatio,
+        //     0.01,
+        //     8
+        // );
+
+        glMatrix.mat4.ortho(
+            this.uProjection,
+            // perspective defined as a bounding box
+            // distance to.. left, right, bottom, top, near, far plane
+            -1, 1, -1, 1, 0, 5 // bounding box as a unit cube that is stretched by factor 5 along z axis
+        );
+    }
+
+    cameraTransform = () => {
+        glMatrix.mat4.rotate(this.uModel, this.uModel, 0.01, [0, 0.53, 0.25]);
+        glMatrix.mat4.scale(this.uModel, this.uModel, [.999, .999, .999]);
     }
 
     /* EVENT HANDLERS*/
@@ -198,47 +260,22 @@ export class GLContext {
      * Initialize the global uniform buffer with default values
     */
     fillGlobalUniformBuffer = () => {
-        // populate buffer with data
-        // 1) mat4 uProjection; == 4 * 4 == 16 elements in one chunk
-        // 2) mat4 uView; == 4 * 4 == 16 elements in two chunks
-        // 3) mat4 uModel; == 4 * 4 == 16 elements in two chunks
-        // 4) uniform vec2 uResolution; == 2 elements in chunk
-        // 5) uniform float uTime; == 1 element in chunk
-        // 6) uniform bool uShowCursor; == 1 element in chunk
-        // 7) uniform vec3 uMouse; == 3 elements in chunk
-        // [1][1][1][1] x 4
-        // [2][2][2][2] x 4
-        // [3][3][3][3] x 4
-        // [4][4]-[5]-[6]
-        // [7][7][7]-[Pad]
-
         this.globalUniformData = new Float32Array(16 + 16 + 16 + 2 + 1 + 1 + 4); // 56 BYTE
-        this.uProjection = glMatrix.mat4.create();
-        this.uView = glMatrix.mat4.create();
-        this.uModel = glMatrix.mat4.create();
-
-        // populate uModel
-        // glMatrix.mat4.rotateZ(this.uModel, this.uModel, 1);
-        // glMatrix.mat4.scale(this.uModel, this.uModel, [.5, .5, .5]);
-
-        // populate uView matrix
-        // glMatrix.mat4.lookAt(
-        //     this.uView,
-        //     [0, 0, 0], 
-        //     [0, 0, 0], 
-        //     [0, 1, 0]
-        // );
-
-        // // populate uProjection matrix
-        // const aspectRatio = this.gl.canvas.width / this.gl.canvas.height;
-        // // args: in_matrix, fovy (vertical FoV in rad, smaller --> 'tele'), aspect_ratio, near, far (resp. distances of camera to near/far planes)
-        // glMatrix.mat4.perspective(
-        //     this.uProjection,
-        //     Math.PI / 1.2, // 150 degrees --> PI = 180, PI/1.5 = 120, PI/2 = 90 deg...
-        //     aspectRatio,
-        //     0.1,
-        //     10
-        // );
+        /**
+         * populate buffer with data
+         *  1) mat4 uProjection; == 4 * 4 == 16 elements in one chunk
+         *  2) mat4 uView; == 4 * 4 == 16 elements in two chunks
+         *  3) mat4 uModel; == 4 * 4 == 16 elements in two chunks
+         *  4) uniform vec2 uResolution; == 2 elements in chunk
+         *  5) uniform float uTime; == 1 element in chunk
+         *  6) uniform bool uShowCursor; == 1 element in chunk
+         *  7) uniform vec3 uMouse; == 3 elements in chunk
+         *  [1][1][1][1] x 4
+         *  [2][2][2][2] x 4
+         *  [3][3][3][3] x 4
+         *  [4][4]-[5]-[6]
+         *  [7][7][7]-[Pad] 
+        */
 
         this.uResolution = new Float32Array([this.canvas.width, this.canvas.height]);
         this.uTime = new Float32Array([0.0]);
