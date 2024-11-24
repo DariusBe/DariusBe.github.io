@@ -235,6 +235,7 @@ export class Shader {
         if (verbose && (foundAttributes.length > 0 || notFoundAttributes.length > 0)) {
             console.groupCollapsed(this.name, '- prepared attributes:');
             if (foundAttributes.length > 0) {
+                
                 console.log(
                     'FOUND:', ...foundAttributes
                         .reduce((acc, found) => {
@@ -287,7 +288,7 @@ export class Shader {
      * @param {boolean} verbose if true, success message is printed
      * @returns {WebGLTexture} texture object
     */
-    prepareImageTexture = (sampler = 'uSampler', textureData, texName = '', width = 0, height = 0, interpolation = 'LINEAR', clamping = 'CLAMP_TO_EDGE', verbose = false) => {
+    prepareImageTexture = (sampler = 'uSampler', textureData, texName = '', width = 0, height = 0, interpolation = 'LINEAR', clamping = 'CLAMP_TO_EDGE', textureUnit='TEXTURE0',verbose = false) => {
         const gl = this.gl;
         const program = this.program;
         program.name = this.name;
@@ -299,8 +300,19 @@ export class Shader {
         // flip image vertically
         // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         const texture = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
+        this.textureList.push(texture);
+
+        for (let i = 0; i < this.textureList.length; i++) {
+            if (this.textureList[i].name === texName) {
+                console.error('Texture', texName, 'already exists in', this.name);
+                return;
+            }
+            gl.activeTexture(gl[textureUnit]);
+            gl.bindTexture(gl.TEXTURE_2D, this.textureList[i]);
+        }   
+        // console.error();
+        // gl.activeTexture(gl[textureUnit]); // set active texture unit
+        // gl.bindTexture(gl.TEXTURE_2D, texture);
 
         var texWidth = 0;
         var texHeight = 0;
@@ -325,7 +337,8 @@ export class Shader {
 
         // bind texture to sampler
         const samplerLocation = gl.getUniformLocation(program, sampler);
-        gl.uniform1i(samplerLocation, 0);
+        const numeral = parseFloat(textureUnit.slice(-1));
+        gl.uniform1i(samplerLocation, numeral);
 
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindVertexArray(null);
@@ -335,7 +348,6 @@ export class Shader {
         if (texName === '') {
             texture.name = this.name + '_Texture';
         }
-        this.textureList.push(texture);
 
         if (verbose) {
             console.info('Prepared texture:', texture.name, 'with size:', texWidth, texHeight);
