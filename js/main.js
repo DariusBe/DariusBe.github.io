@@ -7,6 +7,8 @@ import '../gl-matrix-min.js';
 /* FILES */
 const topoVertCode = await Utils.readShaderFile('js/src/topoShader/topo.vert');
 const topoFragCode = await Utils.readShaderFile('js/src/topoShader/topo.frag');
+const physarumVertCode = await Utils.readShaderFile('js/src/physarumShader/physarum.vert');
+const physarumfragCode = await Utils.readShaderFile('js/src/physarumShader/physarum.frag');
 const blurVertCode = await Utils.readShaderFile('js/src/blurShader/blur.vert');
 const blurFragCode = await Utils.readShaderFile('js/src/blurShader/blur.frag');
 const canvasVertCode = await Utils.readShaderFile('js/src/canvasShader/canvas.vert');
@@ -22,16 +24,18 @@ var hasSliderChanged = false;
 var hasCheckboxChanged = false;
 
 /* Globals */
+const PARTICLE_COUNT = 100;
+const BYTE = 4;
+
 const glContext = new GLContext();
 const gl = glContext.gl;
 glContext.listContextStats();
 const shaderList = glContext.shaderList;
 var tick = 0.0;
-var decayFactor = 0.95;
 var kernelSize = Math.abs(slider.value * 2 - 1);
 var sigma = kernelSize / 4;
 var uIsHorizontal = true;
-const BYTE = 4;
+
 
 /* Event Listeners */
 slider.oninput = function () {
@@ -45,34 +49,41 @@ checkbox.onchange = function () {
     hasCheckboxChanged = true;
 }
 
-// global uniforms
+// global uniforms and attributes
 const globalUniforms = {
     uSampler: ['1i', 0],
     uSlider: ['1f', 0.5],
 };
-
-// console.error();
-
 const globalAttributes = {
     'aPosition': [0, [3, 'FLOAT', false, 5 * BYTE, 0], Utils.canvasAttribs],
     'aTexCoord': [1, [2, 'FLOAT', false, 5 * BYTE, 3 * BYTE], Utils.canvasAttribs],
 };
 
-/* Topography Shader Definition */
+/* TOPO */
 const topoUniforms = Object.assign({}, globalUniforms, {
     uShowCursor: ['bool', false],
     uCheckbox: ['bool', checkbox.checked],
 });
-const topoShader = new Shader(
-    gl,
+const topoShader = new Shader(gl,
     name = 'TopoShader',
-    topoVertCode,
-    topoFragCode,
-    globalAttributes,
-    topoUniforms
+    topoVertCode, topoFragCode,
+    globalAttributes, topoUniforms
 );
 
-/* Blur Shader Definition */
+/* PHYSARUM */
+const physarumUniforms = Object.assign({}, globalUniforms, {
+    uParticleCount: ['1i', 250],
+    uSensorAngle: ['1f', Math.PI],
+    uSensorDistance: ['1f', 5],
+    uParticleSampler: ['1i', 0],
+});
+const physarumShader = new Shader(gl,
+    name = 'PhysarumShader',
+    physarumVertCode, physarumfragCode,
+    globalAttributes, physarumUniforms
+);
+
+/* BLUR */
 const blurUniforms = Object.assign({}, globalUniforms, {
     uKernelSize: ['1i', kernelSize],
     uKernel: ['1fv', Utils.gaussKernel1D(kernelSize, sigma, false)],
@@ -80,35 +91,31 @@ const blurUniforms = Object.assign({}, globalUniforms, {
     uDecay: ['1f', 0.0],
     uShowCursor: ['bool', true],
 });
-const blurShader = new Shader(
-    gl,
+const blurShader = new Shader(gl,
     name = 'BlurShader',
-    blurVertCode,
-    blurFragCode,
-    globalAttributes,
-    blurUniforms
+    blurVertCode, blurFragCode,
+    globalAttributes, blurUniforms
 );
 
-/* Canvas Shader Definition */
-const canvasShader = new Shader(
-    gl,
+/* CANVAS */
+const canvasShader = new Shader(gl,
     name = 'CanvasShader',
-    canvasVertCode,
-    canvasFragCode,
-    globalAttributes,
-    globalUniforms
+    canvasVertCode, canvasFragCode,
+    globalAttributes, globalUniforms
 );
-glContext.setShaderGlobal(canvasShader);
-glContext.setShaderGlobal(topoShader);
-glContext.setShaderGlobal(blurShader);
 
-/* Prepare Textures */
+glContext.setShaderGlobal(topoShader);
+glContext.setShaderGlobal(physarumShader);
+glContext.setShaderGlobal(blurShader);
+glContext.setShaderGlobal(canvasShader);
+
+/* PREPARE TEXTURES */
 // Prepare Topography Map from Point Cloud
 const size = topoMap[topoMap.length - 1];
 topoMap = topoMap.slice(0, topoMap.length - 1);
 topoMap = Utils.normalizePointCloud(topoMap);
 // prepare topo texture
-var toposurfaceTexture = topoShader.prepareImageTexture(
+var toposurfaceTex = topoShader.prepareImageTexture(
     "uSampler",
     topoMap,
     'TopoTexture',
@@ -117,7 +124,7 @@ var toposurfaceTexture = topoShader.prepareImageTexture(
     'CLAMP_TO_EDGE'
 );
 // prepare empty cost surface texture (will be rendered into by topo shader)
-var costsurfaceTex = blurShader.prepareImageTexture(
+var costsurfaceTex = physarumShader.prepareImageTexture(
     "uSampler",
     Utils.getRandomStartTexture(size, size),
     'costsurfaceTex',
@@ -125,11 +132,30 @@ var costsurfaceTex = blurShader.prepareImageTexture(
     'LINEAR',
     'CLAMP_TO_EDGE'
 );
-// prepare empty blur texture (will be rendered into by blur shader)
-var intermediateBlurTex = blurShader.prepareImageTexture(
+// prepare empty particle texture
+var particleTex = physarumShader.prepareImageTexture(
+    "uParticleSampler",
+    Utils.getRandomStartTexture(size, size),
+    'ParticleTexture',
+    size, size,
+    'LINEAR',
+    'CLAMP_TO_EDGE',
+    'TEXTURE1'
+);
+// prepare empty cost surface texture (will be rendered into by physarum shader)
+var horizontalBlurTex = blurShader.prepareImageTexture(
     "uSampler",
     Utils.getRandomStartTexture(size, size),
-    'intermediateBlurTex',
+    'horizontalBlurTex',
+    size, size,
+    'LINEAR',
+    'CLAMP_TO_EDGE'
+);
+// prepare empty blur texture (will be rendered into by blur shader)
+var verticalBlurTex = blurShader.prepareImageTexture(
+    "uSampler",
+    Utils.getRandomStartTexture(size, size),
+    'verticalBlurTex',
     size, size
 );
 // prepare final canvas texture (will be rendered into by blur shader)
@@ -140,7 +166,7 @@ var canvasTexture = canvasShader.prepareImageTexture(
     size, size
 );
 
-/* Prepare FBOs */
+/* PREPARE FBOs */
 topoShader.prepareFramebufferObject(
     gl.COLOR_ATTACHMENT0,
     costsurfaceTex, // FBO will render into this texture
@@ -149,9 +175,17 @@ topoShader.prepareFramebufferObject(
     canvas.height,
     gl.RGBA16F,
 );
+physarumShader.prepareFramebufferObject(
+    gl.COLOR_ATTACHMENT0,
+    horizontalBlurTex, // FBO will render into this texture
+    'Physarum_FBO',
+    canvas.width,
+    canvas.height,
+    gl.RGBA16F,
+);
 blurShader.prepareFramebufferObject(
     gl.COLOR_ATTACHMENT0,
-    intermediateBlurTex, // FBO will render into this texture
+    verticalBlurTex, // FBO will render into this texture
     'horizontalBlurFBO',
     canvas.width,
     canvas.height,
@@ -169,52 +203,16 @@ for (const shader of shaderList) {
     shader.getShaderDetails();
 }
 
-/* Prepare Matrix */
-
-var uModel = glMatrix.mat4.create();
-var uView = glMatrix.mat4.create();
-var uProjection = glMatrix.mat4.create();
-
-// populate uView matrix
-glMatrix.mat4.lookAt(
-    uView,
-    [0, 0, 4],  // viewer's position (4 units away from center)
-    [0, 0, 0],  // position viewer is looking at
-    [0, 1, 0],  // up-axis
-);
-
-// populate uProjection matrix
-const aspectRatio = gl.canvas.width / gl.canvas.height;
-// args: in_matrix, fovy (vertical FoV in rad, smaller --> 'tele'), aspect_ratio, near, far (resp. distances of camera to near/far planes)
-// glMatrix.mat4.perspective(
-//     uProjection,
-//     Math.PI / 6, // 90 degrees --> PI = 180, PI/1.5 = 120, PI/2 = 90 deg...
-//     aspectRatio,
-//     0.01,
-//     8
-// );
-glMatrix.mat4.ortho(
-    uProjection,
-    // perspective defined as a bounding box
-    // distance to.. left, right, bottom, top, near, far plane
-    -1, 1, -1, 1,   0, 5 // bounding box as a unit cube that is stretched by factor 5 along z axis
-);
-
-function cameraTransform() {
-    // populate uModel
-    // glMatrix.mat4.rotate(uModel, uModel, 0.01, [0, 0.53, 0.25]);
-    // glMatrix.mat4.scale(uModel, uModel, [.999, .999, .999]);
-}
-
 function updateUniforms() {
     tick += 0.01;
-    cameraTransform();
+    // glContext.cameraTransform();
+
     glContext.updateGlobalUniform('uTime', tick);
     gl.bindBuffer(gl.UNIFORM_BUFFER, glContext.globalUniformBuffer);
     glContext.updateGlobalUniform('uTime', tick);
-    glContext.updateGlobalUniform('uModel', uModel);
-    glContext.updateGlobalUniform('uView', uView);
-    glContext.updateGlobalUniform('uProjection', uProjection);
+    glContext.updateGlobalUniform('uModel', glContext.uModel);
+    glContext.updateGlobalUniform('uView', glContext.uView);
+    glContext.updateGlobalUniform('uProjection', glContext.uProjection);
 
     for (const shader of shaderList) {
         // glContext.updateGlobalUniform('uTime', tick);
@@ -239,14 +237,28 @@ function swapBlurDirectionUniform() {
     // swap textures
 }
 const renderLandscapes = () => {
-    gl.clearColor(1.0, 0.0, 0.0, 1.0);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     // render TOPOGRAPHY into texture; in: topoSurfaceTexture --> out: costSurfaceTex
     gl.useProgram(topoShader.program);
     gl.bindVertexArray(topoShader.vao);
     gl.bindFramebuffer(gl.FRAMEBUFFER, topoShader.fbo[0]);
-    gl.bindTexture(gl.TEXTURE_2D, toposurfaceTexture);
+    gl.bindTexture(gl.TEXTURE_2D, toposurfaceTex);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+    gl.bindVertexArray(null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    // render PHYSARUM into texture; in: costSurfaceTex, particleTex --> out: horizontalBlurTex
+    gl.useProgram(physarumShader.program);
+    gl.bindVertexArray(physarumShader.vao);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, physarumShader.fbo[0]);
+    // set particle texture for physarum shader
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, particleTex);
+    // set cost surface texture for physarum shader
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     gl.bindVertexArray(null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -255,12 +267,12 @@ const renderLandscapes = () => {
     gl.useProgram(blurShader.program);
     gl.bindVertexArray(blurShader.vao);
     gl.bindFramebuffer(gl.FRAMEBUFFER, blurShader.fbo[0]);
-    gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
+    gl.bindTexture(gl.TEXTURE_2D, horizontalBlurTex);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     // render vertical BLUR with fbo_1; in intermediateBlurTex --> out: canvasTexture
     swapBlurDirectionUniform();
     gl.bindFramebuffer(gl.FRAMEBUFFER, blurShader.fbo[1]);
-    gl.bindTexture(gl.TEXTURE_2D, intermediateBlurTex);
+    gl.bindTexture(gl.TEXTURE_2D, verticalBlurTex);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     gl.bindVertexArray(null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -272,6 +284,7 @@ const renderLandscapes = () => {
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);
+
 }
 const animate = () => {
     updateUniforms();
