@@ -1,7 +1,7 @@
 #version 300 es
 //#pragma vscode_glsllint_stage : frag
-precision highp sampler2D;
-precision highp float;
+// precision highp sampler2D;
+precision mediump float;
 
 // texture data
 in vec2 vTexCoord;
@@ -26,6 +26,23 @@ uniform float uKernel[64];
 uniform bool uIsHorizontal;
 
 out vec4 fragColor;
+
+vec4 prepareCursor(float radius, vec4 color) {
+    // normalize moues position
+    if (uShowCursor == 0.0) {
+        vec2 mouse = uMouse.xy;
+        float mouseClick = uMouse.z;
+
+        vec4 cursor = vec4(0.0);
+        // show the mouse position
+        if (distance(gl_FragCoord.xy, mouse * uResolution) < radius) {
+            if (mouseClick == 1.0) {
+                cursor = color;
+            }
+        }
+        return cursor;
+    }
+}
 
 vec4 applyKernel() {
     vec4 sum = vec4(0.0);
@@ -56,7 +73,7 @@ void main() {
     float mouseClick = uMouse.z;
     float dist = smoothstep(80.0, 100.0, distance(gl_FragCoord.xy, mouse * uResolution));
 
-    if (uShowCursor == 0.0) {
+    if (uShowCursor == 1.0) {
         if (mouseClick == 1.0) {
             fragColor = mix(original, blurred, dist);
             if (dist > 0.9 && dist < 1.0) {

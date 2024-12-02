@@ -427,6 +427,33 @@ export class GLContext {
         console.groupEnd();
 
     }
+
+    updateUniforms() {
+        tick += TIMESTEP;
+        glContext.updateGlobalUniform('uTime', tick);
+        gl.bindBuffer(gl.UNIFORM_BUFFER, glContext.globalUniformBuffer);
+        glContext.updateGlobalUniform('uTime', tick);
+        glContext.updateGlobalUniform('uModel', glContext.uModel);
+        glContext.updateGlobalUniform('uView', glContext.uView);
+        glContext.updateGlobalUniform('uProjection', glContext.uProjection);
+
+        for (const shader of shaderList) {
+            if (hasSliderChanged) {
+                const kernel = Utils.gaussKernel1D(kernelSize, sigma, true);
+                blurShader.updateUniform('uKernel', '1fv', kernel);
+                blurShader.updateUniform('uKernelSize', '1i', kernelSize);
+                hasSliderChanged = false;
+            }
+        }
+        if (hasCheckboxChanged) {
+            topoShader.updateUniform('uCheckbox', 'bool', checkbox.checked);
+            hasCheckboxChanged = false;
+        }
+        physarumShader.updateUniform('uParticleSampler', '1i', 0);
+        physarumShader.updateUniform('uCostSampler', '1i', 1);
+
+        gl.useProgram(null);
+    }
 }
 // rotated uModel;
 //  [  0.70710677,  0.70710677,  0.00000000,  0.00000000 ]

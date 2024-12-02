@@ -262,6 +262,29 @@ export class Utils {
     }
 
     /**
+     * Generate a red texture.
+     * @param {number} width The width of the texture
+     * @param {number} height The height of the texture
+     * @returns {Float32Array} A red texture with RGBA16F values ranging from 0 to 1. Alpha is always 1.
+     * @example
+    */
+    static getRedStartTexture(width = 512, height = 512, verbose = false) {
+        var textureData = new Float32Array(width * height * 4);
+
+        for (let i = 0; i < width * height; i++) {
+            textureData[i * 4 + 0] = 1.0;  // r
+            textureData[i * 4 + 1] = 0.0;  // g
+            textureData[i * 4 + 2] = 0.0;  // b
+            textureData[i * 4 + 3] = 1.0;  // a
+        }
+
+        if (verbose) {
+            console.info('Generated red start texture of size', width, 'x', height);
+        }
+        return textureData;
+    }
+
+    /**
      * @param {string} path The path to a GLSL shader file
      * @returns {Promise<string>} The shader code as a string
      */

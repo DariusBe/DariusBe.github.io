@@ -5,7 +5,7 @@ export class Shader {
     name;
     program;
     vao;
-    textureList = [];
+    textureList = {};
     bufferList = [];
     fbo = [];
     tfBufferSize = 0;
@@ -26,6 +26,7 @@ export class Shader {
      * @param {boolean} verbose If true, the console will output detailed information about uniforms, attributes and transform feedback
     */
     constructor(gl, name = '', vertexShaderCode, fragmentShaderCode, attributes, uniforms, tf_description = null, verbose = false) {
+        if (verbose) { console.groupCollapsed(name); }
         this.gl = gl;
         this.name = name;
         this.program = this.prepareShaderProgram(
@@ -44,6 +45,7 @@ export class Shader {
             const bufferSize = tf_description.TF_bufferSize;
             this.prepareTransformFeedback(buffer, bufferSize, verbose);
         }
+        if (verbose) { console.groupEnd(); }
     }
 
     /**
@@ -145,7 +147,7 @@ export class Shader {
             } else {
                 console.error('Unknown uniform type:', type);
             }
-            this.uniformList[type] = uniformName;
+            this.uniformList[uniformName] = value;
         }
         if (verbose && (usedUniforms.length > 0 || unusedUniforms.length > 0)) {
             console.groupCollapsed(this.name, '- prepared uniforms:');
@@ -235,7 +237,7 @@ export class Shader {
         if (verbose && (foundAttributes.length > 0 || notFoundAttributes.length > 0)) {
             console.groupCollapsed(this.name, '- prepared attributes:');
             if (foundAttributes.length > 0) {
-                
+
                 console.log(
                     'FOUND:', ...foundAttributes
                         .reduce((acc, found) => {
@@ -279,7 +281,7 @@ export class Shader {
     /**
      * Creates a texture object and binds it to the shader program
      * @param {string} sampler name of the sampler in the shader program
-     * @param {Float32Array} textureData an array buffer
+     * @param {Float32Array} texData an array buffer
      * @param {string} texName name of the texture
      * @param {number} width width of the texture
      * @param {number} height height of the texture
@@ -288,7 +290,7 @@ export class Shader {
      * @param {boolean} verbose if true, success message is printed
      * @returns {WebGLTexture} texture object
     */
-    prepareImageTexture = (sampler = 'uSampler', textureData, texName = '', width = 0, height = 0, interpolation = 'LINEAR', clamping = 'CLAMP_TO_EDGE', textureUnit='TEXTURE0',verbose = false) => {
+    prepareImageTexture = (sampler = 'uSampler', texData, texName = '', width = 0, height = 0, interpolation = 'LINEAR', clamping = 'CLAMP_TO_EDGE', texUnit = 0, verbose = false) => {
         const gl = this.gl;
         const program = this.program;
         program.name = this.name;
@@ -300,19 +302,16 @@ export class Shader {
         // flip image vertically
         // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         const texture = gl.createTexture();
-        this.textureList.push(texture);
 
-        for (let i = 0; i < this.textureList.length; i++) {
-            if (this.textureList[i].name === texName) {
-                console.error('Texture', texName, 'already exists in', this.name);
-                return;
-            }
-            gl.activeTexture(gl[textureUnit]);
-            gl.bindTexture(gl.TEXTURE_2D, this.textureList[i]);
-        }   
-        // console.error();
-        // gl.activeTexture(gl[textureUnit]); // set active texture unit
-        // gl.bindTexture(gl.TEXTURE_2D, texture);
+        if (texName == '') {
+            const nthTexture = Object.keys(this.textureList).length + 1;
+            texName = this.name + '_Texture_' + nthTexture;
+        }
+        texture.name = texName;
+
+        this.textureList[texName] = [texture, texUnit];
+        gl.activeTexture(gl.TEXTURE0 + texUnit);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
 
         var texWidth = 0;
         var texHeight = 0;
@@ -324,11 +323,11 @@ export class Shader {
             texHeight = window.innerHeight;
         }
 
-        // args: target, mipmap level, internal format, width, height, border, format, type, data
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, texWidth, texHeight, 0, gl.RGBA, gl.FLOAT, textureData);        // mipmapping
+        // args: target, mipmap level, internal format, width, height, border (always 0), format, type, data
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, texWidth, texHeight, 0, gl.RGBA, gl.FLOAT, texData);        // mipmapping
         gl.generateMipmap(gl.TEXTURE_2D);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[interpolation]);
-
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl[interpolation]);
 
         // set to non-repeat
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl[clamping]);
@@ -337,17 +336,11 @@ export class Shader {
 
         // bind texture to sampler
         const samplerLocation = gl.getUniformLocation(program, sampler);
-        const numeral = parseFloat(textureUnit.slice(-1));
-        gl.uniform1i(samplerLocation, numeral);
+        gl.uniform1i(samplerLocation, texUnit);
 
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindVertexArray(null);
         gl.useProgram(null);
-
-        texture.name = texName;
-        if (texName === '') {
-            texture.name = this.name + '_Texture';
-        }
 
         if (verbose) {
             console.info('Prepared texture:', texture.name, 'with size:', texWidth, texHeight);
@@ -401,14 +394,14 @@ export class Shader {
      * @param {boolean} verbose    if true, success message is printed
      * @returns {WebGLFramebuffer?} if successful: a complete framebuffer object, else null
      */
-    prepareFramebufferObject = (location = gl.COLOR_ATTACHMENT0, texture, name = texture.name, width, height, textureFormat = gl.RGBA16F, withRenderBuffer = false, verbose = false) => {
+    prepareFramebufferObject = (location = gl.COLOR_ATTACHMENT0, texture, name = texture.name, width, height, textureFormat = gl.RGBA16F, intoTexUnit=0, withRenderBuffer = false, verbose = false) => {
         const gl = this.gl;
 
         const program = this.program;
         gl.useProgram(program);
 
         if (texture.constructor.name !== 'WebGLTexture') {
-            console.error('prepareFramebufferObject(): passed texture', texture.name, 'is not of type WebGLTexture');
+            console.error('prepareFramebufferObject():', texture.name, 'is not of type WebGLTexture');
             return;
         }
 
@@ -429,11 +422,12 @@ export class Shader {
 
         gl.framebufferTexture2D(
             gl.FRAMEBUFFER, // target
-            location, // attachment point == location of point locations in fragment shader
+            location,       // texture attachment point = the output location in the fragment shader
             gl.TEXTURE_2D,  // texture target
             texture,        // texture we rendered into
             0               // mipmap level, always 0 in webgl
         );
+
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
             console.error(program.name, ':', fbo.name, 'is incomplete');
@@ -447,7 +441,7 @@ export class Shader {
             gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer);
             gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
             gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderBuffer);
-            //this.bufferList.push(renderBuffer);
+            // this.bufferList.push(renderBuffer);
         }
 
         // unbind
@@ -569,7 +563,7 @@ export class Shader {
             const arr = [];
             for (const [key, value] of Object.entries(list)) {
                 arr.push('\n •');
-                arr.push(key + ':\n');
+                arr.push(key + ':');
                 arr.push(value);
             }
             return arr;
@@ -596,7 +590,8 @@ export class Shader {
             );
             return acc;
         }, []));
-        console.log('Textures:', ...this.textureList.reduce((acc, tex) => { acc.push('\n •', tex.name); return acc; }, []));
+        // console.log('Textures:', ...this.textureList.reduce((acc, tex) => { acc.push('\n •', tex.name); return acc; }, []));
+        console.log('Textures:', ...listToArray(this.textureList));
         console.log('Buffers:', ...this.bufferList.reduce((acc, buff) => {
             gl.bindBuffer(gl.ARRAY_BUFFER, buff);
             const buffSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);

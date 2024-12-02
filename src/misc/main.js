@@ -147,6 +147,8 @@ function renderToTexture() {
     gl.uniform1i(gl.getUniformLocation(rulesProgram, 'uSampler'), 0);
     // bind framebuffer
     gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
+    gl.viewport(0, 0, size, size);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
