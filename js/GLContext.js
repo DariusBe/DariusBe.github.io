@@ -3,6 +3,8 @@ import { Utils } from './Utils.js';
 import '../../gl-matrix-min.js';
 
 export class GLContext {
+
+    /* MEMBERS */
     gl;
     shaderList = [];
     canvas;
@@ -37,7 +39,8 @@ export class GLContext {
         if (!this.canvas) {
             throw new Error('No canvas found with id: ' + context);
         }
-        this.gl = canvas.getContext('webgl2', { antialias: true });
+        // powerPreference: 'high-performance', 'low-power', 'default'
+        this.gl = canvas.getContext('webgl2', { antialias: true, powerPreference: 'high-performance' });
         if (!this.gl) {
             throw new Error('WebGL2 not supported');
         }
@@ -126,12 +129,10 @@ export class GLContext {
             -1, 1, -1, 1, 0, 5 // bounding box as a unit cube that is stretched by factor 5 along z axis
         );
     }
-
     cameraTransform = () => {
         glMatrix.mat4.rotate(this.uModel, this.uModel, 0.01, [0, 0.53, 0.25]);
         glMatrix.mat4.scale(this.uModel, this.uModel, [.999, .999, .999]);
     }
-
     /* EVENT HANDLERS*/
     onmousemove = (e) => {
         const shaderList = this.shaderList;
@@ -148,15 +149,12 @@ export class GLContext {
         const gl = this.gl;
 
         e.preventDefault(); // prevent scrolling
-        var touch = e.touches[0];
+        var touch = e.touches[0]; // get first touch point
         // update mouse uniform
         const pressedButton = 1.0;
-        var mouse = new Float32Array([touch.clientX / canvas.width, 1 - (touch.clientY / canvas.height), pressedButton]);
+        var mouse = new Float32Array([touch.clientX / this.canvas.width, 1 - (touch.clientY / this.canvas.height), pressedButton]);
 
-        for (const shader of shaderList.program) {
-            gl.useProgram(shader.program);
-            gl.uniform3fv(gl.getUniformLocation(shader.program, 'uMouse'), mouse);
-        }
+        this.updateGlobalUniform('uMouse', mouse);
     }
     onresize = () => {
         const shaderList = this.shaderList;
@@ -225,6 +223,7 @@ export class GLContext {
                     Renderer: gl.getParameter(gl.RENDERER),
                     Version: gl.getParameter(gl.VERSION),
                     ShadingLanguageVersion: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
+                    powerPreference: gl.getContextAttributes().powerPreference,
                 },
             ],
             Limitations: [
@@ -258,10 +257,11 @@ export class GLContext {
 
     /**
      * Initialize the global uniform buffer with default values
+     * @param {boolean} verbose - whether to print the buffer layout to console
     */
-    fillGlobalUniformBuffer = () => {
+    fillGlobalUniformBuffer = (verbose = false) => {
         this.globalUniformData = new Float32Array(16 + 16 + 16 + 2 + 1 + 1 + 4); // 56 BYTE
-        /**
+        /** Buffer Layout:
          * populate buffer with data
          *  1) mat4 uProjection; == 4 * 4 == 16 elements in one chunk
          *  2) mat4 uView; == 4 * 4 == 16 elements in two chunks
@@ -305,36 +305,37 @@ export class GLContext {
         this.globalUniformData.set(this.uShowCursor, 51);
         this.globalUniformData.set(this.uMouse, 52);
 
-
-        console.groupCollapsed('Global Uniform Buffer, Length:', this.globalUniformData.length);
-        console.log('uProjection',
-            '[Positions 0-15]', '\n',
-            Utils.printMatrix(this.globalUniformData.slice(0, 16), 4));
-        console.log('uView',
-            '[Positions 16-31]', '\n',
-            Utils.printMatrix(this.globalUniformData.slice(16, 32), 4));
-        console.log('uModel',
-            '[Positions 32-47]', '\n',
-            Utils.printMatrix(this.globalUniformData.slice(32, 48), 4));
-        console.log('uResolution',
-            '[Positions 48-49]\n',
-            Utils.printMatrix(this.globalUniformData.slice(48, 50), 2, 1));
-        console.log('uTime',
-            '[Position 50]\n',
-            Utils.printMatrix(this.globalUniformData.slice(50, 51), 1, 1));
-        console.log('uShowCursor',
-            '[Position 51]\n',
-            Utils.printMatrix(this.globalUniformData.slice(51, 52), 1, 1),
-        );
-        console.log('uMouse',
-            '[Positions 52-55]\n',
-            Utils.printMatrix(this.globalUniformData.slice(52, 55), 3, 1) + '\n',
-            Utils.printMatrix(this.globalUniformData.slice(55, 56), 1, 1), '(Pad)'
-        );
-
-        console.log('Buffer Layout:\n',
-            Utils.printMatrix(this.globalUniformData, 4, 14));
-        console.groupEnd();
+        if (verbose) {
+            console.groupCollapsed('Global Uniform Buffer, Length:', this.globalUniformData.length);
+            console.log('uProjection',
+                '[Positions 0-15]', '\n',
+                Utils.printMatrix(this.globalUniformData.slice(0, 16), 4));
+            console.log('uView',
+                '[Positions 16-31]', '\n',
+                Utils.printMatrix(this.globalUniformData.slice(16, 32), 4));
+            console.log('uModel',
+                '[Positions 32-47]', '\n',
+                Utils.printMatrix(this.globalUniformData.slice(32, 48), 4));
+            console.log('uResolution',
+                '[Positions 48-49]\n',
+                Utils.printMatrix(this.globalUniformData.slice(48, 50), 2, 1));
+            console.log('uTime',
+                '[Position 50]\n',
+                Utils.printMatrix(this.globalUniformData.slice(50, 51), 1, 1));
+            console.log('uShowCursor',
+                '[Position 51]\n',
+                Utils.printMatrix(this.globalUniformData.slice(51, 52), 1, 1),
+            );
+            console.log('uMouse',
+                '[Positions 52-55]\n',
+                Utils.printMatrix(this.globalUniformData.slice(52, 55), 3, 1) + '\n',
+                Utils.printMatrix(this.globalUniformData.slice(55, 56), 1, 1), '(Pad)'
+            );
+    
+            console.log('Buffer Layout:\n',
+                Utils.printMatrix(this.globalUniformData, 4, 14));
+            console.groupEnd();
+        }
     }
 
     /**
@@ -455,8 +456,3 @@ export class GLContext {
         gl.useProgram(null);
     }
 }
-// rotated uModel;
-//  [  0.70710677,  0.70710677,  0.00000000,  0.00000000 ]
-//  [  0.70710677, -0.70710677,  0.00000000,  0.00000000 ]
-//  [  0.00000000,  0.00000000, -1.00000000,  0.00000000 ]
-//  [  0.00000000,  0.00000000,  0.00000000,  1.00000000 ]
