@@ -37,6 +37,7 @@ ivec2 br = ivec2(1, -1);
 
 vec4 prepareCursor(float radius, vec4 color) {
     vec2 mouse = uMouse.xy;
+    
     float mouseClick = uMouse.z;
 
     vec4 cursor = vec4(0.0);
@@ -59,7 +60,7 @@ void main() {
 
     bool modCondition = mod(uTime, .01) == 0.0;
 
-    if (uTime > 1. && modCondition) {
+    if (uTime > 1.) {
 
         // if texel < 0.5, 1, otherwise 0
         float cell = float(texelFetch(uParticleSampler, ivec2(uv), 0).r > 0.5);
@@ -107,7 +108,9 @@ void main() {
             fragColor = vec4(0.0, 0.0, 0.0, 1.0);
         }
     }
-    fragColor += prepareCursor(120.0, vec4(1.0, 1.0, 1.0, 1.0));
+
+    fragColor += prepareCursor(20.0, vec4(1.0, 1.0, 1.0, 1.0));
+    // fragColor = cost;
 }
 
 /*
