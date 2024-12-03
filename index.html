@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL2 Test</title>
+    <title>Physarum - WebGL2</title>
     <link rel="stylesheet" href="css/main.css">
     <script type="module" src="js/main.js"></script>
     <link rel="icon" href="data:,"> <!-- Prevents favicon request -->
@@ -129,7 +129,7 @@
         matrix_checkbox.addEventListener('change', (event) => {
             bottombar.style.height = event.target.checked ? '150px' : '70px';
             matrixpanel.style.visibility = matrix_checkbox.checked ? 'visible' : 'hidden';
-            sliderpanel.style.display = event.target.checked ? 'none' : 'block';
+            sliderpanel.style.display = event.target.checked ? 'none' : 'block'; // hide slider when matrix is visible
         });
 
     </script>
