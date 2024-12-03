@@ -290,14 +290,13 @@ export class Shader {
      * @param {boolean} verbose if true, success message is printed
      * @returns {WebGLTexture} texture object
     */
-    prepareImageTexture = (sampler = 'uSampler', texData, texName = '', width = 0, height = 0, interpolation = 'LINEAR', clamping = 'CLAMP_TO_EDGE', texUnit = 0, verbose = false) => {
+    prepareImageTexture = (sampler = 'uSampler', texData, texName = '', width = 512, height = 512, interpolation = 'LINEAR', clamping = 'CLAMP_TO_EDGE', texUnit = 0, verbose = false) => {
+
         const gl = this.gl;
         const program = this.program;
-        program.name = this.name;
-        const programVAO = this.vao;
+        // const programVAO = this.vao;
 
         gl.useProgram(program);
-        gl.bindVertexArray(programVAO);
 
         // flip image vertically
         // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -313,26 +312,20 @@ export class Shader {
         gl.activeTexture(gl.TEXTURE0 + texUnit);
         gl.bindTexture(gl.TEXTURE_2D, texture);
 
-        var texWidth = 0;
-        var texHeight = 0;
-        if (width >= 0 && height >= 0) {
-            texWidth = width;
-            texHeight = height;
-        } else {
-            texWidth = window.innerWidth;
-            texHeight = window.innerHeight;
+        if (width <= 0 || height <= 0) {
+            width = gl.canvas.width;
+            height = gl.canvas.height;
         }
 
         // args: target, mipmap level, internal format, width, height, border (always 0), format, type, data
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, texWidth, texHeight, 0, gl.RGBA, gl.FLOAT, texData);        // mipmapping
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[interpolation]);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl[interpolation]);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.FLOAT, texData);        // mipmapping
+        // gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
         // set to non-repeat
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl[clamping]);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl[clamping]);
-
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
         // bind texture to sampler
         const samplerLocation = gl.getUniformLocation(program, sampler);
@@ -343,7 +336,7 @@ export class Shader {
         gl.useProgram(null);
 
         if (verbose) {
-            console.info('Prepared texture:', texture.name, 'with size:', texWidth, texHeight);
+            console.info('Prepared texture:', texture, 'with size:', width, texHeight);
         }
 
         return texture;
@@ -394,11 +387,11 @@ export class Shader {
      * @param {boolean} verbose    if true, success message is printed
      * @returns {WebGLFramebuffer?} if successful: a complete framebuffer object, else null
      */
-    prepareFramebufferObject = (location = gl.COLOR_ATTACHMENT0, texture, name = texture.name, width, height, textureFormat = gl.RGBA16F, intoTexUnit=0, withRenderBuffer = false, verbose = false) => {
+    prepareFramebufferObject = (location = gl.COLOR_ATTACHMENT0, texture, name = texture.name, width, height, withRenderBuffer = false, verbose = false) => {
         const gl = this.gl;
-
         const program = this.program;
         gl.useProgram(program);
+        gl.bindVertexArray(this.vao);
 
         if (texture.constructor.name !== 'WebGLTexture') {
             console.error('prepareFramebufferObject():', texture.name, 'is not of type WebGLTexture');
@@ -406,6 +399,7 @@ export class Shader {
         }
 
         const fbo = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
         if (name === null) {
             fbo.name = texture.name + 'FBO';
             if (this.fbo.length > 0) {
@@ -414,20 +408,14 @@ export class Shader {
         } else {
             fbo.name = name;
         }
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-        // gl.activeTexture(gl.TEXTURE0 + this.fbo.length);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        // params: target, mipmap-level, internalFormat, width, height
-        gl.texStorage2D(gl.TEXTURE_2D, 1, [textureFormat], width, height);
 
         gl.framebufferTexture2D(
-            gl.FRAMEBUFFER, // target
+            gl.FRAMEBUFFER,             // target
             location,       // texture attachment point = the output location in the fragment shader
-            gl.TEXTURE_2D,  // texture target
-            texture,        // texture we rendered into
-            0               // mipmap level, always 0 in webgl
+            gl.TEXTURE_2D,              // texture target
+            texture,                    // texture we rendered into
+            0                           // mipmap level, always 0 in webgl
         );
-
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
             console.error(program.name, ':', fbo.name, 'is incomplete');
@@ -631,5 +619,45 @@ export class Shader {
             'Heading:\t', data[1], '\n',
             'Acc.:\t\t', data[2], '\n',
             'Age:\t\t', data[3]);
+    }
+
+    /**
+     * Render with Frame Buffer Object
+     * @param {Shader} shader The Shader with a framebuffer object
+     * @param {WebGLTexture} inputTexture The texture to render into the framebuffer
+     * @param {number | WebGLFramebuffer} fbo The framebuffer object to render into (default is 0)
+     * @param {number} attachAtTextureUnit If the shader uses multiple textures, this parameter can be used to set the texture unit (default is null)
+     * @param {WebGLTexture} texture The texture to be associated with the above texture unit
+     * @param {function} drawArrays An optional function passed as gl-render instruction (default is gl.drawArrays(gl.TRIANGLE_FAN, 0, 4))
+     * @returns {void}
+     * @example
+     * shaderWithFBO.renderWithFrameBuffer(
+     *      inputTexture, 0, 
+     *      1, secondaryTexture, 
+     *      () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+     * );
+     * 
+    */
+    renderWithFBO = (inputTexture, fbo = 0, attachAtTextureUnit = null, texture = null, drawArrays = () => this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4)) => {
+        const gl = this.gl;
+        gl.useProgram(this.program);
+        gl.bindVertexArray(this.vao);
+        if (fbo.constructor.name != 'Number') {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        } else {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo[fbo]);
+        }
+        if (attachAtTextureUnit != null && texture != null) {
+            gl.activeTexture(gl.TEXTURE0 + attachAtTextureUnit);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+        }
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, inputTexture);
+
+        drawArrays();
+
+        gl.bindVertexArray(null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
     }
 }
