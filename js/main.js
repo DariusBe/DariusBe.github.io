@@ -38,7 +38,6 @@ var sigma = kernelSize / 4;
 var uIsHorizontal = true;
 var updateLandscape = false;
 
-
 /* Event Listeners */
 slider.oninput = function () {
     hasSliderChanged = true;
@@ -105,13 +104,10 @@ const canvasShader = new Shader(gl, name = 'CanvasShader',
     globalAttributes, globalUniforms
 );
 
-/* PREPARE TEXTURES */
-// Prepare Topography Map from Point Cloud
+/* TOPO Textures and FBO */
 const size = topoMap[topoMap.length - 1];
-topoMap = topoMap.slice(0, topoMap.length - 1);
-topoMap = Utils.normalizePointCloud(topoMap);
-// prepare topo texture
-var toposurfaceTex = topoShader.prepareImageTexture(
+topoMap = Utils.normalizePointCloud(topoMap.slice(0, topoMap.length - 1));
+const toposurfaceTex = topoShader.prepareImageTexture(
     "uSampler",
     topoMap,
     'TopoTexture',
@@ -119,129 +115,80 @@ var toposurfaceTex = topoShader.prepareImageTexture(
     'LINEAR',
     'CLAMP_TO_EDGE'
 );
-// prepare random start texture
-const randomMap = await Utils.getRandomStartTexture(canvas.width, canvas.height);
-const randomTexture = gl.createTexture();
-gl.bindTexture(gl.TEXTURE_2D, randomTexture);
-gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, canvas.width, canvas.height, 0, gl.RGBA, gl.FLOAT, randomMap);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-// clamp to edge
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-gl.bindTexture(gl.TEXTURE_2D, null);
-// var randomTexture = physarumShader.prepareImageTexture(
-//     "uParticleSampler",
-//     randomMap,
-//     'randomTexture',
-//     size, size,
-//     'LINEAR',
-//     'CLAMP_TO_EDGE',
-//     0  // texture unit 0
-// );
-var emptyMap = await Utils.getRandomStartTexture(canvas.width, canvas.height);
-const emptyTexture = gl.createTexture();
-gl.bindTexture(gl.TEXTURE_2D, emptyTexture);
-gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, canvas.width, canvas.height, 0, gl.RGBA, gl.FLOAT, emptyMap);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-// clamp to edge
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-gl.bindTexture(gl.TEXTURE_2D, null);
-// var emptyTexture = physarumShader.prepareImageTexture(
-//     "uParticleSampler",
-//     emptyMap,
-//     'emptyTexture',
-//     size, size,
-//     'LINEAR',
-//     'CLAMP_TO_EDGE',
-//     0  // texture unit 0
-// );
-
-/* New Physarum FBOS */
-const fbo1 = gl.createFramebuffer();
-gl.bindFramebuffer(gl.FRAMEBUFFER, fbo1);
-gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, emptyTexture, 0);
-if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-    console.error('Framebuffer 1 is not complete');
-}
-gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-const fbo2 = gl.createFramebuffer();
-gl.bindFramebuffer(gl.FRAMEBUFFER, fbo2);
-gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, randomTexture, 0);
-if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-    console.error('Framebuffer 2 is not complete');
-}
-gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-const verticalBlurTex = blurShader.prepareImageTexture(
-    "uSampler",
-    Utils.getRandomStartTexture(128, 128),
-    'verticalBlurTex',
-    128, 128
-);
-const canvasTexture = canvasShader.prepareImageTexture(
-    "uSampler",
-    Utils.getRandomStartTexture(128, 128),
-    'canvasTex',
-    128, 128
-);
-// prepare empty cost surface texture (will be rendered into by topo shader)
 const costsurfaceTex = physarumShader.prepareImageTexture(
     "uCostSampler",
-    Utils.getRandomStartTexture(size, size),
+    Utils.getRandomStartTexture(canvas.width, canvas.height),
     'costsurfaceTex',
-    size, size,
+    canvas.width, canvas.height,
     'LINEAR',
     'CLAMP_TO_EDGE',
     1  // texture unit 1
 );
-
-/* PREPARE FBOs */
-// TopoShader FBO
 topoShader.prepareFramebufferObject(
     gl.COLOR_ATTACHMENT0,
     costsurfaceTex, // FBO will render into this texture
     'Topo_FBO',
-    canvas.width,
-    canvas.height,
-    gl.RGBA16F,
+    canvas.width, canvas.height
 );
-// PhysarumShader FBOs
 
-// physarumShader.prepareFramebufferObject(
-//     gl.COLOR_ATTACHMENT0,   // equals output location in fragment shader
-//     emptyTexture,          // FBO will render into this texture
-//     'Physarum_FBO_FULL',
-//     canvas.width, canvas.height,
-//     gl.RGBA16F
-// );
-// physarumShader.prepareFramebufferObject(
-//     gl.COLOR_ATTACHMENT0,   // equals output location in fragment shader
-//     randomTexture,          // FBO will render into this texture
-//     'Physarum_FBO_EMPTY',
-//     canvas.width, canvas.height,
-//     gl.RGBA16F
-// );
-// BlurShader FBOs
+/* Physarum Textures and FBOs */;
+const randomTexture = physarumShader.prepareImageTexture(
+    "uParticleSampler",
+    Utils.getRandomStartTexture(canvas.width, canvas.height),
+    'randomTexture',
+    canvas.width, canvas.height,
+    'LINEAR',
+    'CLAMP_TO_EDGE',
+    0  // texture unit 0
+);
+const emptyTexture = physarumShader.prepareImageTexture(
+    'uParticleSampler',
+    Utils.getEmptyStartTexture(canvas.width, canvas.height),
+    'emptyTexture',
+    canvas.width, canvas.height,
+    'LINEAR',
+    'CLAMP_TO_EDGE',
+    0  // texture unit 0
+);
+const fbo1 = physarumShader.prepareFramebufferObject(
+    gl.COLOR_ATTACHMENT0,   // equals output location in fragment shader
+    emptyTexture,          // FBO will render into this texture
+    'Physarum_FBO_FULL',
+    canvas.width, canvas.height
+);
+const fbo2 = physarumShader.prepareFramebufferObject(
+    gl.COLOR_ATTACHMENT0,   // equals output location in fragment shader
+    randomTexture,          // FBO will render into this texture
+    'Physarum_FBO_EMPTY',
+    canvas.width, canvas.height
+);
+
+/* Blur Textures and FBOs */
+const verticalBlurTex = blurShader.prepareImageTexture(
+    "uSampler",
+    Utils.getRandomStartTexture(canvas.width, canvas.height),
+    'verticalBlurTex',
+    canvas.width, canvas.height,
+);
+const canvasTexture = canvasShader.prepareImageTexture(
+    "uSampler",
+    Utils.getRandomStartTexture(canvas.width, canvas.height),
+    'canvasTex',
+    canvas.width, canvas.height,
+);
 blurShader.prepareFramebufferObject(
     gl.COLOR_ATTACHMENT0,
     verticalBlurTex, // FBO will render into this texture
     'horizontalBlurFBO',
-    canvas.width,
-    canvas.height,
-    gl.RGBA16F,
+    canvas.width, canvas.height
 );
 blurShader.prepareFramebufferObject(
     gl.COLOR_ATTACHMENT0,
     canvasTexture, // FBO will render into this texture
     'verticalBlurFBO',
-    canvas.width,
-    canvas.height,
-    gl.RGBA16F,
+    canvas.width, canvas.height
 );
+
 
 /* SET ALL SHADERS GLOBAL */
 glContext.setShaderGlobal(topoShader);
@@ -256,7 +203,6 @@ for (const shader of shaderList) {
 var renderFrom = randomTexture;
 var renderInto = emptyTexture;
 var fbo = fbo1;
-
 function swapFBOTextures() {
     renderFrom = renderFrom == randomTexture ? emptyTexture : randomTexture;
     renderInto = renderInto == randomTexture ? emptyTexture : randomTexture;
@@ -271,9 +217,6 @@ function swapBlurDirectionUniform() {
 function updateUniforms() {
     tick += TIMESTEP;
     // glContext.cameraTransform();
-
-
-    glContext.updateGlobalUniform('uTime', tick);
     gl.bindBuffer(gl.UNIFORM_BUFFER, glContext.globalUniformBuffer);
     glContext.updateGlobalUniform('uTime', tick);
     glContext.updateGlobalUniform('uModel', glContext.uModel);
@@ -294,82 +237,6 @@ function updateUniforms() {
         hasCheckboxChanged = false;
     }
     gl.useProgram(null);
-}
-/**
- * Render with Frame Buffer Object
- * @param {Shader} shader The Shader with a framebuffer object
- * @param {WebGLTexture} inputTexture The texture to render into the framebuffer
- * @param {number} fboIndex If multiple framebuffers are used, this index identifies the framebuffer in the list of FBOs (default is 0)
- * @param {number} overwriteTextureUnit If the shader uses multiple textures, this parameter can be used to set the texture unit (default is null)
- * @param {WebGLTexture} texture The texture to be associated with the above texture unit
- * @param {function} drawArrays An optional function passed as gl-render instruction (default is gl.drawArrays(gl.TRIANGLE_FAN, 0, 4))
- * @returns {void}
- * @example
- * renderWithFrameBuffer(
- *      shaderWithFBO, inputTexture, 0, 
- *      1, secondaryTexture, 
- *      () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
- * );
- * 
-*/
-const renderWithFrameBuffer = (shader, inputTexture, fboIndex = 0, overwriteTextureUnit = null, texture = null, drawArrays = () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)) => {
-    gl.useProgram(shader.program);
-    gl.bindVertexArray(shader.vao);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, shader.fbo[fboIndex]);
-    if (overwriteTextureUnit != null && texture != null) {
-        gl.activeTexture(gl.TEXTURE0 + overwriteTextureUnit);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-    }
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, inputTexture);
-
-    drawArrays();
-
-    gl.bindVertexArray(null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-}
-
-/* RENDERING */
-const renderLandscapes = () => {
-    // render TOPOGRAPHY into texture; in: topoSurfaceTexture --> out: costSurfaceTex
-    renderWithFrameBuffer(topoShader, toposurfaceTex);
-}
-
-// function updateSamplerUniform(program, canvasTexture, samplerName='uSampler') {
-//     gl.useProgram(program);
-//     gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
-//     gl.uniform1i(gl.getUniformLocation(program, samplerName), 0);
-//     gl.bindTexture(gl.TEXTURE_2D, null);
-//     gl.useProgram(null);
-// }
-
-
-const renderPhysarum = () => {
-    gl.useProgram(physarumShader.program);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    
-    gl.bindVertexArray(physarumShader.vao);
-    
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, renderFrom);
-
-    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-    
-    gl.bindVertexArray(null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    swapFBOTextures();
-}
-
-const renderBlur = () => {
-    gl.useProgram(blurShader.program);
-    gl.bindVertexArray(blurShader.vao);
-    renderWithFrameBuffer(blurShader, renderInto, 0);
-    swapBlurDirectionUniform();
-    renderWithFrameBuffer(blurShader, verticalBlurTex, 1);
 }
 
 /**
@@ -392,69 +259,32 @@ const renderCanvas = (drawArrays = () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)) =
     gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
-// renderLandscapes();
+// fill topo texture exactly once
+topoShader.renderWithFBO(toposurfaceTex);
 
 const animate = () => {
-    requestAnimationFrame(animate);
 
+    requestAnimationFrame(animate);
     updateUniforms();
 
-    if ((tick == TIMESTEP) || updateLandscape) {
-        renderLandscapes();
+    // update topo if checkbox is checked
+    if (updateLandscape) {
+        topoShader.renderWithFBO(toposurfaceTex);
         console.info('updating landscape');
         updateLandscape = false;
     }
 
-    renderPhysarum();
-
-    renderBlur();
-    renderCanvas(
-        () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
-    );
-
-
+    // render physarum shader
+    physarumShader.renderWithFBO(renderFrom, fbo, 1, costsurfaceTex);
+    swapFBOTextures();
+    
+    // render blur shader
+    blurShader.renderWithFBO(renderInto, 0);
+    swapBlurDirectionUniform();
+    blurShader.renderWithFBO(verticalBlurTex, 1);
+    
+    // render canvas shader
+    renderCanvas();
 }
 
 animate();
-
-
-
-
-//   function renderPingPong() {
-//     let useFbo1 = true;
-
-//     for (let i = 0; i < numIterations; i++) {
-//       const fbo = useFbo1 ? fbo1 : fbo2;
-//       const tex = useFbo1 ? tex1 : tex2;
-//       const srcTex = useFbo1 ? tex2 : tex1;
-
-//       // Bind the framebuffer
-//       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-//       gl.viewport(0, 0, width, height);
-//       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-//       // Bind the VAO
-//       gl.bindVertexArray(vao);
-
-//       // Bind textures to texture units
-//       gl.activeTexture(gl.TEXTURE0);
-//       gl.bindTexture(gl.TEXTURE_2D, srcTex);
-
-//       gl.activeTexture(gl.TEXTURE1);
-//       gl.bindTexture(gl.TEXTURE_2D, miscTex);
-
-//       // Set the uniform samplers in the shader
-//       gl.uniform1i(gl.getUniformLocation(shaderProgram, "u_srcTex"), 0);
-//       gl.uniform1i(gl.getUniformLocation(shaderProgram, "u_miscTex"), 1);
-
-//       // Draw your scene
-//       gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-//       // Unbind the VAO and framebuffer
-//       gl.bindVertexArray(null);
-//       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-//       // Toggle between FBOs
-//       useFbo1 = !useFbo1;
-//     }
-//   }
