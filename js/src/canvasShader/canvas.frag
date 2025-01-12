@@ -4,6 +4,7 @@ precision mediump float;
 in vec2 vTexCoord;
 
 uniform sampler2D uSampler;
+uniform sampler2D uTopoSampler;
 
 // uniform binding index = 0
 layout(std140) uniform GlobalUniforms {
@@ -39,12 +40,15 @@ vec4 prepareCursor(float radius, vec4 color) {
 
 void main() {
     vec4 cursor = prepareCursor(15.0, vec4(0.4471, 0.4471, 0.4471, 0.5));
+    
+    vec4 particle_tex = texture(uSampler, vTexCoord);
+    vec4 topo_tex = texture(uTopoSampler, vTexCoord);
 
-    vec4 tex = texture(uSampler, vTexCoord);
-    // if (particles.r > 0.1) {
-    //     particles = vec4(1.0, 1.0, 1.0, 1.0);
-    // } else {
-    //     particles = vec4(0.0, 0.0, 0.0, 1.0);
+
+    // if (particle_tex.r > 0.1) {
+    //     particle_tex = vec4(1.0, 1.0, 1.0, 1.0);
+    // }  else {
+    //     particle_tex = vec4(0.0, 0.0, 0.0, 1.0);
     // }
-    fragColor = tex + cursor;
+    fragColor = topo_tex - particle_tex + cursor;
 }

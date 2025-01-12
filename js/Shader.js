@@ -4,16 +4,19 @@ export class Shader {
     gl;
     name;
     program;
+    vaoList = [];
     vao;
     textureList = {};
     bufferList = [];
     fbo = [];
+    tfVao = null;
     tfBufferSize = 0;
     tfBuffer;
     attributeList = {};
-    AttributesPoolBuffer;
+    AttributesPoolBuffer = null;
     uniformList = {};
     uniformBlockIndex = 'GlobalUniforms';
+
     /**
      * Creates a new Shader object.
      * @param {WebGL2RenderingContext} gl The WebGL2 rendering context
@@ -39,11 +42,13 @@ export class Shader {
 
         this.prepareUniform(uniforms, verbose);
         this.vao = this.prepareAttributes(attributes, verbose);
+        this.vaoList.push(this.vao);
         if (tf_description !== null) {
-            // seperate tf_description into args { TF_varyings: ['vPoints'], TF_mode: gl.SEPARATE_ATTRIBS, TF_buffer: TF_BUFF_1, TF_bufferSize: BUFFSIZE }
+            // seperate tf_description into args { TF_Attribute, TF_varyings: ['vPoints'], TF_mode: gl.SEPARATE_ATTRIBS, TF_buffer: TF_BUFF_1, TF_bufferSize: BUFFSIZE }
+            const TF_attribute = tf_description.TF_attribute;
             const buffer = tf_description.TF_buffer;
             const bufferSize = tf_description.TF_bufferSize;
-            this.prepareTransformFeedback(buffer, bufferSize, verbose);
+            this.prepareTransformFeedback(TF_attribute, buffer, bufferSize, 'DYNAMIC_DRAW', verbose);
         }
         if (verbose) { console.groupEnd(); }
     }
@@ -65,6 +70,7 @@ export class Shader {
         gl.shaderSource(this.vertexShader, vertexShaderCode);
         gl.compileShader(this.vertexShader);
         if (!gl.getShaderParameter(this.vertexShader, gl.COMPILE_STATUS)) {
+            console.groupEnd();
             console.error('Error compiling ', this.vertexShader.name, gl.getShaderInfoLog(this.vertexShader));
             return;
         }
@@ -74,6 +80,7 @@ export class Shader {
         gl.shaderSource(this.fragmentShader, fragmentShaderCode);
         gl.compileShader(this.fragmentShader);
         if (!gl.getShaderParameter(this.fragmentShader, gl.COMPILE_STATUS)) {
+            console.groupEnd();
             console.error('Error compiling ', this.fragmentShader.name, gl.getShaderInfoLog(this.fragmentShader));
             return;
         }
@@ -84,17 +91,23 @@ export class Shader {
 
         // before linking, set up transform feedback varyings if enabled
         if (tf_description !== null) {
-            const { TF_varyings, TF_mode, tf_bufferSize } = tf_description;
-            this.tfBufferSize = tf_bufferSize;
+            const { TF_attribute, TF_varyings, TF_mode, TF_bufferSize } = tf_description;
+            this.tfBufferSize = TF_bufferSize;
             if (verbose) {
-                console.info('Transform feedback enabled with varyings:', TF_varyings, ', buffer size:', tf_bufferSize);
+                console.info('Transform feedback enabled with varyings:', TF_varyings, 'for attributes:', TF_attribute, 'buffer size:', TF_bufferSize);
             }
+            /* TF_mode: SEPARATE_ATTRIBS or INTERLEAVED_ATTRIBS:
+            * SEPARATE_ATTRIBS: If multiple varyings are passed, each varying is written to a separate buffer object.
+            * INTERLEAVED_ATTRIBS: All varyings are written to the same buffer object.
+            */
             gl.transformFeedbackVaryings(shaderProgram, TF_varyings, TF_mode);
+            gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, this.tfBuffer);
         }
 
         gl.linkProgram(shaderProgram);
 
         if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            console.groupEnd();
             console.error('Error linking program', gl.getProgramInfoLog(shaderProgram));
             return;
         }
@@ -145,9 +158,11 @@ export class Shader {
             } else if (type === '4iv') {
                 gl.uniform4iv(uniformLocation, value);
             } else {
+                console.groupEnd();
                 console.error('Unknown uniform type:', type);
             }
-            this.uniformList[uniformName] = value;
+            // add to uniform list
+            this.uniformList[uniformName] = [type, value];
         }
         if (verbose && (usedUniforms.length > 0 || unusedUniforms.length > 0)) {
             console.groupCollapsed(this.name, '- prepared uniforms:');
@@ -184,12 +199,12 @@ export class Shader {
      *                              * **separate**:     true/false representing whether multiple attributes should stored in separate buffers.
      * @returns {WebGLVertexArrayObject} A WebGLVertexArrayObject
      */
-    prepareAttributes = (attributes, verbose = false) => {
+    prepareAttributes = (attributes, verbose = false, for_TF = false) => {
         const gl = this.gl;
         const program = this.program;
-        const programVAO = gl.createVertexArray();
-        programVAO.name = this.name + '_VAO';
-        gl.bindVertexArray(programVAO);
+        const VAO = gl.createVertexArray();
+        VAO.name = this.name + '_VAO' + (for_TF ? '_TF' : '');
+        gl.bindVertexArray(VAO);
 
         gl.useProgram(program);
         // name: [location_in_shader, [size, type, normalized, stride, offset], [...]] 
@@ -197,9 +212,10 @@ export class Shader {
 
         var foundAttributes = [];
         var notFoundAttributes = [];
+
         this.AttributesPoolBuffer = gl.createBuffer();
         this.AttributesPoolBuffer.name = 'AttributesPool_Buffer';
-        this.bufferList.push(this.AttributesPoolBuffer)
+
 
         for (const [attributeName, [location, [size, type, normalized, stride, offset], bufferData, separate = false]] of Object.entries(attributes)) {
             const attributeLocation = gl.getAttribLocation(program, attributeName);
@@ -207,6 +223,7 @@ export class Shader {
                 // console.error('Attribute', attributeName, 'not found in', this.name);
                 notFoundAttributes.push([attributeName, [location, [size, type, normalized, stride, offset], bufferData]]);
             } else if (attributeLocation !== location) {
+                console.groupEnd();
                 console.error('Attribute', attributeName, 'prepared for location', location, 'but is located at', attributeLocation);
             } else {
                 // console.info(this.name, '\nAttribute', attributeName, 'found'); 
@@ -275,7 +292,7 @@ export class Shader {
             console.groupEnd();
         }
 
-        return programVAO;
+        return VAO;
     }
 
     /**
@@ -394,6 +411,7 @@ export class Shader {
         gl.bindVertexArray(this.vao);
 
         if (texture.constructor.name !== 'WebGLTexture') {
+            console.groupEnd();
             console.error('prepareFramebufferObject():', texture.name, 'is not of type WebGLTexture');
             return;
         }
@@ -418,6 +436,7 @@ export class Shader {
         );
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+            console.groupEnd();
             console.error(program.name, ':', fbo.name, 'is incomplete');
         } else if (verbose) {
             console.info(program.name, ':', fbo.name, 'with texture', texture.name, 'is complete');
@@ -438,6 +457,7 @@ export class Shader {
         gl.useProgram(null);
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+            console.groupEnd();
             console.error(program.name, ':', fbo.name, 'is incomplete');
             return null;
         } else {
@@ -448,17 +468,20 @@ export class Shader {
 
     /**
      * Creates a transform feedback buffer object and binds it to the shader program.
+     * @param {Object} attributes a list of attributes to be associated with the TF_VAO, defined as { attributeName: [location, [size, type, normalized, stride, offset], bufferData, separate] }
      * @param {WebGLBuffer} buffer a buffer object
      * @param {number} bufferSize size of the buffer
      * @param {string} usage usage pattern of the buffer, e.g. 'DYNAMIC_DRAW' (default), 'STATIC_DRAW', 'STREAM_DRAW'
      * @param {boolean} verbose if true, success message is printed
      * @returns {WebGLBuffer} buffer object
     */
-    prepareTransformFeedback(buffer, bufferSize, usage = 'DYNAMIC_DRAW', verbose = false) {
+    prepareTransformFeedback(attributes, buffer, bufferSize, usage = 'DYNAMIC_DRAW', verbose = false) {
         // set to use program and get attached program name
         const gl = this.gl;
         const program = this.program;
-        const vao = this.vao;
+
+        this.tfVao = this.prepareAttributes(attributes, true, true);
+        this.vaoList.push(this.tfVao);
 
         gl.useProgram(program);
         this.tfBuffer = buffer;
@@ -468,10 +491,23 @@ export class Shader {
         if (verbose) {
             console.info('Transform feedback buffer created with size:', bufferSize);
         }
-        // this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 3*4, 0);
-        this.gl.enableVertexAttribArray(0);   // means that the buffer is bound to location 0
+        
+        gl.bindVertexArray(this.tfVao);
+        gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, buffer);
+
+        const attribute = Object.entries(attributes)[0][0];
+        const attributeLocation = Object.entries(attributes)[0][1][0];
+        const attributeSize = Object.entries(attributes)[0][1][1][0];
+        const attributeType = Object.entries(attributes)[0][1][1][1];
+        const attributeNormalized = Object.entries(attributes)[0][1][1][2];
+        const attributeStride = Object.entries(attributes)[0][1][1][3];
+        const attributeOffset = Object.entries(attributes)[0][1][1][4];
+
+        this.gl.enableVertexAttribArray(attributeLocation);   // means that the buffer is bound to location 0
+        this.gl.vertexAttribPointer(attributeLocation, attributeSize, gl[attributeType], attributeNormalized, attributeStride, attributeOffset);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.bindVertexArray(null);
+        this.gl.useProgram(null);
 
         return this.tfBuffer;
     }
@@ -517,6 +553,7 @@ export class Shader {
         } else if (type === '4iv') {
             gl.uniform4iv(uniformLocation, value);
         } else {
+            console.groupEnd();
             console.error('Unknown uniform type:', type);
         }
     }
@@ -530,7 +567,7 @@ export class Shader {
      * @param {number} bufferSize size of the buffer
      * @returns {Float32Array} buffer data
      */
-    fetchBufferData(buffer, bufferSize) {
+    readBufferData(buffer, bufferSize) {
         const view = new Float32Array(bufferSize);
         const gl = this.gl;
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -569,7 +606,7 @@ export class Shader {
         }
 
         console.groupCollapsed('Shader Details:', this.name);
-        console.log('VAO:', vao.name);
+        console.log('VAOs:', ...this.vaoList.reduce((acc, vao) => { acc.push('\n •', vao.name); return acc; }, []));
         console.log('FBOs:', this.fbo.length == 0 ? 'none' : ' ', ...this.fbo.reduce((acc, fbo) => {
             acc.push(
                 '\n •', gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE ? '[COMPLETE]' : '[INCOMPLETE]',
@@ -640,6 +677,7 @@ export class Shader {
     */
     renderWithFBO = (inputTexture, fbo = 0, attachAtTextureUnit = null, texture = null, drawArrays = () => this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4)) => {
         const gl = this.gl;
+
         gl.useProgram(this.program);
         gl.bindVertexArray(this.vao);
         if (fbo.constructor.name != 'Number') {

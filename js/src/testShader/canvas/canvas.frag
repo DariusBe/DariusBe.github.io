@@ -1,12 +1,9 @@
 #version 300 es
-precision mediump float;
+precision highp float;
 
 in vec2 vTexCoord;
 
 uniform sampler2D uSampler;
-uniform vec2 uResolution;
-uniform float uTime;
-uniform vec3 uMouse;
 
 layout(std140) uniform GlobalUniforms {
     mat4 uProjection;

@@ -5,10 +5,13 @@ import { ModelOBJ } from './ModelOBJ.js';
 import '../gl-matrix-min.js';
 
 /* FILES */
+const basePath = 'js/src/';
+const particleVertCode = await Utils.readShaderFile(basePath + 'testShader/tf/tf.vert');
+const particleFragCode = await Utils.readShaderFile(basePath + 'testShader/tf/tf.frag');
 const topoVertCode = await Utils.readShaderFile('js/src/topoShader/topo.vert');
 const topoFragCode = await Utils.readShaderFile('js/src/topoShader/topo.frag');
-const physarumVertCode = await Utils.readShaderFile('js/src/physarumShader/physarum.vert');
-const physarumfragCode = await Utils.readShaderFile('js/src/physarumShader/physarum.frag');
+const physarumVertCode = await Utils.readShaderFile('js/src/rulesShader/rules.vert');
+const physarumfragCode = await Utils.readShaderFile('js/src/rulesShader/rules.frag');
 const blurVertCode = await Utils.readShaderFile('js/src/blurShader/blur.vert');
 const blurFragCode = await Utils.readShaderFile('js/src/blurShader/blur.frag');
 const canvasVertCode = await Utils.readShaderFile('js/src/canvasShader/canvas.vert');
@@ -24,9 +27,10 @@ var hasSliderChanged = false;
 var hasCheckboxChanged = false;
 
 /* Globals */
-const PARTICLE_COUNT = 100;
+const PARTICLE_COUNT = 1000;
 const BYTE = 4;
 const TIMESTEP = 0.01;
+const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
 
 const glContext = new GLContext();
 const gl = glContext.gl;
@@ -77,12 +81,32 @@ const physarumUniforms = {
     uCostSampler: ['1i', 1],
 
     uParticleCount: ['1i', 250],
-    uSensorAngle: ['1f', Math.PI],
-    uSensorDistance: ['1f', 5]
+    uSensorAngle: ['1f', Math.PI / 4.0],
+    uSensorDistance: ['1f', 8]
 };
+
+
+// Transform Feedback Buffers
+var TF_BUFF_1 = gl.createBuffer();
+var TF_DATA = Utils.populateParticleBuffer(PARTICLE_COUNT, canvas.width, canvas.height);
+console.log(TF_DATA);
+gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_1)
+gl.bufferData(gl.ARRAY_BUFFER, TF_DATA, gl.DYNAMIC_COPY);
+var TF_BUFF_2 = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_2)
+gl.bufferData(gl.ARRAY_BUFFER, TF_DATA, gl.DYNAMIC_COPY);
+gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
 const physarumShader = new Shader(gl, name = 'PhysarumShader',
-    physarumVertCode, physarumfragCode,
-    globalAttributes, physarumUniforms
+    particleVertCode, particleFragCode,
+    globalAttributes, physarumUniforms,
+    {
+        TF_attribute: { 'aParticle': [2, [4, 'FLOAT', false, 4 * BYTE, 0], TF_DATA] },
+        TF_varyings: ['vParticle'],
+        TF_mode: gl.SEPARATE_ATTRIBS,
+        TF_buffer: TF_BUFF_1,
+        TF_bufferSize: BUFFSIZE,
+    }
 );
 
 /* BLUR */
@@ -99,9 +123,12 @@ const blurShader = new Shader(gl, name = 'BlurShader',
 );
 
 /* CANVAS */
+const canvasUniforms = Object.assign({}, globalUniforms, {
+    uTopoSampler: ['1i', 1]
+});
 const canvasShader = new Shader(gl, name = 'CanvasShader',
     canvasVertCode, canvasFragCode,
-    globalAttributes, globalUniforms
+    globalAttributes, canvasUniforms
 );
 
 /* TOPO Textures and FBO */
@@ -113,7 +140,7 @@ const toposurfaceTex = topoShader.prepareImageTexture(
     'TopoTexture',
     size, size,
     'LINEAR',
-    'CLAMP_TO_EDGE'
+    'CLAMP_TO_BORDER'
 );
 const costsurfaceTex = physarumShader.prepareImageTexture(
     "uCostSampler",
@@ -121,7 +148,7 @@ const costsurfaceTex = physarumShader.prepareImageTexture(
     'costsurfaceTex',
     canvas.width, canvas.height,
     'LINEAR',
-    'CLAMP_TO_EDGE',
+    'CLAMP_TO_BORDER',
     1  // texture unit 1
 );
 topoShader.prepareFramebufferObject(
@@ -138,7 +165,7 @@ const randomTexture = physarumShader.prepareImageTexture(
     'randomTexture',
     canvas.width, canvas.height,
     'LINEAR',
-    'CLAMP_TO_EDGE',
+    'CLAMP_TO_BORDER',
     0  // texture unit 0
 );
 const emptyTexture = physarumShader.prepareImageTexture(
@@ -147,7 +174,7 @@ const emptyTexture = physarumShader.prepareImageTexture(
     'emptyTexture',
     canvas.width, canvas.height,
     'LINEAR',
-    'CLAMP_TO_EDGE',
+    'CLAMP_TO_BORDER',
     0  // texture unit 0
 );
 const fbo1 = physarumShader.prepareFramebufferObject(
@@ -175,6 +202,15 @@ const canvasTexture = canvasShader.prepareImageTexture(
     Utils.getRandomStartTexture(canvas.width, canvas.height),
     'canvasTex',
     canvas.width, canvas.height,
+);
+const topoTexture = canvasShader.prepareImageTexture(
+    "uTopoSampler",
+    Utils.getRandomStartTexture(canvas.width, canvas.height),
+    'topoTex',
+    canvas.width, canvas.height,
+    'LINEAR',
+    'CLAMP_TO_BORDER',
+    1  // texture unit 0
 );
 blurShader.prepareFramebufferObject(
     gl.COLOR_ATTACHMENT0,
@@ -207,6 +243,11 @@ function swapFBOTextures() {
     renderFrom = renderFrom == randomTexture ? emptyTexture : randomTexture;
     renderInto = renderInto == randomTexture ? emptyTexture : randomTexture;
     fbo = fbo == fbo1 ? fbo2 : fbo1;
+}
+function swapTFBuffers() {
+    const temp = TF_BUFF_1;
+    TF_BUFF_1 = TF_BUFF_2;
+    TF_BUFF_2 = temp;
 }
 function swapBlurDirectionUniform() {
     // swap blur direction
@@ -252,18 +293,60 @@ const renderCanvas = (drawArrays = () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)) =
     // render canvas texture
     gl.useProgram(canvasShader.program);
     gl.bindVertexArray(canvasShader.vao);
+
+    gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
+
     // gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     drawArrays();
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
+const renderParticle = () => {
+    gl.useProgram(physarumShader.program);
+    gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_2)
+    gl.bindVertexArray(physarumShader.vaoList[1]);
+    gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 0, 0);
+    // gl.enable(gl.RASTERIZER_DISCARD);
+    // if (particleShader.tfBuffer !== null) {
+    // bindBufferBase args: target, index, buffer
+    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, TF_BUFF_1);
+    // }
+    /* rendering with fbos */
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    // gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, renderFrom);
+    gl.beginTransformFeedback(gl.POINTS);
+    gl.drawArrays(gl.POINTS, 0, PARTICLE_COUNT); // args: mode, first, count
+    gl.endTransformFeedback();
+    gl.bindVertexArray(null);
+    gl.useProgram(null);
+    gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    if (Math.round(tick * 100) % 1 == 0) {
+        console.log(Utils.printMatrix(physarumShader.readBufferData(TF_BUFF_2, PARTICLE_COUNT * 4), 4, 1, 4));
+    }
+
+
+    swapTFBuffers();
+    swapFBOTextures();
+
+}
+
 // fill topo texture exactly once
 topoShader.renderWithFBO(toposurfaceTex);
 
 const animate = () => {
-
     requestAnimationFrame(animate);
     updateUniforms();
 
@@ -275,14 +358,15 @@ const animate = () => {
     }
 
     // render physarum shader
-    physarumShader.renderWithFBO(renderFrom, fbo, 1, costsurfaceTex);
+    // physarumShader.renderWithFBO(renderFrom, fbo, 1, costsurfaceTex);
+    renderParticle();
     swapFBOTextures();
-    
+
     // render blur shader
     blurShader.renderWithFBO(renderInto, 0);
     swapBlurDirectionUniform();
     blurShader.renderWithFBO(verticalBlurTex, 1);
-    
+
     // render canvas shader
     renderCanvas();
 }

@@ -113,7 +113,10 @@
 
         const canvas = document.getElementById('webgl-canvas');
         canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight - 65;
+        const bottombar_height = 90; // used to be 65px;
+        // canvas.height = 
+        window.innerHeight = window.innerHeight - bottombar_height;
+        canvas.height = window.innerHeight;
 
         // Add event listener to checkbox_2
         const matrix_checkbox = document.getElementById('matrix_checkbox');

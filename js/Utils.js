@@ -225,7 +225,7 @@ export class Utils {
     static getEmptyStartTexture(width = 512, height = 512, verbose = false) {
         var textureData = new Float32Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
-            textureData[i * 4 + 0] = (i % 15 == 0) ? 255 : 0;  // r
+            textureData[i * 4 + 0] = 0;  // r
             textureData[i * 4 + 1] = 0;     // g
             textureData[i * 4 + 2] = 0;     // b
             textureData[i * 4 + 3] = 1;     // a
@@ -248,11 +248,10 @@ export class Utils {
 
         for (let i = 0; i < width * height; i++) {
             // Random value between 0 and 1 for each channel.
-            const fill = Math.random();
-            textureData[i * 4 + 0] = fill;  // r
-            textureData[i * 4 + 1] = fill;  // g
-            textureData[i * 4 + 2] = fill;  // b
-            textureData[i * 4 + 3] = 1.0;   // a (fully opaque)
+            textureData[i * 4 + 0] = Math.random();  // r       //occupation
+            textureData[i * 4 + 1] = Math.random();  // g       //heading
+            textureData[i * 4 + 2] = Math.random();  // b       //acceleration
+            textureData[i * 4 + 3] = 0.0;   // a (fully opaque) //age
         }
 
         if (verbose) {
@@ -340,6 +339,18 @@ export class Utils {
             coors[i * 2 + 1] = Math.random() * 2 - 1;
         }
         return coors;
+    }
+
+    static populateParticleBuffer = (count, width, height) => {
+        //XYZ, ID
+        const particleBuffer = new Float32Array(count * 4);
+        for (let i = 0; i < count; i++) {
+            particleBuffer[i * 4] = Math.random();
+            particleBuffer[i * 4 + 1] = Math.random();
+            particleBuffer[i * 4 + 2] = Math.random()*Math.PI*2;
+            particleBuffer[i * 4 + 3] = i;
+        }
+        return particleBuffer;
     }
 
     /**
