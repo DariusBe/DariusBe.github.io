@@ -297,10 +297,10 @@ export class Utils {
      * Positions for a quad covering the entire canvas. 
      */
     static canvasPoints = new Float32Array([
-        -1.0,   -1.0,   0.0,
-        1.0,    -1.0,   0.0,
-        1.0,    1.0,    0.0,
-        -1.0,   1.0,    0.0
+        -1.0, -1.0, 0.0,
+        1.0, -1.0, 0.0,
+        1.0, 1.0, 0.0,
+        -1.0, 1.0, 0.0
     ]);
 
     /**
@@ -318,13 +318,13 @@ export class Utils {
      * test
      * ---
      * [x][y][z]-[u][v] (5 BYTES per line (Stride), 3 BYTE Offset for aTexCoords)
-     */ 
+     */
     static canvasAttribs = new Float32Array([
         // vec3 aPosition,  vec2 aTexCoord
-        -1.0, -1.0, 0.0,    0.0, 0.0,
-        1.0,  -1.0, 0.0,    1.0, 0.0,
-        1.0,   1.0, 0.0,    1.0, 1.0,
-        -1.0,  1.0, 0.0,    0.0, 1.0
+        -1.0, -1.0, 0.0, 0.0, 0.0,
+        1.0, -1.0, 0.0, 1.0, 0.0,
+        1.0, 1.0, 0.0, 1.0, 1.0,
+        -1.0, 1.0, 0.0, 0.0, 1.0
     ]);
 
     /**
@@ -341,13 +341,13 @@ export class Utils {
         return coors;
     }
 
-    static populateParticleBuffer = (count, width, height) => {
+    static populateParticleBuffer = (count, max_x=width, max_y=height, min_x=0, min_y=0) => {
         //XYZ, ID
         const particleBuffer = new Float32Array(count * 4);
         for (let i = 0; i < count; i++) {
-            particleBuffer[i * 4] = Math.random();
-            particleBuffer[i * 4 + 1] = Math.random();
-            particleBuffer[i * 4 + 2] = Math.random()*Math.PI*2;
+            particleBuffer[i * 4] = Math.random() * (max_x - min_x) + min_x;
+            particleBuffer[i * 4 + 1] = Math.random() * (max_y - min_y) + min_y;
+            particleBuffer[i * 4 + 2] = Math.random() * Math.PI * 2;
             particleBuffer[i * 4 + 3] = i;
         }
         return particleBuffer;
@@ -590,4 +590,27 @@ export class Utils {
         a.click();
 
     }
+
+    static getBufferContents = (gl, buffer, COUNT, cols = null, max=COUNT/4) => {
+        const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+        const checkStatus = () => {
+            const status = gl.clientWaitSync(sync, gl.SYNC_FLUSH_COMMANDS_BIT, 0);
+            if (status == gl.TIMEOUT_EXPIRED) {
+                console.log('GPU busy.'); setTimeout(checkStatus);
+            } else if (status === gl.WAIT_FAILED) {
+                console.erfor('Context lost.');
+            } else {
+                const view = new Float32Array(COUNT);
+                gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, buffer);
+                gl.getBufferSubData(gl.TRANSFORM_FEEDBACK_BUFFER, 0, view);
+                gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, null);
+                // if (cols != null) {
+                //     console.log(Utils.printMatrix(view, cols, max, 2));
+                // } else {
+                    console.log(view);
+                // }
+            };
+        };
+        setTimeout(checkStatus);
+    };
 }

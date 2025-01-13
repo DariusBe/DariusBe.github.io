@@ -50,5 +50,5 @@ void main() {
     // }  else {
     //     particle_tex = vec4(0.0, 0.0, 0.0, 1.0);
     // }
-    fragColor = topo_tex - particle_tex + cursor;
+    fragColor = particle_tex + cursor;
 }

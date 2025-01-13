@@ -1,8 +1,8 @@
 #version 300 es
 precision highp float;
 
+in vec3 vPosition;
 in vec2 vTexCoord;
-in vec2 vPosition;
 in vec4 vParticle;
 
 layout(std140) uniform GlobalUniforms {
@@ -17,7 +17,7 @@ layout(std140) uniform GlobalUniforms {
 uniform sampler2D uParticleSampler;
 uniform sampler2D uCostSampler;
 
-uniform int uParticleCount;
+uniform float uParticleCount;
 uniform float uSensorAngle; // 22.5 degrees
 uniform float uSensorDistance; // 8 pixels
 
@@ -39,13 +39,20 @@ vec4 prepareCursor(float radius, vec4 color) {
 }
 
 void main() {
-    vec2 uv = vTexCoord;
-    vec2 st = uv / uResolution;
-    vec3 pos = vParticle.xyz;
-    vec4 outColor = vec4(0.0f);
-    vec4 cursor = prepareCursor(250.0, vec4(1.0f));
+    // vec2 uv = vTexCoord;
+    // vec2 st = uv / uResolution;
+    // vec3 pos = vParticle.xyz;
+    // vec4 cursor = prepareCursor(350.0, vec4(0.0f, 0.0f, 0.0f, 0.5f));
 
-    // vec4 particle = texelFetch(uParticleSampler, ivec2(vParticle.xy), 0);
-    vec4 cost = texture(uCostSampler, uv);
-    fragColor = vec4(1.0, 1.0, 1.0, 1.0f);
+    // vec4 cost = texture(uCostSampler, uv);
+    // vec4 particle = texture(uParticleSampler, uv);
+    
+    // // render particles
+    // vec4 test = vec4(0.0f);
+    // if (particle.r > 0.5) {
+    //     test = vec4(1.0f) + cursor;
+    // } else {
+    //     test = vec4(0.0f, 0.0f, 0.0f, 1.0f) + cursor;
+    // }
+    // fragColor = cost;
 }

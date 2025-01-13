@@ -33,13 +33,23 @@ vec4 prepareCursor(float radius, vec4 color) {
 }
 
 void main() {
-    vec4 cursor = prepareCursor(15.0, vec4(0.4471, 0.4471, 0.4471, 0.5));
-
     vec4 tex = texture(uSampler, vTexCoord);
-    // if (particles.r > 0.1) {
-    //     particles = vec4(1.0, 1.0, 1.0, 1.0);
-    // } else {
-    //     particles = vec4(0.0, 0.0, 0.0, 1.0);
-    // }
-    fragColor = tex + cursor;
+    vec2 pos = vec2(tex.r, tex.g);
+    pos.x = pos.x/2.0 + 0.5;
+    pos.y = pos.y/2.0 + 0.5;
+    float heading = tex.b;
+    float speed = tex.a;
+    // tex.r = x, tex.g = y, tex.b = heading, tex.a = speed
+    // where tex.xy is the position of the particle
+    // start by checking if the particle is located at current fragment
+    
+    if (distance(vTexCoord, pos) < 0.2) {
+        // draw the particle
+        fragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    } else {
+        fragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+    
+
+    
 }

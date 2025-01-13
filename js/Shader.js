@@ -220,6 +220,8 @@ export class Shader {
         for (const [attributeName, [location, [size, type, normalized, stride, offset], bufferData, separate = false]] of Object.entries(attributes)) {
             const attributeLocation = gl.getAttribLocation(program, attributeName);
             if (attributeLocation === -1) {
+                console.groupEnd();
+                console.error(this.name+':', 'Error enabling Vertex Attribute', attributeName);
                 // console.error('Attribute', attributeName, 'not found in', this.name);
                 notFoundAttributes.push([attributeName, [location, [size, type, normalized, stride, offset], bufferData]]);
             } else if (attributeLocation !== location) {
@@ -247,6 +249,10 @@ export class Shader {
             gl.bufferData(gl.ARRAY_BUFFER, bufferData, gl.STATIC_DRAW);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, bufferData);
             gl.enableVertexAttribArray(attributeLocation);
+            // // if failed, print error
+            // if (gl.getError() !== gl.NO_ERROR) {
+
+            // }
             gl.vertexAttribPointer(attributeLocation, size, gl[type], normalized, stride, offset);
             this.attributeList[attributeName] = [attributeLocation, [size, type, normalized, stride, offset], bufferData];
         }

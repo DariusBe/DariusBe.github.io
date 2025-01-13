@@ -44,7 +44,8 @@ export class GLContext {
         if (!this.gl) {
             throw new Error('WebGL2 not supported');
         }
-        this.gl.getExtension('EXT_color_buffer_float');
+        console.log('WebGL2 context created, canvas:', this.canvas.width, 'x', this.canvas.height);
+        this.gl.getExtension('EXT_color_buffer_float'); // enable float textures
         this.gl.hint(this.gl.FRAGMENT_SHADER_DERIVATIVE_HINT, this.gl.NICEST);
 
         this.uModel = new glMatrix.mat4.create();
@@ -112,15 +113,15 @@ export class GLContext {
             row3,  // up-axis
         );
 
-        // const aspectRatio = this.canvas.width / this.canvas.height;
-        // // args: in_matrix, fovy (vertical FoV in rad, smaller --> 'tele'), aspect_ratio, near, far (resp. distances of camera to near/far planes)
-        // glMatrix.mat4.perspective(
-        //     this.uProjection,
-        //     Math.PI / 6, // 90 degrees --> PI = 180, PI/1.5 = 120, PI/2 = 90 deg...
-        //     aspectRatio,
-        //     0.01,
-        //     8
-        // );
+        const aspectRatio = this.canvas.width / this.canvas.height;
+        // args: in_matrix, fovy (vertical FoV in rad, smaller --> 'tele'), aspect_ratio, near, far (resp. distances of camera to near/far planes)
+        glMatrix.mat4.perspective(
+            this.uProjection,
+            Math.PI / 1.5, // 90 degrees --> PI = 180, PI/1.5 = 120, PI/2 = 90 deg...
+            aspectRatio,
+            0.01,
+            8
+        );
 
         glMatrix.mat4.ortho(
             this.uProjection,
@@ -131,7 +132,7 @@ export class GLContext {
     }
     cameraTransform = () => {
         glMatrix.mat4.rotate(this.uModel, this.uModel, 0.01, [0, 0.53, 0.25]);
-        glMatrix.mat4.scale(this.uModel, this.uModel, [.999, .999, .999]);
+        // glMatrix.mat4.scale(this.uModel, this.uModel, [.999, .999, .999]);
     }
     /* EVENT HANDLERS*/
     onmousemove = (e) => {

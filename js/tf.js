@@ -18,7 +18,7 @@ var hasSliderChanged = false;
 var hasCheckboxChanged = false;
 
 /* Globals */
-const PARTICLE_COUNT = 10000;
+const PARTICLE_COUNT = canvas.width * canvas.height*8;
 const BYTE = 4;
 const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
 const TIMESTEP = 0.01;
@@ -60,7 +60,7 @@ console.log(particleUniforms);
 
 // Transform Feedback Buffers
 var TF_BUFF_1 = gl.createBuffer();
-var TF_DATA = Utils.populateParticleBuffer(PARTICLE_COUNT, canvas.width, canvas.height);
+var TF_DATA = Utils.populateParticleBuffer(PARTICLE_COUNT, 1, 1, -1, -1);
 
 // const TF_DATA = new Float32Array(
 //     [
@@ -92,7 +92,7 @@ const costsurfaceTex = particleShader.prepareImageTexture(
     Utils.getRandomStartTexture(canvas.width, canvas.height),
     'costsurfaceTex',
     canvas.width, canvas.height,
-    'LINEAR',
+    'NEAREST',
     'CLAMP_TO_BORDER',
     1  // texture unit 1
 );
@@ -109,7 +109,7 @@ const randomTexture = particleShader.prepareImageTexture(
     Utils.getEmptyStartTexture(canvas.width, canvas.height),
     'randomTexture',
     canvas.width, canvas.height,
-    'LINEAR',
+    'NEAREST',
     'CLAMP_TO_EDGE',
     0  // texture unit 0
 );
@@ -118,7 +118,7 @@ const emptyTexture = particleShader.prepareImageTexture(
     Utils.getEmptyStartTexture(canvas.width, canvas.height),
     'emptyTexture',
     canvas.width, canvas.height,
-    'LINEAR',
+    'NEAREST',
     'CLAMP_TO_EDGE',
     0  // texture unit 0
 );
@@ -139,6 +139,9 @@ const canvasTexture = canvasShader.prepareImageTexture(
     Utils.getRandomStartTexture(canvas.width, canvas.height),
     'canvasTex',
     canvas.width, canvas.height,
+    'NEAREST',
+    'CLAMP_TO_EDGE',
+    0  // texture unit 0
 );
 
 
@@ -222,17 +225,17 @@ const renderParticle = () => {
     gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_2)
     gl.bindVertexArray(particleShader.vaoList[1]);
     gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 0, 0);
-    // gl.enable(gl.RASTERIZER_DISCARD);
+    gl.enable(gl.RASTERIZER_DISCARD);
     // if (particleShader.tfBuffer !== null) {
     // bindBufferBase args: target, index, buffer
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, TF_BUFF_1);
     // }
     /* rendering with fbos */
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    
+    // gl.viewport(0, 0, canvas.width, canvas.height);
+    // gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    // gl.clear(gl.COLOR_BUFFER_BIT);
+
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
     gl.activeTexture(gl.TEXTURE0);
@@ -245,14 +248,20 @@ const renderParticle = () => {
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    // gl.disable(gl.RASTERIZER_DISCARD);   
+    gl.disable(gl.RASTERIZER_DISCARD);   
 
 
-    // if (tick % 1 == 0) {
-    //     console.log(Utils.printMatrix(particleShader.readBufferData(TF_BUFF_2, PARTICLE_COUNT * 4), 4, PARTICLE_COUNT, 4));
+    // if (Math.round(tick * 100) % 100 == 0) {
+    //     Utils.getBufferContents(gl, TF_BUFF_2, PARTICLE_COUNT, 4, 3);
     // }
     swapTFBuffers();
     swapFBOTextures();
+
+    // Bind PBO and transfer data to texture
+    gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, TF_BUFF_2);
+    gl.bindTexture(gl.TEXTURE_2D, renderFrom);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, canvas.width, canvas.height, gl.RGBA, gl.FLOAT, 0);
+    gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
 
     // // fill canvas buffer with transformed points
     // gl.useProgram(canvas_Shader.program);
