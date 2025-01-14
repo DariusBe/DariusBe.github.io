@@ -225,7 +225,7 @@ export class Utils {
     static getEmptyStartTexture(width = 512, height = 512, verbose = false) {
         var textureData = new Float32Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
-            textureData[i * 4 + 0] = 0;  // r
+            textureData[i * 4 + 0] = 0;     // r
             textureData[i * 4 + 1] = 0;     // g
             textureData[i * 4 + 2] = 0;     // b
             textureData[i * 4 + 3] = 1;     // a

@@ -16,6 +16,7 @@ layout(std140) uniform GlobalUniforms {
 };
 uniform sampler2D uParticleSampler;
 uniform sampler2D uCostSampler;
+uniform sampler2D uAdditionalSampler;
 
 uniform float uParticleCount;
 uniform float uSensorAngle; // 22.5 degrees
@@ -46,7 +47,7 @@ void main() {
 
     // vec4 cost = texture(uCostSampler, uv);
     // vec4 particle = texture(uParticleSampler, uv);
-    
+
     // // render particles
     // vec4 test = vec4(0.0f);
     // if (particle.r > 0.5) {
@@ -55,4 +56,12 @@ void main() {
     //     test = vec4(0.0f, 0.0f, 0.0f, 1.0f) + cursor;
     // }
     // fragColor = cost;
+
+    vec2 delta = gl_PointCoord - vec2(0.5, 0.5);
+    float lenSqr = abs(dot(delta, delta));
+    float a = smoothstep(0.25, 0.24, lenSqr);
+    
+
+    vec3 col = texture(uAdditionalSampler, gl_FragCoord.xy/uResolution).rgb;
+    fragColor = vec4(col, a);
 }

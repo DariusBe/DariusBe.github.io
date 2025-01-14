@@ -42,32 +42,41 @@ float randomSign() {
 }
 
 void main() {
-    float stepWidth = .1;
+    gl_PointSize = 2.0;
+    float stepWidth = .0025;
 
     vec2 pos = aParticle.xy;
-    vec2 mouse = uMouse.xy;
+    // normalize mouse position for -0.5 to 0.5
+    vec2 mouse = uMouse.xy - 0.5;
     float mouseDown = uMouse.z;
 
     float heading = aParticle.z;
     // keep in bounds
-    if (pos.x <= 0.0 || pos.x >= uResolution.x || pos.y <= 0.0 || pos.y >= uResolution.y) {
+    float bound = 0.5;
+    if (pos.x <= -bound || pos.x >= bound || pos.y <= -bound || pos.y >= bound) {
         heading += PI / 2.0;
     }
     // cost map at current position ()
     vec4 costTexel = texelFetch(uAdditionalSampler, ivec2(pos.x, pos.y), 0);
-    if (costTexel.r >= 1.0) {
-        heading += randomSign() * PI / 8.0;
-        heading = mod(heading, 2.0 * PI);
+
+    //normalize pos
+    vec2 normPos = pos + vec2(0.5, 0.5);
+
+    vec4 cost = texture(uAdditionalSampler, normPos);
+
+    if (cost.r >= 0.5 || cost.g >= 0.5) {
+        // gl_PointSize = 1.0;
         pos.x += cos(heading) * stepWidth;
         pos.y += sin(heading) * stepWidth;
     } else {
-        pos.x += cos(heading) * stepWidth;
-        pos.y += sin(heading) * stepWidth;
+        // heading = mod(heading, 2.0 * PI);
+        pos.x += cos(heading) * stepWidth*0.1;
+        pos.y += sin(heading) * stepWidth*0.1;
     }
 
     if (mouseDown == 1.0) {
-        if (distance(pos, mouse * uResolution) < 105.0) {
-            pos.xy = mouse * uResolution;
+        if (distance(pos, mouse) < 0.1) {
+            pos.xy = mouse;
         }
     }
 
@@ -76,7 +85,6 @@ void main() {
     vParticle = vec4(pos.xy, heading, aParticle.w);
     // vParticle.xy = pos.xy * uResolution; //+ vec2(sin(uTime)*0.005, cos(uTime)*0.005);
 
-
-    gl_Position = vec4(aParticle.xy + pos.xy, 1.0, 1.0); 
+    gl_Position = vec4(aParticle.xy + pos.xy, 1.0, 1.0);
     // gl_Position = vec4(pos.xy, 1.0, 1.0);
 }
