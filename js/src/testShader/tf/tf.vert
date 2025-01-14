@@ -18,6 +18,7 @@ layout(std140) uniform GlobalUniforms {
 
 uniform sampler2D uParticleSampler; //texture unit 0
 uniform sampler2D uCostSampler; //texture unit 1
+uniform sampler2D uAdditionalSampler; //texture unit 2
 
 uniform float uParticleCount;
 uniform float uSensorAngle; // 22.5 degrees
@@ -36,33 +37,46 @@ float random(float seed) {
     return fract(sin(seed + 12397.1237) * cos(17263.0 + seed));
 }
 
-
 float randomSign() {
-    return sign(random(uTime*float(gl_VertexID)) - 0.5);
-}   
+    return sign(random(uTime * float(gl_VertexID)) - 0.5);
+}
 
 void main() {
+    float stepWidth = .1;
+
     vec2 pos = aParticle.xy;
     vec2 mouse = uMouse.xy;
     float mouseDown = uMouse.z;
 
     float heading = aParticle.z;
     // keep in bounds
-    if (pos.x <= -1.0 || pos.x >= 1.0 || pos.y <= -1.0 || pos.y >= 1.0) {
-        heading += PI/2.0;
+    if (pos.x <= 0.0 || pos.x >= uResolution.x || pos.y <= 0.0 || pos.y >= uResolution.y) {
+        heading += PI / 2.0;
     }
-    pos.x += cos(heading) * 0.01;
-    pos.y += sin(heading) * 0.01;
+    // cost map at current position ()
+    vec4 costTexel = texelFetch(uAdditionalSampler, ivec2(pos.x, pos.y), 0);
+    if (costTexel.r >= 1.0) {
+        heading += randomSign() * PI / 8.0;
+        heading = mod(heading, 2.0 * PI);
+        pos.x += cos(heading) * stepWidth;
+        pos.y += sin(heading) * stepWidth;
+    } else {
+        pos.x += cos(heading) * stepWidth;
+        pos.y += sin(heading) * stepWidth;
+    }
 
     if (mouseDown == 1.0) {
-        pos.xy = mouse * 2.0 - 1.0;
+        if (distance(pos, mouse * uResolution) < 105.0) {
+            pos.xy = mouse * uResolution;
+        }
     }
 
     vPosition = aPosition;
     vTexCoord = aTexCoord;
     vParticle = vec4(pos.xy, heading, aParticle.w);
-    vParticle.xy = pos.xy; //+ vec2(sin(uTime)*0.005, cos(uTime)*0.005);
+    // vParticle.xy = pos.xy * uResolution; //+ vec2(sin(uTime)*0.005, cos(uTime)*0.005);
 
 
-    gl_Position = vec4(pos.xy, 1.0, 1.0);
+    gl_Position = vec4(aParticle.xy + pos.xy, 1.0, 1.0); 
+    // gl_Position = vec4(pos.xy, 1.0, 1.0);
 }

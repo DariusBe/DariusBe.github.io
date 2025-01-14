@@ -9,6 +9,7 @@ const particleVertCode = await Utils.readShaderFile(basePath + 'testShader/tf/tf
 const particleFragCode = await Utils.readShaderFile(basePath + 'testShader/tf/tf.frag');
 const canvasVertCode = await Utils.readShaderFile(basePath + 'testShader/canvas/canvas.vert');
 const canvasFragCode = await await Utils.readShaderFile(basePath + 'testShader/canvas/canvas.frag');
+const testImage = await Utils.loadImage(basePath+'testShader/tf/testmap.png');
 
 /* DOM Elements */
 const slider = document.getElementById('conv_slider');
@@ -18,7 +19,7 @@ var hasSliderChanged = false;
 var hasCheckboxChanged = false;
 
 /* Globals */
-const PARTICLE_COUNT = canvas.width * canvas.height*8;
+const PARTICLE_COUNT = canvas.width * canvas.height;
 const BYTE = 4;
 const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
 const TIMESTEP = 0.01;
@@ -37,10 +38,10 @@ checkbox.onchange = function () {
 }
 
 // global uniforms and attributes
-const globalUniforms = {
-    uSampler: ['1i', 0],
-    uSlider: ['1f', 0.5]
-};
+// const globalUniforms = {
+//     // uSampler: ['1i', 0],
+//     uSlider: ['1f', 0.5]
+// };
 const globalAttributes = {
     'aPosition': [0, [3, 'FLOAT', false, 5 * BYTE, 0], Utils.canvasAttribs],
     'aTexCoord': [1, [2, 'FLOAT', false, 5 * BYTE, 3 * BYTE], Utils.canvasAttribs],
@@ -50,6 +51,7 @@ const globalAttributes = {
 const particleUniforms = {
     uParticleSampler: ['1i', 0],
     uCostSampler: ['1i', 1],
+    uAdditionalSampler: ['1i', 2],
 
     uParticleCount: ['1i', PARTICLE_COUNT],
     uSensorAngle: ['1f', Math.PI / 8], // 22.5 degrees
@@ -60,20 +62,14 @@ console.log(particleUniforms);
 
 // Transform Feedback Buffers
 var TF_BUFF_1 = gl.createBuffer();
-var TF_DATA = Utils.populateParticleBuffer(PARTICLE_COUNT, 1, 1, -1, -1);
-
-// const TF_DATA = new Float32Array(
-//     [
-//         0.0, 0.0, Math.PI+Math.PI / 8.0, 1.0,
-//     ]
-// );
-
-console.log(TF_DATA);
+var TF_DATA = Utils.populateParticleBuffer(PARTICLE_COUNT, canvas.width, canvas.height, 0, 0);
+// console.log(TF_DATA);
 gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_1)
-gl.bufferData(gl.ARRAY_BUFFER, TF_DATA, gl.DYNAMIC_COPY);
+gl.bufferData(gl.ARRAY_BUFFER, TF_DATA, gl.STATIC_DRAW);
 var TF_BUFF_2 = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_2)
-gl.bufferData(gl.ARRAY_BUFFER, TF_DATA, gl.DYNAMIC_COPY);
+gl.bufferData(gl.ARRAY_BUFFER, TF_DATA, gl.STATIC_DRAW);
+
 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
 const particleShader = new Shader(gl, name = 'ParticleShader',
@@ -92,15 +88,19 @@ const costsurfaceTex = particleShader.prepareImageTexture(
     Utils.getRandomStartTexture(canvas.width, canvas.height),
     'costsurfaceTex',
     canvas.width, canvas.height,
-    'NEAREST',
+    'LINEAR',
     'CLAMP_TO_BORDER',
     1  // texture unit 1
 );
 
 /* CANVAS */
+const canvasUniforms = {
+    uCanvasSampler1: ['1i', 0],
+    uCanvasSampler2: ['1i', 1],
+}
 const canvasShader = new Shader(gl, name = 'CanvasShader',
     canvasVertCode, canvasFragCode,
-    globalAttributes, globalUniforms
+    globalAttributes, canvasUniforms,
 );
 
 /* Physarum Textures and FBOs */;
@@ -109,7 +109,7 @@ const randomTexture = particleShader.prepareImageTexture(
     Utils.getEmptyStartTexture(canvas.width, canvas.height),
     'randomTexture',
     canvas.width, canvas.height,
-    'NEAREST',
+    'LINEAR',
     'CLAMP_TO_EDGE',
     0  // texture unit 0
 );
@@ -118,7 +118,7 @@ const emptyTexture = particleShader.prepareImageTexture(
     Utils.getEmptyStartTexture(canvas.width, canvas.height),
     'emptyTexture',
     canvas.width, canvas.height,
-    'NEAREST',
+    'LINEAR',
     'CLAMP_TO_EDGE',
     0  // texture unit 0
 );
@@ -135,13 +135,14 @@ const fbo2 = particleShader.prepareFramebufferObject(
     canvas.width, canvas.height
 );
 const canvasTexture = canvasShader.prepareImageTexture(
-    "uSampler",
-    Utils.getRandomStartTexture(canvas.width, canvas.height),
+    "uCanvasSampler2",
+    testImage,
+    // Utils.getRandomStartTexture(canvas.width, canvas.height),
     'canvasTex',
     canvas.width, canvas.height,
-    'NEAREST',
+    'LINEAR',
     'CLAMP_TO_EDGE',
-    0  // texture unit 0
+    1  // texture unit 0
 );
 
 
@@ -203,6 +204,8 @@ const renderCanvas = (drawArrays = () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)) =
     // render canvas texture
     gl.useProgram(canvasShader.program);
     gl.bindVertexArray(canvasShader.vao);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, fbo == fbo1 ? emptyTexture : randomTexture);
 
@@ -212,6 +215,9 @@ const renderCanvas = (drawArrays = () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)) =
     // bind result of TF to canvas shader
     // gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_2);
     // gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     drawArrays();
     gl.bindVertexArray(null);
@@ -236,19 +242,47 @@ const renderParticle = () => {
     // gl.clearColor(0.0, 0.0, 0.0, 1.0);
     // gl.clear(gl.COLOR_BUFFER_BIT);
 
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, renderFrom);
     gl.beginTransformFeedback(gl.POINTS);
     gl.drawArrays(gl.POINTS, 0, PARTICLE_COUNT); // args: mode, first, count
+    gl.disable(gl.RASTERIZER_DISCARD);   
     gl.endTransformFeedback();
     gl.bindVertexArray(null);
     gl.useProgram(null);
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.disable(gl.RASTERIZER_DISCARD);   
+
+    // Bind PBO and transfer data to texture
+    // gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, TF_BUFF_2);
+    // gl.bindTexture(gl.TEXTURE_2D, renderFrom);
+    // gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, canvas.width, canvas.height, gl.RGBA, gl.FLOAT, 0);
+    // // args: target, level, xoffset, yoffset, width, height, format, type, offset
+    // gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
+
+    // 1. Bind the PBO to transfer data from the buffer to the texture
+    gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, TF_BUFF_2);
+    // 2. Bind the texture where the data will go
+    gl.bindTexture(gl.TEXTURE_2D, renderFrom);
+
+    gl.texSubImage2D(
+        gl.TEXTURE_2D,                  // Target
+        0,                              // Mipmap level (0 for base level)
+        0, 0,                           // X and Y offsets (top-left corner)
+        canvas.width,                   // Width of the area to be updated
+        canvas.height,                  // Height of the area to be updated
+        gl.RGBA,                        // Format of the data
+        gl.FLOAT,                        // Type of the data (FLOAT, as TF data is floating-point)
+        0                               // Data pointer (use 0 since it's stored in the PBO)
+    );
+
+    // 4. Unbind the PBO and the texture
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
+
 
 
     // if (Math.round(tick * 100) % 100 == 0) {
@@ -257,11 +291,6 @@ const renderParticle = () => {
     swapTFBuffers();
     swapFBOTextures();
 
-    // Bind PBO and transfer data to texture
-    gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, TF_BUFF_2);
-    gl.bindTexture(gl.TEXTURE_2D, renderFrom);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, canvas.width, canvas.height, gl.RGBA, gl.FLOAT, 0);
-    gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
 
     // // fill canvas buffer with transformed points
     // gl.useProgram(canvas_Shader.program);
