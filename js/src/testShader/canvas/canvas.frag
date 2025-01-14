@@ -61,5 +61,5 @@ void main() {
     vec4 black = vec4(0.0, 0.0, 0.0, 1.0);
     vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
     vec4 cost = texture(uCanvasSampler2, vTexCoord);
-    fragColor = mix(black, cost, col);
+    fragColor = mix(tex, cost, 0.5);
 }

@@ -19,7 +19,7 @@ var hasSliderChanged = false;
 var hasCheckboxChanged = false;
 
 /* Globals */
-const PARTICLE_COUNT = 50000;
+const PARTICLE_COUNT = 5000;
 const BYTE = 4;
 const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
 const TIMESTEP = 0.01;
@@ -206,7 +206,7 @@ const renderCanvas = (drawArrays = () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)) =
     gl.useProgram(canvasShader.program);
     gl.bindVertexArray(canvasShader.vao);
     gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, renderInto);
+    gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, fbo == fbo1 ? emptyTexture : randomTexture);
 

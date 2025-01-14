@@ -42,8 +42,8 @@ float randomSign() {
 }
 
 void main() {
-    gl_PointSize = 2.0;
-    float stepWidth = .0025;
+    gl_PointSize = 3.0;
+    float stepWidth = .0005;
 
     vec2 pos = aParticle.xy;
     // normalize mouse position for -0.5 to 0.5
@@ -64,14 +64,14 @@ void main() {
 
     vec4 cost = texture(uAdditionalSampler, normPos);
 
-    if (cost.r >= 0.5 || cost.g >= 0.5) {
+    if (cost.b >= 0.5 || cost.g >= 0.5) {
         // gl_PointSize = 1.0;
         pos.x += cos(heading) * stepWidth;
         pos.y += sin(heading) * stepWidth;
     } else {
-        // heading = mod(heading, 2.0 * PI);
-        pos.x += cos(heading) * stepWidth*0.1;
-        pos.y += sin(heading) * stepWidth*0.1;
+        heading = mod(heading, 2.0 * PI);
+        pos.x += cos(heading) * stepWidth*0.01;
+        pos.y += sin(heading) * stepWidth*0.01;
     }
 
     if (mouseDown == 1.0) {
