@@ -314,7 +314,7 @@ const animate = () => {
     requestAnimationFrame(animate);
 
     // render blur shader
-    blurShader.renderWithFBO(renderInto, 0);
+    blurShader.renderWithFBO(renderFrom, 0);
     swapBlurDirectionUniform();
     blurShader.renderWithFBO(verticalBlurTex, fbo == fbo2 ? 1 : 2);
     
