@@ -36,11 +36,11 @@ void main() {
     // size of one texel:
     float texelSize = 1.0 / uResolution.x;
 
-    vec4 tex = texture(uCanvasSampler1, vTexCoord);
-    vec2 pos = vec2(tex.x, tex.y);
-    float x = tex.r;
-    float y = tex.g;
-    float heading = tex.b;
+    vec4 trail = texture(uCanvasSampler1, vTexCoord);
+    vec2 pos = vec2(trail.x, trail.y);
+    float x = trail.r;
+    float y = trail.g;
+    float heading = trail.b;
     // tex.r = x, tex.g = y, tex.b = heading, tex.a = speed
     // where tex.xy is the position of the particle
     // start by checking if the particle is located at current fragment
@@ -61,5 +61,6 @@ void main() {
     vec4 black = vec4(0.0, 0.0, 0.0, 1.0);
     vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
     vec4 cost = texture(uCanvasSampler2, vTexCoord);
-    fragColor = mix(tex, cost, 0.5);
+    
+    fragColor = mix(trail, cost, 0.5);
 }

@@ -40,25 +40,9 @@ vec4 prepareCursor(float radius, vec4 color) {
 }
 
 void main() {
-    // vec2 uv = vTexCoord;
-    // vec2 st = uv / uResolution;
-    // vec3 pos = vParticle.xyz;
-    // vec4 cursor = prepareCursor(350.0, vec4(0.0f, 0.0f, 0.0f, 0.5f));
-
-    // vec4 cost = texture(uCostSampler, uv);
-    // vec4 particle = texture(uParticleSampler, uv);
-
-    // // render particles
-    // vec4 test = vec4(0.0f);
-    // if (particle.r > 0.5) {
-    //     test = vec4(1.0f) + cursor;
-    // } else {
-    //     test = vec4(0.0f, 0.0f, 0.0f, 1.0f) + cursor;
-    // }
-    // fragColor = cost;
 
     vec2 delta = gl_PointCoord - vec2(0.5, 0.5);
-    float lenSqr = abs(dot(delta, delta));
+    float lenSqr = abs(dot(delta, delta))*2.0;
     float a = smoothstep(0.25, 0.24, lenSqr);
     
 

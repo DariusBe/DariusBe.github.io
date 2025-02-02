@@ -57,12 +57,14 @@ void main() {
         heading += PI / 2.0;
     }
     // cost map at current position ()
-    vec4 costTexel = texelFetch(uAdditionalSampler, ivec2(pos.x, pos.y), 0);
+    vec4 costTexel = texelFetch(uCostSampler, ivec2(pos.x, pos.y), 0);
 
     //normalize pos
     vec2 normPos = pos + vec2(0.5, 0.5);
 
-    vec4 cost = texture(uAdditionalSampler, normPos);
+    vec4 cost = texture(uCostSampler, normPos);
+
+    float dampingFactor = 0.25;
 
     if (cost.b >= 0.5 || cost.g >= 0.5) {
         // gl_PointSize = 1.0;
@@ -70,8 +72,8 @@ void main() {
         pos.y += sin(heading) * stepWidth;
     } else {
         heading = mod(heading, 2.0 * PI);
-        pos.x += cos(heading) * stepWidth*0.01;
-        pos.y += sin(heading) * stepWidth*0.01;
+        pos.x += cos(heading) * stepWidth*dampingFactor;
+        pos.y += sin(heading) * stepWidth*dampingFactor;
     }
 
     if (mouseDown == 1.0) {

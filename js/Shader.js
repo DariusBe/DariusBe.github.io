@@ -221,7 +221,7 @@ export class Shader {
             const attributeLocation = gl.getAttribLocation(program, attributeName);
             if (attributeLocation === -1) {
                 console.groupEnd();
-                console.error(this.name+':', 'Error enabling Vertex Attribute', attributeName);
+                console.error(this.name + ':', 'Error enabling Vertex Attribute', attributeName);
                 // console.error('Attribute', attributeName, 'not found in', this.name);
                 notFoundAttributes.push([attributeName, [location, [size, type, normalized, stride, offset], bufferData]]);
             } else if (attributeLocation !== location) {
@@ -497,7 +497,7 @@ export class Shader {
         if (verbose) {
             console.info('Transform feedback buffer created with size:', bufferSize);
         }
-        
+
         gl.bindVertexArray(this.tfVao);
         gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, buffer);
 
@@ -697,6 +697,8 @@ export class Shader {
         }
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, inputTexture);
+
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
         drawArrays();
 
