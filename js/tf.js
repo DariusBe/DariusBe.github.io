@@ -25,7 +25,7 @@ var hasSliderChanged = false;
 var hasCheckboxChanged = false;
 
 /* Globals */
-const PARTICLE_COUNT = 15;
+const PARTICLE_COUNT = 150;
 const BYTE = 4;
 const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
 const TIMESTEP = 0.01;
@@ -75,8 +75,8 @@ gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
 const particleUniforms = {
     uParticleSampler: ['1i', 0],
-    uAdditionalSampler: ['1i', 1],
-    uCostSampler: ['1i', 2],
+    uAdditionalSampler: ['1i', 2],
+    uCostSampler: ['1i', 1],
 
     uParticleCount: ['1i', PARTICLE_COUNT],
     uSensorAngle: ['1f', Math.PI / 8], // 22.5 degrees

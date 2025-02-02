@@ -45,7 +45,7 @@ void main() {
     float lenSqr = abs(dot(delta, delta))*2.0;
     float a = smoothstep(0.25, 0.24, lenSqr);
     
-
-    // vec3 col = texture(uAdditionalSampler, gl_FragCoord.xy/uResolution).rgb;
+    vec3 col = texture(uAdditionalSampler, gl_FragCoord.xy/uResolution).rgb;
     fragColor = vec4(vec3(1.0), a);
+    
 }

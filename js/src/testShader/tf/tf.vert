@@ -62,9 +62,15 @@ void main() {
     //normalize pos
     vec2 normPos = pos + vec2(0.5, 0.5);
 
+    ivec2 sensorDistanceVec = ivec2(uSensorDistance, uSensorDistance);
+    vec4 particleTexel = texelFetch(uParticleSampler, ivec2(normPos * uResolution)+sensorDistanceVec, 0);
     vec4 cost = texture(uCostSampler, normPos);
 
-    float dampingFactor = 0.25;
+    float dampingFactor = 0.9;
+
+    if ((particleTexel.r + particleTexel.g + particleTexel.b) > 0.5) {
+        heading = 0.0;
+    }
 
     if (cost.b >= 0.5 || cost.g >= 0.5) {
         // gl_PointSize = 1.0;
@@ -72,8 +78,8 @@ void main() {
         pos.y += sin(heading) * stepWidth;
     } else {
         heading = mod(heading, 2.0 * PI);
-        pos.x += cos(heading) * stepWidth*dampingFactor;
-        pos.y += sin(heading) * stepWidth*dampingFactor;
+        pos.x += cos(heading) * stepWidth * dampingFactor;
+        pos.y += sin(heading) * stepWidth * dampingFactor;
     }
 
     if (mouseDown == 1.0) {
