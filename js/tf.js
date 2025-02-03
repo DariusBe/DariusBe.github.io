@@ -63,7 +63,7 @@ convSlider.addEventListener('dblclick', (event) => {
     hasConvSliderChanged = true;
     convSlider.value = 2;
     const val = Math.abs(convSlider.value * 2 - 1);
-    slopeSliderLabel.innerHTML = val == 1 ? 'off' : val;
+    convSliderLabel.innerHTML = val == 1 ? 'off' : val;
     kernelSize = val;
     sigma = val / 4;
 });
