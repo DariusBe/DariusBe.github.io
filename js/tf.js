@@ -6,6 +6,9 @@ import '../gl-matrix-min.js';
 /* FILES */
 const basePath = 'js/src/';
 
+const topoVertCode = await Utils.readShaderFile('js/src/topoShader/topo.vert');
+const topoFragCode = await Utils.readShaderFile('js/src/topoShader/topo.frag');
+
 const particleVertCode = await Utils.readShaderFile(basePath + 'testShader/tf/tf.vert');
 const particleFragCode = await Utils.readShaderFile(basePath + 'testShader/tf/tf.frag');
 
@@ -15,14 +18,19 @@ const blurFragCode = await Utils.readShaderFile('js/src/blurShader/blur.frag');
 const canvasVertCode = await Utils.readShaderFile(basePath + 'testShader/canvas/canvas.vert');
 const canvasFragCode = await await Utils.readShaderFile(basePath + 'testShader/canvas/canvas.frag');
 
-const testImage = await Utils.loadImage(basePath+'testShader/tf/testmap.png');
+const mapFile = 'testmap6.xyz';
+var topoMap = await Utils.readXYZMapToTexture('js/src/topoShader/maps/' + mapFile);
+// const testImage = await Utils.loadImage(basePath+'testShader/tf/testmap.png');
 
 /* DOM Elements */
-const slider = document.getElementById('conv_slider');
-var sliderLabel = document.getElementById('sliderlabel');
-const checkbox = document.getElementById('cost_checkbox');
-var hasSliderChanged = false;
-var hasCheckboxChanged = false;
+const convSlider = document.getElementById('conv_slider');
+var convSliderLabel = document.getElementById('conv_slider_label');
+const slopeSlider = document.getElementById('slope_slider');
+var slopeSliderLabel = document.getElementById('slope_slider_label');
+const checkbox = document.getElementById('slope_checkbox');
+var hasConvSliderChanged = false;
+var hasSlopeSliderChanged = false;
+var hasCheckboxChanged = checkbox.checked;
 
 /* Globals */
 const PARTICLE_COUNT = 150;
@@ -33,23 +41,49 @@ const TIMESTEP = 0.01;
 const glContext = new GLContext();
 const gl = glContext.gl;
 glContext.listContextStats();
-const shaderList = glContext.shaderList;
+
 var TICK = 0.0;
-var kernelSize = Math.abs(slider.value * 2 - 1);
+var kernelSize = Math.abs(convSlider.value * 2 - 1);
 var sigma = kernelSize / 4;
+var slopeFactor = slopeSlider.value;
 var uIsHorizontal = true;
-var updateLandscape = false;
+var updateLandscape = true;
+const shaderList = glContext.shaderList;
 
 /* Event Listeners */
-slider.oninput = function () {
-    hasSliderChanged = true;
+convSlider.oninput = function () {
+    hasConvSliderChanged = true;
     const val = Math.abs(this.value * 2 - 1);
-    sliderLabel.innerHTML = val == 1 ? 'off' : val;
+    convSliderLabel.innerHTML = val == 1 ? 'off' : val;
     kernelSize = val;
     sigma = val / 4;
 }
+// on double click, resest slider to default value
+convSlider.addEventListener('dblclick', (event) => {
+    hasConvSliderChanged = true;
+    convSlider.value = 2;
+    const val = Math.abs(convSlider.value * 2 - 1);
+    slopeSliderLabel.innerHTML = val == 1 ? 'off' : val;
+    kernelSize = val;
+    sigma = val / 4;
+});
+slopeSlider.oninput = function () {
+    hasSlopeSliderChanged = true;
+    const val = this.value;
+    slopeSliderLabel.innerHTML = val;
+    slopeFactor = val;
+    updateLandscape = true;
+}
+slopeSlider.addEventListener('dblclick', (event) => {
+    hasSlopeSliderChanged = true;
+    slopeSlider.value = 4;
+    slopeSliderLabel.innerHTML = slopeSlider.value;
+    slopeFactor = slopeSlider.value;
+    updateLandscape = true;
+});
 checkbox.onchange = function () {
-
+    hasCheckboxChanged = true;
+    updateLandscape = true;
 }
 
 // global uniforms and attributes
@@ -62,7 +96,18 @@ const globalAttributes = {
     'aTexCoord': [1, [2, 'FLOAT', false, 5 * BYTE, 3 * BYTE], Utils.canvasAttribs],
 };
 
-/* PARTICLE */
+/* TOPO Shader */
+const topoUniforms = Object.assign({}, globalUniforms, {
+    uShowCursor: ['bool', false],
+    uCheckbox: ['bool', checkbox.checked],
+    uSlopeFactor: ['1f', slopeFactor],
+});
+const topoShader = new Shader(gl, name = 'TopoShader',
+    topoVertCode, topoFragCode,
+    globalAttributes, topoUniforms
+);
+
+/* PARTICLE Shader */
 // Transform Feedback Buffers
 var TF_BUFF_1 = gl.createBuffer();
 var TF_DATA = Utils.populateParticleBuffer(PARTICLE_COUNT, -0.5, -0.5, 0.5, 0.5);
@@ -95,7 +140,7 @@ const particleShader = new Shader(gl, name = 'ParticleShader',
 );
 const costsurfaceTex = particleShader.prepareImageTexture(
     "uCostSampler",
-    testImage,
+    topoMap,
     // Utils.getRandomStartTexture(canvas.width, canvas.height),
     'costsurfaceTex',
     canvas.width, canvas.height,
@@ -104,7 +149,7 @@ const costsurfaceTex = particleShader.prepareImageTexture(
     1  // texture unit 1
 );
 
-/* BLUR */
+/* BLUR Shader */
 const blurUniforms = Object.assign({}, globalUniforms, {
     uKernelSize: ['1i', kernelSize],
     uKernel: ['1fv', Utils.gaussKernel1D(kernelSize, sigma, false)],
@@ -117,14 +162,35 @@ const blurShader = new Shader(gl, name = 'BlurShader',
     globalAttributes, blurUniforms
 );
 
-/* CANVAS */
+/* CANVAS Shader */
 const canvasUniforms = {
     uCanvasSampler1: ['1i', 0],
     uCanvasSampler2: ['1i', 1],
+    uCanvasSampler3: ['1i', 2],
 }
 const canvasShader = new Shader(gl, name = 'CanvasShader',
     canvasVertCode, canvasFragCode,
     globalAttributes, canvasUniforms,
+);
+
+/* TOPO Textures and FBO */
+const size = topoMap[topoMap.length - 1];
+topoMap = Utils.normalizePointCloud(topoMap.slice(0, topoMap.length - 1));
+const toposurfaceTex = topoShader.prepareImageTexture(
+    "uSampler",
+    topoMap,
+    'TopoTexture',
+    size, size,
+    'LINEAR',
+    'CLAMP_TO_BORDER'
+);
+topoShader.prepareFramebufferObject(
+    'Topo_FBO',
+    {
+        'COLOR_ATTACHMENT0': costsurfaceTex,
+        // 'COLOR_ATTACHMENT1': sensorTexture,
+    },
+    canvas.width, canvas.height
 );
 
 /* Physarum Textures and FBOs */;
@@ -147,19 +213,24 @@ const emptyTexture = particleShader.prepareImageTexture(
     0  // texture unit 0
 );
 const fbo1 = particleShader.prepareFramebufferObject(
-    gl.COLOR_ATTACHMENT0,   // equals output location in fragment shader
-    emptyTexture,          // FBO will render into this texture
     'Physarum_FBO_FULL',
+    // target texture location: Texture rendered into
+    {
+        'COLOR_ATTACHMENT0': emptyTexture,
+        // 'COLOR_ATTACHMENT1': sensorTexture,
+    },
     canvas.width, canvas.height
 );
 const fbo2 = particleShader.prepareFramebufferObject(
-    gl.COLOR_ATTACHMENT0,   // equals output location in fragment shader
-    randomTexture,          // FBO will render into this texture
     'Physarum_FBO_EMPTY',
+    // target texture location: Texture rendered into
+    {
+        'COLOR_ATTACHMENT0': randomTexture,
+        // 'COLOR_ATTACHMENT1': sensorTexture,
+    },
     canvas.width, canvas.height
 );
-
-/* RENDER UTILS */
+/* Particle FBO render */
 var renderFrom = randomTexture;
 var renderInto = emptyTexture;
 var fbo = fbo1;
@@ -183,26 +254,24 @@ const verticalBlurTex = blurShader.prepareImageTexture(
     canvas.width, canvas.height,
 );
 blurShader.prepareFramebufferObject(
-    gl.COLOR_ATTACHMENT0,
-    verticalBlurTex, // FBO will render into this texture
     'horizontalBlurFBO',
+    // target texture location: Texture rendered into
+    { 'COLOR_ATTACHMENT0': verticalBlurTex },
     canvas.width, canvas.height
 );
 blurShader.prepareFramebufferObject(
-    gl.COLOR_ATTACHMENT0,
-    renderFrom, // FBO will render into this texture
-    'verticalBlurFBO',
+    'verticalBlurFBO_Target_RenderInto',
+    { 'COLOR_ATTACHMENT0': renderFrom },
     canvas.width, canvas.height
 );
 blurShader.prepareFramebufferObject(
-    gl.COLOR_ATTACHMENT0,
-    renderInto, // FBO will render into this texture
-    'verticalBlurFBO',
+    'verticalBlurFBO_Target_RenderInto',
+    { 'COLOR_ATTACHMENT0': renderInto },
     canvas.width, canvas.height
 );
-
 
 /* SET ALL SHADERS GLOBAL */
+glContext.setShaderGlobal(topoShader);
 glContext.setShaderGlobal(particleShader);
 glContext.setShaderGlobal(canvasShader);
 for (const shader of shaderList) {
@@ -216,31 +285,6 @@ function swapBlurDirectionUniform() {
     blurShader.updateUniform('uIsHorizontal', '1i', uIsHorizontal);
     // swap textures
 }
-function updateUniforms() {
-    TICK += TIMESTEP;
-    TICK = Math.round(TICK * 100) / 100;
-    // glContext.cameraTransform();
-    gl.bindBuffer(gl.UNIFORM_BUFFER, glContext.globalUniformBuffer);
-    glContext.updateGlobalUniform('uTime', TICK);
-    glContext.updateGlobalUniform('uModel', glContext.uModel);
-    glContext.updateGlobalUniform('uView', glContext.uView);
-    glContext.updateGlobalUniform('uProjection', glContext.uProjection);
-    
-    for (const shader of shaderList) {
-        // glContext.updateGlobalUniform('uTime', tick);
-        if (hasSliderChanged) {
-            const kernel = Utils.gaussKernel1D(kernelSize, sigma, true);
-            blurShader.updateUniform('uKernel', '1fv', kernel);
-            blurShader.updateUniform('uKernelSize', '1i', kernelSize);
-            hasSliderChanged = false;
-        }
-    }
-    if (hasCheckboxChanged) {
-
-    }
-    gl.useProgram(null);
-}
-
 function swapTFBuffers() {
     const temp = TF_BUFF_1;
     TF_BUFF_1 = TF_BUFF_2;
@@ -250,6 +294,35 @@ function swapFBOTextures() {
     renderFrom = renderFrom == randomTexture ? emptyTexture : randomTexture;
     renderInto = renderInto == randomTexture ? emptyTexture : randomTexture;
     fbo = fbo == fbo1 ? fbo2 : fbo1;
+}
+function updateUniforms() {
+    TICK += TIMESTEP;
+    TICK = Math.round(TICK * 100) / 100;
+    // glContext.cameraTransform();
+    gl.bindBuffer(gl.UNIFORM_BUFFER, glContext.globalUniformBuffer);
+    glContext.updateGlobalUniform('uTime', TICK);
+    glContext.updateGlobalUniform('uModel', glContext.uModel);
+    glContext.updateGlobalUniform('uView', glContext.uView);
+    glContext.updateGlobalUniform('uProjection', glContext.uProjection);
+
+    for (const shader of shaderList) {
+        // glContext.updateGlobalUniform('uTime', tick);
+        if (hasConvSliderChanged) {
+            const kernel = Utils.gaussKernel1D(kernelSize, sigma, true);
+            blurShader.updateUniform('uKernel', '1fv', kernel);
+            blurShader.updateUniform('uKernelSize', '1i', kernelSize);
+            hasConvSliderChanged = false;
+        }
+        if (hasSlopeSliderChanged) {
+            topoShader.updateUniform('uSlopeFactor', '1f', slopeFactor);
+            hasSlopeSliderChanged = false;
+        }
+    }
+    if (hasCheckboxChanged) {
+        topoShader.updateUniform('uCheckbox', 'bool', checkbox.checked);
+        hasCheckboxChanged = false;
+    }
+    gl.useProgram(null);
 }
 
 /**
@@ -264,8 +337,13 @@ function swapFBOTextures() {
 const renderCanvas = (drawArrays = () => gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)) => {
     gl.useProgram(canvasShader.program);
     gl.bindVertexArray(canvasShader.vao);
+
+    // gl.activeTexture(gl.TEXTURE2);
+    // gl.bindTexture(gl.TEXTURE_2D, sensorTexture);
+
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
+
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, fbo == fbo1 ? emptyTexture : randomTexture);
 
@@ -279,16 +357,16 @@ const renderParticle = () => {
     gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_2)
     gl.bindVertexArray(particleShader.vaoList[1]);
     gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 0, 0);
-    
+
     gl.enable(gl.BLEND); // means that the color of the fragment is blended with the color already in the framebuffer
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    
+
     /* rendering with fbos */
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, TF_BUFF_1);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    // gl.viewport(0, 0, canvas.width, canvas.height);
+    // gl.clearColor(0.0, 0.0, 0.0, 0.0);
     // gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.activeTexture(gl.TEXTURE1);
@@ -310,20 +388,27 @@ const renderParticle = () => {
     swapFBOTextures();
 }
 
-const animate = () => {
-    requestAnimationFrame(animate);
+const renderCycle = () => {
+    requestAnimationFrame(renderCycle);
+
+    updateUniforms();
+    // update topo if checkbox is checked
+    if (updateLandscape) {
+        topoShader.renderWithFBO(toposurfaceTex);
+        console.info('updating landscape');
+        updateLandscape = false;
+    }
 
     // render blur shader
     blurShader.renderWithFBO(renderFrom, 0);
     swapBlurDirectionUniform();
     blurShader.renderWithFBO(verticalBlurTex, fbo == fbo2 ? 1 : 2);
-    
+
     // render physarum shader
     renderParticle();
 
     // render canvas shader
     renderCanvas();
-    updateUniforms();
 }
 
-animate();
+renderCycle();

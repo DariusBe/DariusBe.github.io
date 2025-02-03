@@ -400,9 +400,8 @@ export class Shader {
 
     /**
      * Creates a framebuffer object (FBO) with a texture attached to it.
-     * @param {number?} location color attachment position matching the output location in fragment shader (default: gl.COLOR_ATTACHMENT0)
-     * @param {WebGLTexture} texture   A WebGLTexture texture to render into
      * @param {string} name     Name of the FBO
+     * @param {Object} textureStack a list of textures to be attached to the FBO, defined as { location: texture, location: texture, ... }
      * @param {number} width     Width of texture
      * @param {number} height    Height of texture
      * @param {number} textureFormat represents the internal format of the texture (default: gl.RGBA16F)
@@ -410,17 +409,13 @@ export class Shader {
      * @param {boolean} verbose    if true, success message is printed
      * @returns {WebGLFramebuffer?} if successful: a complete framebuffer object, else null
      */
-    prepareFramebufferObject = (location = gl.COLOR_ATTACHMENT0, texture, name = texture.name, width, height, withRenderBuffer = false, verbose = false) => {
+    prepareFramebufferObject = (name, textureStack, width, height, withRenderBuffer = false, verbose = false) => {
+
         const gl = this.gl;
         const program = this.program;
         gl.useProgram(program);
         gl.bindVertexArray(this.vao);
 
-        if (texture.constructor.name !== 'WebGLTexture') {
-            console.groupEnd();
-            console.error('prepareFramebufferObject():', texture.name, 'is not of type WebGLTexture');
-            return;
-        }
 
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
@@ -433,13 +428,39 @@ export class Shader {
             fbo.name = name;
         }
 
-        gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,             // target
-            location,       // texture attachment point = the output location in the fragment shader
-            gl.TEXTURE_2D,              // texture target
-            texture,                    // texture we rendered into
-            0                           // mipmap level, always 0 in webgl
-        );
+        // texture stack: { texture: texture, location: location, name: name }
+        // for (const [attributeName, [location, [size, type, normalized, stride, offset], bufferData, separate = false]] of Object.entries(attributes)) {
+        var attachments = [];
+        var count = 0;
+        for (const [location, texture] of Object.entries(textureStack)) {
+            if (texture.constructor.name !== 'WebGLTexture') {
+                console.groupEnd();
+                console.error('prepareFramebufferObject():', texture.name, 'is not of type WebGLTexture');
+                return;
+            }
+            gl.framebufferTexture2D(
+                gl.FRAMEBUFFER,             // target
+                gl[location],               // texture attachment point = the output location in the fragment shader
+                gl.TEXTURE_2D,              // texture target
+                texture,                    // texture we rendered into
+                0                           // mipmap level, always 0 in webgl
+            );
+            attachments.push(location);
+            count++;
+        }
+
+        if (attachments.length > 1) {
+            gl.drawBuffers(attachments.map(attachment => gl[attachment]));
+        } else {
+            gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+        }
+
+        //         // Define draw buffers to specify rendering outputs
+        // gl.drawBuffers([
+        //     gl.COLOR_ATTACHMENT0,  // Write to textureA
+        //     gl.COLOR_ATTACHMENT1   // Write to textureB
+        // ]);
+
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
             console.groupEnd();

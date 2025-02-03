@@ -15,6 +15,7 @@ layout(std140) uniform GlobalUniforms {
 
 uniform sampler2D uSampler;
 uniform bool uCheckbox;
+uniform float uSlopeFactor;
 // uniform vec2 uResolution;
 // uniform float uTime;
 // uniform vec3 uMouse;
@@ -74,9 +75,10 @@ void main() {
     vec4 xyz = texture(uSampler, vTexCoord);
     vec4 terrain = colorGradient(1.0-xyz.z);
 
-    float slopeFactor = 35.0;
-    float slope = 1.0-calculateCostSurfaceDerivative(vTexCoord)*slopeFactor;
-    vec4 derrivative = colorGradient(slope);
+    float slopeFactor = uSlopeFactor;
+    float slope = calculateCostSurface(vTexCoord)/slopeFactor;
+    // vec4 derrivative = colorGradient(slope);
+    vec4 derrivative = vec4(slope, slope, slope, 1.0);
 
     float t = sin(uTime)*sin(uTime);
 
