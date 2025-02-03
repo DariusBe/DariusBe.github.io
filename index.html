@@ -21,10 +21,10 @@
     <div class="bottombar">
         <div class="checkboxpanel">
             <div class="checkboxrow">
-                <label for="checkbox" class="labeltext">Cost Landscape</label>
-                <input type="checkbox" value="0" id="cost_checkbox" class="checkbox">
+                <label for="slope_checkbox" class="labeltext">Terrain as Slope</label>
+                <input type="checkbox" checked="1" id="slope_checkbox" class="checkbox">
             </div>
-            <div class="checkboxrow">
+            <div class="checkboxrow" id="matrix_checkbox_row" style="display: none;">
                 <label for="checkbox2" class="labeltext">Matrices</label>
                 <input type="checkbox" value="0" id="matrix_checkbox" class="checkbox">
             </div>
@@ -32,9 +32,13 @@
 
         <div class="sliderpanel">
             <div class="sliderrow">
-                <label for="slider" class="labeltext">Convolution-Kernel</label>
-                <input type="range" step="1" min="2" max="30" value="1" id="conv_slider" class="slider">
-                <div id="sliderlabel" class="labeltext">off</div>
+                <label for="conv_slider" class="labeltext">Convolution-Kernel</label>
+                <input type="range" step="1" min="1" max="30" value="2" id="conv_slider" class="slider">
+                <div id="conv_slider_label" class="labeltext">off</div>
+
+                <label for="slope_slider" class="labeltext">Slope Factor</label>
+                <input type="range" step="0.01" min="1" max="25" value="4" id="slope_slider" class="slider">
+                <div id="slope_slider_label" class="labeltext">1</div>
             </div>
         </div>
         <div class="matrixpanel">
@@ -105,11 +109,15 @@
     </div>
 
     <script>
-        var slider = document.getElementById("conv_slider");
-        var sliderLabel = document.getElementById("sliderlabel");
-        var output = document.getElementById("sliderlabel");
-        const val = Math.abs(slider.value * 2 - 1);
-        sliderLabel.innerHTML = val == 1 ? 'off' : val;
+        var convSlider = document.getElementById("conv_slider");
+        var conv_slider_label = document.getElementById("conv_slider_label");
+        var output = document.getElementById("conv_slider_label");
+        const val = Math.abs(convSlider.value * 2 - 1);
+        conv_slider_label.innerHTML = val == 1 ? 'off' : val;
+
+        var slopeSlider = document.getElementById("slope_slider");
+        var slope_slider_label = document.getElementById("slope_slider_label");
+        slope_slider_label.innerHTML = slopeSlider.value;
 
         const canvas = document.getElementById('webgl-canvas');
         canvas.width = window.innerWidth;

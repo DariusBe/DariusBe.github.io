@@ -34,8 +34,9 @@ canvas {
 .checkboxrow {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: left;
-  align-items: top;
+  align-items: center;
   text-align: left;
   padding: 5px;
 }
@@ -44,9 +45,9 @@ canvas {
 .labeltext {
   text-align: left;
   color: #333;
-  padding: 5px;
+  padding: 2px;
   width: 90px;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .sliderpanel {
