@@ -50,27 +50,31 @@ void main() {
     vec2 mouse = uMouse.xy - 0.5;
     float mouseDown = uMouse.z;
 
+
+
     float heading = aParticle.z;
+
+        //normalize pos
+    vec2 normPos = pos + vec2(0.5, 0.5);
+
+    ivec2 sensorDistanceVec = ivec2(cos(heading)*uSensorDistance, sin(heading)*uSensorDistance);
+    vec4 particleTexel = texelFetch(uParticleSampler, ivec2(normPos * uResolution)+sensorDistanceVec, 0);
+    vec4 cost = texture(uCostSampler, normPos);
+
+    float dampingFactor = 0.25;
+
+    if ((particleTexel.r + particleTexel.g + particleTexel.b) > 0.5) {
+        heading = heading + PI / 2.0;
+    }
     // keep in bounds
     float bound = 0.5;
     if (pos.x <= -bound || pos.x >= bound || pos.y <= -bound || pos.y >= bound) {
-        heading += PI / 2.0;
+        heading += PI;
     }
     // cost map at current position ()
     vec4 costTexel = texelFetch(uCostSampler, ivec2(pos.x, pos.y), 0);
 
-    //normalize pos
-    vec2 normPos = pos + vec2(0.5, 0.5);
 
-    ivec2 sensorDistanceVec = ivec2(uSensorDistance, uSensorDistance);
-    vec4 particleTexel = texelFetch(uParticleSampler, ivec2(normPos * uResolution)+sensorDistanceVec, 0);
-    vec4 cost = texture(uCostSampler, normPos);
-
-    float dampingFactor = 0.9;
-
-    if ((particleTexel.r + particleTexel.g + particleTexel.b) > 0.5) {
-        heading = 0.0;
-    }
 
     if (cost.b >= 0.5 || cost.g >= 0.5) {
         // gl_PointSize = 1.0;
@@ -83,8 +87,8 @@ void main() {
     }
 
     if (mouseDown == 1.0) {
-        if (distance(pos, mouse) < 0.1) {
-            pos.xy = mouse;
+        if (distance(pos, mouse) < 0.5) {
+            pos.xy = mouse+randomize(vec2(0.01, 0.01));
         }
     }
 

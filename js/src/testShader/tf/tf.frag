@@ -22,7 +22,7 @@ uniform float uParticleCount;
 uniform float uSensorAngle; // 22.5 degrees
 uniform float uSensorDistance; // 8 pixels
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 vec4 prepareCursor(float radius, vec4 color) {
     // normalize moues position
@@ -42,10 +42,8 @@ vec4 prepareCursor(float radius, vec4 color) {
 void main() {
 
     vec2 delta = gl_PointCoord - vec2(0.5, 0.5);
-    float lenSqr = abs(dot(delta, delta))*2.0;
+    float lenSqr = abs(dot(delta, delta));
     float a = smoothstep(0.25, 0.24, lenSqr);
     
-    vec3 col = texture(uAdditionalSampler, gl_FragCoord.xy/uResolution).rgb;
     fragColor = vec4(vec3(1.0), a);
-    
 }
