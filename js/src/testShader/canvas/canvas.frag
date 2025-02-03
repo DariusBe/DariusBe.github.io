@@ -1,6 +1,8 @@
 #version 300 es
 precision highp float;
 
+#define PI 3.14159265359
+
 in vec2 vTexCoord;
 
 uniform sampler2D uCanvasSampler1;
@@ -34,28 +36,10 @@ vec4 prepareCursor(float radius, vec4 color) {
 }
 
 void main() {
-    // size of one texel:
     float texelSize = 1.0 / uResolution.x;
 
     vec4 trail = texture(uCanvasSampler1, vTexCoord);
-    vec2 pos = vec2(trail.x, trail.y);
-    float x = trail.r;
-    float y = trail.g;
-    float heading = trail.b;
-
-    vec4 col = vec4(1.0, 1.0, 1.0, 1.0);
-
-
-    float dist = distance(vTexCoord, vec2(x, y));
-    // Check if the distance is within the radius
-    if (distance(pos, vTexCoord*uResolution) < 5.0) {
-        col = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-  
-
-    vec4 black = vec4(0.0, 0.0, 0.0, 1.0);
-    vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
     vec4 cost = texture(uCanvasSampler2, vTexCoord);
     
-    fragColor = mix(trail, cost, 0.0);
+    fragColor = mix(trail, cost, 0.5);
 }
