@@ -40,10 +40,12 @@ vec4 prepareCursor(float radius, vec4 color) {
 }
 
 void main() {
-
     vec2 delta = gl_PointCoord - vec2(0.5, 0.5);
     float lenSqr = abs(dot(delta, delta));
     float a = smoothstep(0.25, 0.24, lenSqr);
-    
-    fragColor = vec4(vec3(1.0), a);
+
+    float deposition = vParticle.w;
+
+    fragColor = vec4(vec3(1.0)*deposition, a);
+
 }

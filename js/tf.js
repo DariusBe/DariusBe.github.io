@@ -3,6 +3,11 @@ import { Shader } from './Shader.js';
 import { Utils } from './Utils.js';
 import '../gl-matrix-min.js';
 
+/* WebGL Context */
+const glContext = new GLContext();
+const gl = glContext.gl;
+glContext.listContextStats();
+
 /* FILES */
 const basePath = 'js/src/';
 
@@ -17,10 +22,8 @@ const blurFragCode = await Utils.readShaderFile('js/src/blurShader/blur.frag');
 
 const canvasVertCode = await Utils.readShaderFile(basePath + 'testShader/canvas/canvas.vert');
 const canvasFragCode = await await Utils.readShaderFile(basePath + 'testShader/canvas/canvas.frag');
-
 const mapFile = 'testmap6.xyz';
-var topoMap = await Utils.readXYZMapToTexture('js/src/topoShader/maps/' + mapFile);
-// const testImage = await Utils.loadImage(basePath+'testShader/tf/testmap.png');
+var topoMap = Utils.getEmptyStartTexture(canvas.width, canvas.height);
 
 /* DOM Elements */
 const convSlider = document.getElementById('conv_slider');
@@ -33,18 +36,24 @@ var hasSlopeSliderChanged = false;
 var hasCheckboxChanged = checkbox.checked;
 
 /* Globals */
-const PARTICLE_COUNT = 150;
+const PARTICLE_COUNT = 2500;
 const BYTE = 4;
 const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
 const TIMESTEP = 0.01;
-
-const glContext = new GLContext();
-const gl = glContext.gl;
-glContext.listContextStats();
-
 var TICK = 0.0;
-var kernelSize = Math.abs(convSlider.value * 2 - 1);
-var sigma = kernelSize / 4;
+const SKIP_TOPO = true;
+if (!SKIP_TOPO) {
+    topoMap = await Utils.readXYZMapToTexture('js/src/topoShader/maps/' + mapFile);
+}
+// Particle
+var uSensorAngle = Math.PI / 8;
+var uSensorDistance = 8;
+
+// Blur
+var uKernelSize = Math.abs(convSlider.value * 2 - 1);
+var sigma = uKernelSize / 4;
+var uAttenuation = 0.01;
+// Topo
 var slopeFactor = slopeSlider.value;
 var uIsHorizontal = true;
 var updateLandscape = true;
@@ -55,7 +64,7 @@ convSlider.oninput = function () {
     hasConvSliderChanged = true;
     const val = Math.abs(this.value * 2 - 1);
     convSliderLabel.innerHTML = val == 1 ? 'off' : val;
-    kernelSize = val;
+    uKernelSize = val;
     sigma = val / 4;
 }
 // on double click, resest slider to default value
@@ -64,7 +73,7 @@ convSlider.addEventListener('dblclick', (event) => {
     convSlider.value = 2;
     const val = Math.abs(convSlider.value * 2 - 1);
     convSliderLabel.innerHTML = val == 1 ? 'off' : val;
-    kernelSize = val;
+    uKernelSize = val;
     sigma = val / 4;
 });
 slopeSlider.oninput = function () {
@@ -86,7 +95,7 @@ checkbox.onchange = function () {
     updateLandscape = true;
 }
 
-// global uniforms and attributes
+// Global uniforms and attributes
 const globalUniforms = {
     uSampler: ['1i', 0],
     uSlider: ['1f', 0.5]
@@ -107,10 +116,11 @@ const topoShader = new Shader(gl, name = 'TopoShader',
     globalAttributes, topoUniforms
 );
 
-/* PARTICLE Shader */
-// Transform Feedback Buffers
+/* PARTICLE Transform Feedback */
 var TF_BUFF_1 = gl.createBuffer();
-var TF_DATA = Utils.populateParticleBuffer(PARTICLE_COUNT, -0.5, -0.5, 0.5, 0.5);
+var bounds = 0.01;
+var TF_DATA = Utils.populateParticleBuffer(PARTICLE_COUNT, -bounds, -bounds, bounds, bounds);
+console.info(...TF_DATA);
 gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_1)
 gl.bufferData(gl.ARRAY_BUFFER, TF_DATA, gl.STATIC_DRAW);
 var TF_BUFF_2 = gl.createBuffer();
@@ -118,15 +128,16 @@ gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_2)
 gl.bufferData(gl.ARRAY_BUFFER, TF_DATA, gl.STATIC_DRAW);
 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-const particleUniforms = {
+/* PARTICLE Shader */
+const particleUniforms = Object.assign({}, globalUniforms, {
     uParticleSampler: ['1i', 0],
-    uAdditionalSampler: ['1i', 2],
     uCostSampler: ['1i', 1],
+    uAdditionalSampler: ['1i', 2],
 
     uParticleCount: ['1i', PARTICLE_COUNT],
-    uSensorAngle: ['1f', Math.PI / 8], // 22.5 degrees
-    uSensorDistance: ['1f', 8]         // 8 pixels
-};
+    uSensorAngle: ['1f', uSensorAngle],         // 22.5 degrees
+    uSensorDistance: ['1f', uSensorDistance]    // 8 pixels
+});
 const particleShader = new Shader(gl, name = 'ParticleShader',
     particleVertCode, particleFragCode,
     globalAttributes, particleUniforms,
@@ -151,11 +162,12 @@ const costsurfaceTex = particleShader.prepareImageTexture(
 
 /* BLUR Shader */
 const blurUniforms = Object.assign({}, globalUniforms, {
-    uKernelSize: ['1i', kernelSize],
-    uKernel: ['1fv', Utils.gaussKernel1D(kernelSize, sigma, false)],
+    uKernelSize: ['1i', uKernelSize],
+    uKernel: ['1fv', Utils.gaussKernel1D(uKernelSize, sigma, false)],
     uIsHorizontal: ['1i', uIsHorizontal], // whether to blur horizontally or vertically in current pass
     uDecay: ['1f', 0.0],
     uShowCursor: ['bool', true],
+    uAttenuation: ['1f', uAttenuation],
 });
 const blurShader = new Shader(gl, name = 'BlurShader',
     blurVertCode, blurFragCode,
@@ -200,7 +212,7 @@ const randomTexture = particleShader.prepareImageTexture(
     'randomTexture',
     canvas.width, canvas.height,
     'LINEAR',
-    'CLAMP_TO_EDGE',
+    'CLAMP_TO_BORDER',
     0  // texture unit 0
 );
 const emptyTexture = particleShader.prepareImageTexture(
@@ -209,7 +221,7 @@ const emptyTexture = particleShader.prepareImageTexture(
     'emptyTexture',
     canvas.width, canvas.height,
     'LINEAR',
-    'CLAMP_TO_EDGE',
+    'CLAMP_TO_BORDER',
     0  // texture unit 0
 );
 const fbo1 = particleShader.prepareFramebufferObject(
@@ -235,23 +247,14 @@ var renderFrom = randomTexture;
 var renderInto = emptyTexture;
 var fbo = fbo1;
 
-// const canvasTexture = canvasShader.prepareImageTexture(
-//     "uCanvasSampler2",
-//     testImage,
-//     // Utils.getRandomStartTexture(canvas.width, canvas.height),
-//     'canvasTex',
-//     canvas.width, canvas.height,
-//     'LINEAR',
-//     'CLAMP_TO_EDGE',
-//     1  // texture unit 0
-// );
-
 /* Blur Textures and FBOs */
 const verticalBlurTex = blurShader.prepareImageTexture(
     "uSampler",
     Utils.getRandomStartTexture(canvas.width, canvas.height),
     'verticalBlurTex',
     canvas.width, canvas.height,
+    'LINEAR',
+    'CLAMP_TO_BORDER',
 );
 blurShader.prepareFramebufferObject(
     'horizontalBlurFBO',
@@ -261,11 +264,13 @@ blurShader.prepareFramebufferObject(
 );
 blurShader.prepareFramebufferObject(
     'verticalBlurFBO_Target_RenderInto',
+    // target texture location: Texture to rendered into
     { 'COLOR_ATTACHMENT0': renderFrom },
     canvas.width, canvas.height
 );
 blurShader.prepareFramebufferObject(
     'verticalBlurFBO_Target_RenderInto',
+    // target texture location: Texture to rendered into
     { 'COLOR_ATTACHMENT0': renderInto },
     canvas.width, canvas.height
 );
@@ -274,6 +279,7 @@ blurShader.prepareFramebufferObject(
 glContext.setShaderGlobal(topoShader);
 glContext.setShaderGlobal(particleShader);
 glContext.setShaderGlobal(canvasShader);
+glContext.setShaderGlobal(blurShader);
 for (const shader of shaderList) {
     shader.getShaderDetails();
 }
@@ -308,9 +314,9 @@ function updateUniforms() {
     for (const shader of shaderList) {
         // glContext.updateGlobalUniform('uTime', tick);
         if (hasConvSliderChanged) {
-            const kernel = Utils.gaussKernel1D(kernelSize, sigma, true);
+            const kernel = Utils.gaussKernel1D(uKernelSize, sigma, true);
             blurShader.updateUniform('uKernel', '1fv', kernel);
-            blurShader.updateUniform('uKernelSize', '1i', kernelSize);
+            blurShader.updateUniform('uKernelSize', '1i', uKernelSize);
             hasConvSliderChanged = false;
         }
         if (hasSlopeSliderChanged) {
@@ -360,14 +366,16 @@ const renderParticle = () => {
 
     gl.enable(gl.BLEND); // means that the color of the fragment is blended with the color already in the framebuffer
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.blendEquation(gl.FUNC_ADD);
 
 
     /* rendering with fbos */
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, TF_BUFF_1);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     // gl.viewport(0, 0, canvas.width, canvas.height);
-    // gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
     // gl.clear(gl.COLOR_BUFFER_BIT);
+
 
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, costsurfaceTex);
@@ -384,6 +392,10 @@ const renderParticle = () => {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
+    // print buffer contents
+    if (Math.abs(TICK * 1000) % 1000 == 0) {
+        Utils.getBufferContents(gl, TF_BUFF_1, PARTICLE_COUNT, 4);
+    }
     swapTFBuffers();
     swapFBOTextures();
 }
@@ -393,7 +405,7 @@ const renderCycle = () => {
 
     updateUniforms();
     // update topo if checkbox is checked
-    if (updateLandscape) {
+    if (!SKIP_TOPO && updateLandscape) {
         topoShader.renderWithFBO(toposurfaceTex);
         console.info('updating landscape');
         updateLandscape = false;

@@ -34,6 +34,20 @@ vec4 prepareCursor(float radius, vec4 color) {
     }
     return cursor;
 }
+vec4 colorGradient(float z) {
+    // Define colors for the gradient
+    vec3 color1 = vec3(1.0f, 0.0f, 0.0f); // Red
+    vec3 color2 = vec3(0.0, 1.0, 0.0); // Green
+    vec3 color3 = vec3(0.0, 0.0, 1.0); // Blue
+
+    // Interpolate between colors based on z value
+    if (z < 0.5) {
+        return vec4(mix(color1, color2, z * 2.0), 1.0);
+    } else {
+        return vec4(mix(color2, color3, (z - 0.5) * 2.0), 1.0);
+    }
+    // transform color 
+}
 
 void main() {
     float texelSize = 1.0 / uResolution.x;
@@ -41,5 +55,6 @@ void main() {
     vec4 trail = texture(uCanvasSampler1, vTexCoord);
     vec4 cost = texture(uCanvasSampler2, vTexCoord);
     
+    // fragColor = mix(trail, cost, 0.5);
     fragColor = mix(trail, cost, 0.5);
 }

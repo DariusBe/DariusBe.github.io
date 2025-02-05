@@ -77,8 +77,8 @@ void main() {
 
     float slopeFactor = uSlopeFactor;
     float slope = calculateCostSurface(vTexCoord)/slopeFactor;
-    // vec4 derrivative = colorGradient(slope);
-    vec4 derrivative = vec4(slope, slope, slope, 1.0);
+    vec4 derrivative = colorGradient(1.0-slope);
+    // vec4 derrivative = vec4(slope, slope, slope, 1.0);
 
     float t = sin(uTime)*sin(uTime);
 

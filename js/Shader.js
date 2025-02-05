@@ -702,11 +702,16 @@ export class Shader {
      * );
      * 
     */
-    renderWithFBO = (inputTexture, fbo = 0, attachAtTextureUnit = null, texture = null, drawArrays = () => this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4)) => {
+    renderWithFBO = (inputTexture, fbo = 0, attachAtTextureUnit = null, texture = null, transparency = false, drawArrays = () => this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4)) => {
         const gl = this.gl;
 
         gl.useProgram(this.program);
         gl.bindVertexArray(this.vao);
+
+        // gl.enable(gl.BLEND);
+        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.blendEquation(gl.FUNC_ADD);
+
         if (fbo.constructor.name != 'Number') {
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
         } else {
@@ -722,6 +727,8 @@ export class Shader {
         gl.clear(gl.COLOR_BUFFER_BIT);
 
         drawArrays();
+
+        // gl.disable(gl.BLEND);
 
         gl.bindVertexArray(null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);

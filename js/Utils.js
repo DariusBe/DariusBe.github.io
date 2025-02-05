@@ -591,7 +591,7 @@ export class Utils {
 
     }
 
-    static getBufferContents = (gl, buffer, COUNT, cols = null, max=COUNT/4) => {
+    static getBufferContents = (gl, buffer, COUNT, cols = null, max = COUNT / 4) => {
         const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
         const checkStatus = () => {
             const status = gl.clientWaitSync(sync, gl.SYNC_FLUSH_COMMANDS_BIT, 0);
@@ -600,15 +600,15 @@ export class Utils {
             } else if (status === gl.WAIT_FAILED) {
                 console.erfor('Context lost.');
             } else {
-                const view = new Float32Array(COUNT);
+                const view = new Float32Array(COUNT*4);
                 gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, buffer);
                 gl.getBufferSubData(gl.TRANSFORM_FEEDBACK_BUFFER, 0, view);
                 gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, null);
-                // if (cols != null) {
-                //     console.log(Utils.printMatrix(view, cols, max, 2));
-                // } else {
-                    console.log(view);
-                // }
+                if (cols) {
+                    console.log(Utils.printMatrix(view, cols, COUNT, 4));
+                } else {
+                    console.log(...view);
+                }
             };
         };
         setTimeout(checkStatus);

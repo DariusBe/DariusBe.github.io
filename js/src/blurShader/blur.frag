@@ -16,11 +16,7 @@ layout(std140) uniform GlobalUniforms {
     float uShowCursor;
     vec4 uMouse;
 };
-
-// uniform float uTime;
-// uniform vec3 uMouse;
-// uniform bool uShowCursor;
-// uniform vec2 uResolution;
+uniform float uAttenuation;
 uniform int uKernelSize;
 uniform float uKernel[64];
 uniform bool uIsHorizontal;
@@ -66,24 +62,25 @@ void main() {
     if (uKernelSize >= 3) {
         blurred = applyKernel();
     }
-    // softly combine the original and blurred image
-    // float r_combined = mix(original.r, blurred.r, decay);
+    // convolution fall-off via attenuation
+    blurred.rgb *= 1.0-(uAttenuation*5.0);
 
     vec2 mouse = uMouse.xy;
     float mouseClick = uMouse.z;
-    float dist = smoothstep(80.0, 100.0, distance(gl_FragCoord.xy, mouse * uResolution));
 
-    if (uShowCursor == 1.0) {
-        if (mouseClick == 1.0) {
-            fragColor = mix(original, blurred, dist);
-            if (dist > 0.9 && dist < 1.0) {
-                fragColor = blurred;
-                fragColor.w *= 0.9;
-            }
-        } else {
-            fragColor = blurred;
-        }
-    } else {
-        fragColor = blurred;
-    }
+    // if (uShowCursor == 1.0) {
+    // float dist = smoothstep(80.0, 100.0, distance(gl_FragCoord.xy, mouse * uResolution));
+    //     if (mouseClick == 1.0) {
+    //         fragColor = mix(original, blurred, dist);
+    //         if (dist > 0.9 && dist < 1.0) {
+    //             fragColor = blurred;
+    //         }
+    //     } else {
+    //         fragColor = blurred;
+    //     }
+    // } else {
+    // }
+
+    //threshold
+    fragColor = blurred;
 }

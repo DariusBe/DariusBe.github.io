@@ -279,6 +279,7 @@ export class GLContext {
         */
 
         this.uResolution = new Float32Array([this.canvas.width, this.canvas.height]);
+
         this.uTime = new Float32Array([0.0]);
         this.uShowCursor = new Float32Array([0.0]);
         const padding = new Float32Array([0.0]);
