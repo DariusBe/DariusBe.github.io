@@ -36,7 +36,7 @@ var hasSlopeSliderChanged = false;
 var hasCheckboxChanged = checkbox.checked;
 
 /* Globals */
-const PARTICLE_COUNT = 2500;
+const PARTICLE_COUNT = 1000000;
 const BYTE = 4;
 const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
 const TIMESTEP = 0.01;
@@ -118,9 +118,8 @@ const topoShader = new Shader(gl, name = 'TopoShader',
 
 /* PARTICLE Transform Feedback */
 var TF_BUFF_1 = gl.createBuffer();
-var bounds = 0.01;
+var bounds = 0.1;
 var TF_DATA = Utils.populateParticleBuffer(PARTICLE_COUNT, -bounds, -bounds, bounds, bounds);
-console.info(...TF_DATA);
 gl.bindBuffer(gl.ARRAY_BUFFER, TF_BUFF_1)
 gl.bufferData(gl.ARRAY_BUFFER, TF_DATA, gl.STATIC_DRAW);
 var TF_BUFF_2 = gl.createBuffer();
@@ -393,9 +392,9 @@ const renderParticle = () => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     // print buffer contents
-    if (Math.abs(TICK * 1000) % 1000 == 0) {
-        Utils.getBufferContents(gl, TF_BUFF_1, PARTICLE_COUNT, 4);
-    }
+    // if (Math.abs(TICK * 1000) % 1000 == 0) {
+    //     Utils.getBufferContents(gl, TF_BUFF_1, PARTICLE_COUNT, 4);
+    // }
     swapTFBuffers();
     swapFBOTextures();
 }

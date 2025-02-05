@@ -39,38 +39,39 @@ float random(float seed) {
     return fract(sin(seed * 12397.1237) * cos(17263.0 + seed));
 }
 
-float randomSign() {
-    return sign(random(uTime * float(gl_VertexID)) - 0.5);
+float randomSign(float seed) {
+    return random(seed) > 0.5 ? 1.0 : -1.0;
 }
 
 void main() {
     gl_PointSize = 1.0;
     vec2 texelSize = 1.0 / uResolution;
 
-    float sensorDistance = 8.0;
+    float sensorDistance = 45.0;
     float sensorAngle = PI / 8.0;
 
     vec2 pos = aParticle.xy;
     float heading = aParticle.z;
     float deposition = 0.0;
+    float seed = aParticle.w * 12397.1237;
 
     // normalize pos -1 to 1 -> 0 to 1
     vec2 pixelPos = vec2((pos.x * 0.5 + 0.5) * uResolution.x, (pos.y * 0.5 + 0.5) * uResolution.y);
     // texel ahead
     ivec2 lookAheadOffset = ivec2(
-            pixelPos.x + cos(heading) * gl_PointSize * 5.0,
-            pixelPos.y + sin(heading) * gl_PointSize * 5.0
+            pixelPos.x + cos(heading) * gl_PointSize * 1.0,
+            pixelPos.y + sin(heading) * gl_PointSize * 1.0
         );
     vec2 lookAhead = vec2(cos(heading), sin(heading)) * uResolution;
     vec4 lookAheadTexel = texelFetch(uParticleSampler, lookAheadOffset, 0);
 
-    // if texel ahead is empty, move forward
-    if (lookAheadTexel.r >= 0.8) {
-        heading += randomSign() * random(float(sin(uTime * aParticle.w*12387.0)));
+    // if texel ahead is occupied, choose random new heading
+    if (lookAheadTexel.r >= 0.9) {
+        heading += randomSign(seed) * random(seed * 12376.1236);
     } else {
         // choose random new heading
         // go ahead
-        pos += vec2(cos(heading), sin(heading)) * texelSize;
+        pos += vec2(cos(heading), sin(heading)) * texelSize * 5.0;
         deposition = 1.0;
     }
 
@@ -89,27 +90,27 @@ void main() {
     float FR_val = FR.r + FR.g + FR.b;
 
     /*
-                                    - [Movement]
-                                        - Attempt to move forward one pixel
-                                        - If successful, move forward
-                                            Deposit trail
-                                        - Else
-                                            Choose random new heading
-                                    - [Sensory Behaviour]
-                                        - Sample chemoattractant values from sensors
-                                        If (F > FL) && (F > FR)
-                                            - Stay facing same direction
-                                            - Return
-                                        - Else if (F < FL) && (F < FR)
-                                            - Rotate randomly by RA
-                                        - Else if (FL < FR)
-                                            - Rotate right by RA
-                                        - Else if (FR < FL)
-                                            - Rotate left by RA
-                                        - Else
-                                            - Continue facing same direction
-                                    Particle [PosX][PosY][Heading][ID]
-                                    */
+    - [Movement]
+        - Attempt to move forward one pixel
+        - If successful, move forward
+            Deposit trail
+        - Else
+            Choose random new heading
+    - [Sensory Behaviour]
+        - Sample chemoattractant values from sensors
+        If (F > FL) && (F > FR)
+            - Stay facing same direction
+            - Return
+        - Else if (F < FL) && (F < FR)
+            - Rotate randomly by RA
+        - Else if (FL < FR)
+            - Rotate right by RA
+        - Else if (FR < FL)
+            - Rotate left by RA
+        - Else
+            - Continue facing same direction
+    Particle [PosX][PosY][Heading][ID]
+    */
 
     // Attempt to move forward one pixel
     // (F > FL) && (F > FR)
@@ -119,7 +120,7 @@ void main() {
         // Return;
     } else if ((F_val < FL_val) && (F_val < FR_val)) {
         // Rotate randomly by RA
-        heading += randomSign() * sensorAngle;
+        heading += randomSign(seed + 6.18728) * sensorAngle;
     } else if (FL_val < FR_val) {
         // Rotate right by RA
         heading -= sensorAngle;
@@ -128,10 +129,11 @@ void main() {
         heading += sensorAngle;
     } else {
         // Continue facing same direction
+        heading = aParticle.z;
     }
 
     // keep in bounds
-    float bound = 0.95;
+    float bound = 0.9;
     if (pos.x < -bound || pos.x > bound || pos.y < -bound || pos.y > bound) {
         heading += PI;
         pos.x = clamp(pos.x, -bound, bound);

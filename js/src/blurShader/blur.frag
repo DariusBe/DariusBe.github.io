@@ -63,7 +63,18 @@ void main() {
         blurred = applyKernel();
     }
     // convolution fall-off via attenuation
-    blurred.rgb *= 1.0-(uAttenuation*5.0);
+    blurred.rgb *= 1.0-(uAttenuation*10.0);
+    
+    // threshold: if alpha lower than 0.1, discard
+    // if (blurred.r < 0.01) {
+    //     blurred = vec4(vec3(0.0), 1.0);
+    // }
+
+
+
+    // normalize moues position
+
+
 
     vec2 mouse = uMouse.xy;
     float mouseClick = uMouse.z;

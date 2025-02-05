@@ -708,9 +708,9 @@ export class Shader {
         gl.useProgram(this.program);
         gl.bindVertexArray(this.vao);
 
-        // gl.enable(gl.BLEND);
-        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        // gl.blendEquation(gl.FUNC_ADD);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.blendEquation(gl.FUNC_ADD);
 
         if (fbo.constructor.name != 'Number') {
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
@@ -724,11 +724,11 @@ export class Shader {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, inputTexture);
 
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        // gl.clear(gl.COLOR_BUFFER_BIT);
 
         drawArrays();
 
-        // gl.disable(gl.BLEND);
+        gl.disable(gl.BLEND);
 
         gl.bindVertexArray(null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
