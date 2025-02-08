@@ -36,7 +36,7 @@ var hasSlopeSliderChanged = false;
 var hasCheckboxChanged = checkbox.checked;
 
 /* Globals */
-const PARTICLE_COUNT = 1000000;
+const PARTICLE_COUNT = 5_000;
 const BYTE = 4;
 const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
 const TIMESTEP = 0.01;
@@ -47,12 +47,13 @@ if (!SKIP_TOPO) {
 }
 // Particle
 var uSensorAngle = Math.PI / 8;
+var uRotationAngle = Math.PI / 4;
 var uSensorDistance = 8;
 
 // Blur
 var uKernelSize = Math.abs(convSlider.value * 2 - 1);
 var sigma = uKernelSize / 4;
-var uAttenuation = 0.01;
+var uAttenuation = 0.1;
 // Topo
 var slopeFactor = slopeSlider.value;
 var uIsHorizontal = true;
@@ -132,9 +133,9 @@ const particleUniforms = Object.assign({}, globalUniforms, {
     uParticleSampler: ['1i', 0],
     uCostSampler: ['1i', 1],
     uAdditionalSampler: ['1i', 2],
-
     uParticleCount: ['1i', PARTICLE_COUNT],
     uSensorAngle: ['1f', uSensorAngle],         // 22.5 degrees
+    uRotationAngle: ['1f', uRotationAngle],
     uSensorDistance: ['1f', uSensorDistance]    // 8 pixels
 });
 const particleShader = new Shader(gl, name = 'ParticleShader',
@@ -154,7 +155,7 @@ const costsurfaceTex = particleShader.prepareImageTexture(
     // Utils.getRandomStartTexture(canvas.width, canvas.height),
     'costsurfaceTex',
     canvas.width, canvas.height,
-    'LINEAR',
+    'NEAREST',
     'CLAMP_TO_BORDER',
     1  // texture unit 1
 );
@@ -192,7 +193,7 @@ const toposurfaceTex = topoShader.prepareImageTexture(
     topoMap,
     'TopoTexture',
     size, size,
-    'LINEAR',
+    'NEAREST',
     'CLAMP_TO_BORDER'
 );
 topoShader.prepareFramebufferObject(
@@ -210,7 +211,7 @@ const randomTexture = particleShader.prepareImageTexture(
     Utils.getEmptyStartTexture(canvas.width, canvas.height),
     'randomTexture',
     canvas.width, canvas.height,
-    'LINEAR',
+    'NEAREST',
     'CLAMP_TO_BORDER',
     0  // texture unit 0
 );
@@ -219,7 +220,7 @@ const emptyTexture = particleShader.prepareImageTexture(
     Utils.getEmptyStartTexture(canvas.width, canvas.height),
     'emptyTexture',
     canvas.width, canvas.height,
-    'LINEAR',
+    'NEAREST',
     'CLAMP_TO_BORDER',
     0  // texture unit 0
 );
@@ -252,7 +253,7 @@ const verticalBlurTex = blurShader.prepareImageTexture(
     Utils.getRandomStartTexture(canvas.width, canvas.height),
     'verticalBlurTex',
     canvas.width, canvas.height,
-    'LINEAR',
+    'NEAREST',
     'CLAMP_TO_BORDER',
 );
 blurShader.prepareFramebufferObject(
@@ -372,7 +373,7 @@ const renderParticle = () => {
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, TF_BUFF_1);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     // gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    // gl.clearColor(1.0, 1.0, 1.0, 1.0);
     // gl.clear(gl.COLOR_BUFFER_BIT);
 
 

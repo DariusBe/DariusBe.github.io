@@ -18,8 +18,10 @@ uniform sampler2D uParticleSampler;
 uniform sampler2D uCostSampler;
 uniform sampler2D uAdditionalSampler;
 
+uniform bool uStage;
 uniform float uParticleCount;
 uniform float uSensorAngle; // 22.5 degrees
+uniform float uRotationAngle; // 45 degreess
 uniform float uSensorDistance; // 8 pixels
 
 layout(location = 0) out vec4 fragColor;
@@ -36,7 +38,7 @@ vec4 colorGradient(float z) {
     } else {
         return vec4(mix(color2, color3, (z - 0.5) * 2.0), 1.0);
     }
-    // transform color 
+    // transform color
 }
 
 vec4 prepareCursor(float radius, vec4 color) {
@@ -57,10 +59,16 @@ vec4 prepareCursor(float radius, vec4 color) {
 void main() {
     vec2 delta = gl_PointCoord - vec2(0.5, 0.5);
     float lenSqr = abs(dot(delta, delta));
-    float a = smoothstep(0.1, 0.0, lenSqr);
+    float a = smoothstep(0.25, 0.24, lenSqr);
 
     float deposition = vParticle.w;
 
-    fragColor = vec4(vec3(1.0)*deposition, a*deposition);
+    fragColor = vec4(vec3(1.0), a * deposition);
+    
 
+    // vec2 pointCoord = vParticle.xy;
+    // float bound = 0.9;
+    // if (pointCoord.x > bound || pointCoord.x < -bound || pointCoord.y > bound || pointCoord.y < -bound) {
+    //     fragColor = vec4(vec3(0.0), 1.0);
+    // }
 }

@@ -63,35 +63,38 @@ void main() {
         blurred = applyKernel();
     }
     // convolution fall-off via attenuation
-    blurred.rgb *= 1.0-(uAttenuation*10.0);
-    
-    // threshold: if alpha lower than 0.1, discard
-    // if (blurred.r < 0.01) {
-    //     blurred = vec4(vec3(0.0), 1.0);
-    // }
+    blurred.rgb *= 0.99;
 
+    fragColor = vec4(blurred.rgb, 1.0);
 
+    if (true) {
+        vec2 mouse = uMouse.xy;
+        float mouseClick = uMouse.z;
 
-    // normalize moues position
+        vec4 cursor = vec4(0.0);
+        // show the mouse position
+        float distPoint1 = distance(vec2(0.15, 0.8) * uResolution, gl_FragCoord.xy);
+        float radius1 = 25.0;
+        float distPoint2 = distance(vec2(0.75, 0.1) * uResolution, gl_FragCoord.xy);
+        float radius2 = 15.0;
+        float distPoint3 = distance(vec2(0.15, 0.5) * uResolution, gl_FragCoord.xy);
+        float radius3 = 35.0;
+        float distPoint4 = distance(vec2(0.25, 0.2) * uResolution, gl_FragCoord.xy);
+        float radius4 = 15.0;
+        float distPoint5 = distance(vec2(0.75, 0.65) * uResolution, gl_FragCoord.xy);
+        float radius5 = 25.0;
 
-
-
-    vec2 mouse = uMouse.xy;
-    float mouseClick = uMouse.z;
-
-    // if (uShowCursor == 1.0) {
-    // float dist = smoothstep(80.0, 100.0, distance(gl_FragCoord.xy, mouse * uResolution));
-    //     if (mouseClick == 1.0) {
-    //         fragColor = mix(original, blurred, dist);
-    //         if (dist > 0.9 && dist < 1.0) {
-    //             fragColor = blurred;
-    //         }
-    //     } else {
-    //         fragColor = blurred;
-    //     }
-    // } else {
-    // }
-
-    //threshold
-    fragColor = blurred;
+        float factor = 0.1;
+        if (distPoint1 < radius1) {
+            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius1*factor);
+        } else if (distPoint2 < radius2) {
+            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius2*factor);
+        } else if (distPoint3 < radius3) {
+            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius3*factor);
+        } else if (distPoint4 < radius4) {
+            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius4*factor);
+        } else if (distPoint5 < radius5) {
+            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius5*factor);
+        }
+    }
 }

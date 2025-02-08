@@ -56,5 +56,5 @@ void main() {
     vec4 cost = texture(uCanvasSampler2, vTexCoord);
     
     // fragColor = mix(trail, cost, 0.5);
-    fragColor = mix(trail, cost, 0.5);
+    fragColor = mix(trail, cost, 0.0);
 }
