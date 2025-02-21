@@ -36,7 +36,9 @@ var hasSlopeSliderChanged = false;
 var hasCheckboxChanged = checkbox.checked;
 
 /* Globals */
-const PARTICLE_COUNT = 5_000;
+const FILL_PERCENTAGE = 0.5;
+const PARTICLE_COUNT = Math.round(canvas.width*canvas.height*FILL_PERCENTAGE); // 3% of the total number of pixels
+console.info('Particle count:', PARTICLE_COUNT);
 const BYTE = 4;
 const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
 const TIMESTEP = 0.01;
