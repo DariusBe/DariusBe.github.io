@@ -73,28 +73,16 @@ void main() {
 
         vec4 cursor = vec4(0.0);
         // show the mouse position
-        float distPoint1 = distance(vec2(0.15, 0.8) * uResolution, gl_FragCoord.xy);
-        float radius1 = 25.0;
-        float distPoint2 = distance(vec2(0.75, 0.1) * uResolution, gl_FragCoord.xy);
-        float radius2 = 15.0;
-        float distPoint3 = distance(vec2(0.15, 0.5) * uResolution, gl_FragCoord.xy);
-        float radius3 = 35.0;
-        float distPoint4 = distance(vec2(0.25, 0.2) * uResolution, gl_FragCoord.xy);
-        float radius4 = 15.0;
-        float distPoint5 = distance(vec2(0.75, 0.65) * uResolution, gl_FragCoord.xy);
-        float radius5 = 25.0;
+        float p1 = distance(vec2(0.5, 0.7) * uResolution, gl_FragCoord.xy);
+        float radius1 = 10.0;
+        float p2 = distance(vec2(0.5, 0.3) * uResolution, gl_FragCoord.xy);
+        float radius2 = 10.0;
 
-        float factor = 0.1;
-        if (distPoint1 < radius1) {
-            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius1*factor);
-        } else if (distPoint2 < radius2) {
-            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius2*factor);
-        } else if (distPoint3 < radius3) {
-            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius3*factor);
-        } else if (distPoint4 < radius4) {
-            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius4*factor);
-        } else if (distPoint5 < radius5) {
-            fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f)*(radius5*factor);
+        float factor = 1.0;
+        if (p1 < radius1) {
+            fragColor = vec4(1.0f);
+        } else if (p2 < radius2) {
+            fragColor = vec4(1.0f);
         }
     }
 }
