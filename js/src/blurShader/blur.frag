@@ -63,7 +63,7 @@ void main() {
         blurred = applyKernel();
     }
     // convolution fall-off via attenuation
-    blurred.rgb *= 0.99;
+    blurred.rgb *= 1.0 - uAttenuation;
 
     fragColor = vec4(blurred.rgb, 1.0);
 

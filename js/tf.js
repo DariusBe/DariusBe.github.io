@@ -26,36 +26,65 @@ const mapFile = 'testmap6.xyz';
 var topoMap = Utils.getEmptyStartTexture(canvas.width, canvas.height);
 
 /* DOM Elements */
+// Sensor Sliders
+var raSlider = document.getElementById("RA_slider");
+var raSlider_label = document.getElementById("RA_slider_label");
+var saSlider = document.getElementById("SA_slider");
+var saSlider_label = document.getElementById("SA_slider_label");
+var sdSlider = document.getElementById("SD_slider");
+var sdSlider_label = document.getElementById("SD_slider_label");
+// Blur Slider
 const convSlider = document.getElementById('conv_slider');
 var convSliderLabel = document.getElementById('conv_slider_label');
+// Attenuation Slider
+var attenuationSlider = document.getElementById("attenuation_slider");
+var attenuation_slider_label = document.getElementById("attenuation_slider_label");
+attenuation_slider_label.innerHTML = attenuationSlider.value;
+// Slope Slider
 const slopeSlider = document.getElementById('slope_slider');
 var slopeSliderLabel = document.getElementById('slope_slider_label');
+// Checkbox
 const checkbox = document.getElementById('slope_checkbox');
+// Iteration Label
+const iterationLabel = document.getElementById('iteration');
+// change flags
+var hasRAChanged = false;
+var hasSAChanged = false;
+var hasSDChanged = false;
 var hasConvSliderChanged = false;
 var hasSlopeSliderChanged = false;
+var hasAttenuationSliderChanged = false;
 var hasCheckboxChanged = checkbox.checked;
 
 /* Globals */
 const FILL_PERCENTAGE = 0.5;
-const PARTICLE_COUNT = Math.round(canvas.width*canvas.height*FILL_PERCENTAGE); // 3% of the total number of pixels
+const PARTICLE_COUNT = Math.round(canvas.width * canvas.height * FILL_PERCENTAGE); // 3% of the total number of pixels
 console.info('Particle count:', PARTICLE_COUNT);
 const BYTE = 4;
 const BUFFSIZE = PARTICLE_COUNT * BYTE * 4;
-const TIMESTEP = 0.01;
+const TIMESTEP = 1;
 var TICK = 0.0;
 const SKIP_TOPO = true;
 if (!SKIP_TOPO) {
     topoMap = await Utils.readXYZMapToTexture('js/src/topoShader/maps/' + mapFile);
 }
-// Particle
-var uSensorAngle = Math.PI / 8;
-var uRotationAngle = Math.PI / 4;
-var uSensorDistance = 8;
+// Sensing Uniforms to sliders
+var uRotationAngle = Math.PI / 4.0;
+var uSensorAngle = Math.PI / 4.0;
+var uSensorDistance = 50;
+raSlider.value = uRotationAngle * 180 / Math.PI;
+raSlider_label.innerHTML = raSlider.value;
+saSlider.value = uSensorAngle * 180 / Math.PI;
+saSlider_label.innerHTML = saSlider.value;
+sdSlider.value = uSensorDistance;
+sdSlider_label.innerHTML = sdSlider.value;
+
 
 // Blur
 var uKernelSize = Math.abs(convSlider.value * 2 - 1);
 var sigma = uKernelSize / 4;
-var uAttenuation = 0.1;
+attenuationSlider.value = 0.01;
+var uAttenuation = attenuationSlider.value;
 // Topo
 var slopeFactor = slopeSlider.value;
 var uIsHorizontal = true;
@@ -70,7 +99,6 @@ convSlider.oninput = function () {
     uKernelSize = val;
     sigma = val / 4;
 }
-// on double click, resest slider to default value
 convSlider.addEventListener('dblclick', (event) => {
     hasConvSliderChanged = true;
     convSlider.value = 2;
@@ -92,6 +120,50 @@ slopeSlider.addEventListener('dblclick', (event) => {
     slopeSliderLabel.innerHTML = slopeSlider.value;
     slopeFactor = slopeSlider.value;
     updateLandscape = true;
+});
+attenuationSlider.oninput = function () {
+    hasAttenuationSliderChanged = true;
+    attenuation_slider_label.innerHTML = this.value;
+    uAttenuation = this.value;
+}
+attenuationSlider.addEventListener('dblclick', (event) => {
+    hasAttenuationSliderChanged = true;
+    attenuationSlider.value = 0.01;
+    attenuation_slider_label.innerHTML = attenuationSlider.value;
+    uAttenuation = attenuationSlider.value;
+});
+raSlider.addEventListener('dblclick', (event) => {
+    hasRAChanged = true;
+    raSlider.value = (Math.PI / 4.0 * 180.0) / Math.PI;
+    raSlider_label.innerHTML = raSlider.value;
+    uRotationAngle = raSlider.value;
+});
+raSlider.oninput = function () {
+    hasRAChanged = true;
+    raSlider_label.innerHTML = this.value;
+    uRotationAngle = this.value;
+}
+saSlider.oninput = function () {
+    hasSAChanged = true;
+    saSlider_label.innerHTML = this.value;
+    uSensorAngle = this.value;
+}
+saSlider.addEventListener('dblclick', (event) => {
+    hasSAChanged = true;
+    saSlider.value = (Math.PI / 8.0 * 180.0) / Math.PI;
+    saSlider_label.innerHTML = saSlider.value;
+    uSensorAngle = saSlider.value;
+});
+sdSlider.oninput = function () {
+    hasSDChanged = true;
+    sdSlider_label.innerHTML = this.value;
+    uSensorDistance = this.value;
+}
+sdSlider.addEventListener('dblclick', (event) => {
+    hasSDChanged = true;
+    sdSlider.value = 8;
+    sdSlider_label.innerHTML = sdSlider.value;
+    uSensorDistance = sdSlider.value;
 });
 checkbox.onchange = function () {
     hasCheckboxChanged = true;
@@ -305,7 +377,8 @@ function swapFBOTextures() {
 }
 function updateUniforms() {
     TICK += TIMESTEP;
-    TICK = Math.round(TICK * 100) / 100;
+    // TICK = Math.round(TICK * 100) / 100;
+    iterationLabel.innerHTML = TICK;
     // glContext.cameraTransform();
     gl.bindBuffer(gl.UNIFORM_BUFFER, glContext.globalUniformBuffer);
     glContext.updateGlobalUniform('uTime', TICK);
@@ -321,9 +394,25 @@ function updateUniforms() {
             blurShader.updateUniform('uKernelSize', '1i', uKernelSize);
             hasConvSliderChanged = false;
         }
+        if (hasAttenuationSliderChanged) {
+            blurShader.updateUniform('uAttenuation', '1f', uAttenuation);
+            hasAttenuationSliderChanged = false;
+        }
         if (hasSlopeSliderChanged) {
             topoShader.updateUniform('uSlopeFactor', '1f', slopeFactor);
             hasSlopeSliderChanged = false;
+        }
+        if (hasRAChanged) {
+            particleShader.updateUniform('uRotationAngle', '1f', uRotationAngle);
+            hasRAChanged = false;
+        }
+        if (hasSAChanged) {
+            particleShader.updateUniform('uSensorAngle', '1f', uSensorAngle);
+            hasSAChanged = false;
+        }
+        if (hasSDChanged) {
+            particleShader.updateUniform('uSensorDistance', '1f', uSensorDistance);
+            hasSDChanged = false;
         }
     }
     if (hasCheckboxChanged) {

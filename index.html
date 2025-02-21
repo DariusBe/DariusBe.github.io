@@ -21,7 +21,7 @@
     <div class="bottombar">
         <div class="checkboxpanel">
             <div class="checkboxrow">
-                <label for="slope_checkbox" class="labeltext">Terrain as Slope</label>
+                <label for="slope_checkbox" class="labeltext">Slope</label>
                 <input type="checkbox" checked="1" id="slope_checkbox" class="checkbox">
             </div>
             <div class="checkboxrow" id="matrix_checkbox_row" style="display: none;">
@@ -32,15 +32,51 @@
 
         <div class="sliderpanel">
             <div class="sliderrow">
-                <label for="conv_slider" class="labeltext">Convolution-Kernel</label>
-                <input type="range" step="1" min="1" max="30" value="2" id="conv_slider" class="slider">
-                <div id="conv_slider_label" class="labeltext">off</div>
+                <div class="sliderAndLabel">
+                    <label for="conv_slider" class="labeltext">Kernelsize</label>
+                    <input type="range" step="1" min="1" max="30" value="2" id="conv_slider" class="slider">
+                    <div id="conv_slider_label" class="labeltext">off</div>
+                </div>
 
-                <label for="slope_slider" class="labeltext">Slope Factor</label>
-                <input type="range" step="0.01" min="1" max="25" value="4" id="slope_slider" class="slider">
-                <div id="slope_slider_label" class="labeltext">1</div>
+                <div class="sliderAndLabel">
+                    <label for="attenuation_slider" class="labeltext">Attenuat.</label>
+                    <input type="range" step="0.01" min="0" max="0.25" value="0.1" id="attenuation_slider" class="slider">
+                    <div id="attenuation_slider_label" class="labeltext">0.0</div>
+                </div>
+
+                <div class="sliderAndLabel">
+                    <label for="slope_slider" class="labeltext">Slope-Fct.</label>
+                    <input type="range" step="1" min="1" max="25" value="4" id="slope_slider" class="slider">
+                    <div id="slope_slider_label" class="labeltext">1</div>
+                </div>
             </div>
+
+            <div class="sliderrow">
+                <div class="sliderAndLabel">
+                    <label for="RA_slider" class="labeltext">Rotation Angle</label>
+                    <input type="range" step="0.5" min="0" max="180.0" value="0" id="RA_slider" class="slider">
+                    <div id="RA_slider_label" class="labeltext deg">0</div>
+                </div>
+
+                <div class="sliderAndLabel">
+                    <label for="SA_slider_slider" class="labeltext">Sensor Angle</label>
+                    <input type="range" step="0.5" min="1" max="180" value="0" id="SA_slider" class="slider">
+                    <div id="SA_slider_label" class="labeltext deg">0</div>
+                </div>
+
+                <div class="sliderAndLabel">
+                    <label for="SD_slider" class="labeltext">Sensor Distance</label>
+                    <input type="range" step="0.5" min="1" max="65" value="8" id="SD_slider" class="slider">
+                    <div id="SD_slider_label" class="labeltext">0</div>
+                </div>
+            </div>
+            <div class="textpanel">
+                <footer class="labeltext" id="iteration">0</footer>
+                <footer class="labeltext">cycles</footer>
+            </div>
+            
         </div>
+
         <div class="matrixpanel">
             <div class="matrix" id="matrix_1">
                 <label for="matrix_1" class="labeltext">Model matrix</label>
@@ -109,19 +145,16 @@
     </div>
 
     <script>
+        /* Convolution Slider */
         var convSlider = document.getElementById("conv_slider");
-        var conv_slider_label = document.getElementById("conv_slider_label");
+        var convSlider_label = document.getElementById("conv_slider_label");
         var output = document.getElementById("conv_slider_label");
-        const val = Math.abs(convSlider.value * 2 - 1);
-        conv_slider_label.innerHTML = val == 1 ? 'off' : val;
-
-        var slopeSlider = document.getElementById("slope_slider");
-        var slope_slider_label = document.getElementById("slope_slider_label");
-        slope_slider_label.innerHTML = slopeSlider.value;
+        const canvSlider_val = Math.abs(convSlider.value * 2 - 1);
+        convSlider_label.innerHTML = canvSlider_val == 1 ? 'off' : canvSlider_val;
 
         const canvas = document.getElementById('webgl-canvas');
         canvas.width = window.innerWidth;
-        const bottombar_height = 90; // used to be 65px;
+        const bottombar_height = 150; // used to be 65px;
         // canvas.height = 
         window.innerHeight = window.innerHeight - bottombar_height;
         canvas.height = window.innerHeight;

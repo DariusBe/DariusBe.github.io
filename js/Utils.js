@@ -429,6 +429,12 @@ export class Utils {
         return str;
     }
 
+    static degreestoRadians = (degrees) => {
+        return degrees * Math.PI / 180;
+    }
+    static radianstoDegrees = (radians) => {
+        return radians * 180 / Math.PI;
+    }
 
     /**
       * Read a text file from the server and parse it into a Float32Array.

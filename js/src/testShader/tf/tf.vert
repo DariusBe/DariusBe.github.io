@@ -54,10 +54,6 @@ void main() {
     float bound = 0.99;
     float deposition = 1.0;
 
-    float sensorDistance = 50.0;
-    float sensorAngle = PI / 8.0;
-    float rotationAngle = PI / 4.0;
-
     vec2 pos = aParticle.xy;
     float heading = aParticle.z;
     float seed = aParticle.w * 12397.1237;
@@ -88,16 +84,16 @@ void main() {
     /* SENSORY STAGE */
     // Sensor Offsets
     ivec2 F_Offset = ivec2(
-            pixelPos.x + sensorDistance * cos(heading),
-            pixelPos.y + sensorDistance * sin(heading)
+            pixelPos.x + uSensorDistance * cos(heading),
+            pixelPos.y + uSensorDistance * sin(heading)
         );
     ivec2 FL_Offset = ivec2(
-            pixelPos.x + sensorDistance * cos(heading + sensorAngle),
-            pixelPos.y + sensorDistance * sin(heading + sensorAngle)
+            pixelPos.x + uSensorDistance * cos(heading + uSensorAngle),
+            pixelPos.y + uSensorDistance * sin(heading + uSensorAngle)
         );
     ivec2 FR_Offset = ivec2(
-            pixelPos.x + sensorDistance * cos(heading - sensorAngle),
-            pixelPos.y + sensorDistance * sin(heading - sensorAngle)
+            pixelPos.x + uSensorDistance * cos(heading - uSensorAngle),
+            pixelPos.y + uSensorDistance * sin(heading - uSensorAngle)
         );
 
     // Sensors
@@ -140,13 +136,13 @@ void main() {
         // Return;
     } else if ((F_val < FL_val) && (F_val < FR_val)) {
         // Rotate randomly by RA
-        heading += randomSign(seed + 6.18728) * rotationAngle;
+        heading += randomSign(seed + 6.18728) * uRotationAngle;
     } else if (FL_val < FR_val) {
         // Rotate right by RA
-        heading -= rotationAngle;
+        heading -= uRotationAngle;
     } else if (FR_val < FL_val) {
         // Rotate left by RA
-        heading += rotationAngle;
+        heading += uRotationAngle;
     } else {
         // Continue facing same direction
         // heading = aParticle.z;

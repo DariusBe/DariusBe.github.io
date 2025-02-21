@@ -4,21 +4,33 @@ body {
 }
 
 canvas {
-  display: block;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
 }
 
 .bottombar {
   display: flex;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-wrap: wrap;
+  flex-direction: row;
+
   background: #EEEEEE;
-  height: 70px;
+  width: auto;
+  height: auto;
   justify-content: left;
   align-items: top;
   text-align: center;
   padding: 10px;
+}
+
+.textpanel {
+  width: auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: right;
+  align-items: right;
+  text-align: right;
+  padding: 5px;
 }
 
 .checkboxpanel {
@@ -27,53 +39,64 @@ canvas {
   flex-direction: column;
   justify-content: top;
   align-items: top;
-  align-items: top;
   text-align: left;
+  width: auto;
 }
 
 .checkboxrow {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: left;
+  justify-content: center;
   align-items: center;
-  text-align: left;
   padding: 5px;
+  border: 1px solid rgb(199, 199, 199);
 }
-
 
 .labeltext {
   text-align: left;
   color: #333;
   padding: 2px;
-  width: 90px;
+  width: auto;
   font-size: 12px;
+}
+.deg:after {
+  content: "°";
 }
 
 .sliderpanel {
-  display: flex;
+  display: flex; 
   float: center;
+  flex-direction: row;
   align-items: top;
   text-align: center;
+  width: 100%;
+}
+
+.sliderAndLabel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  text-align: center;
+  padding: 5px;
 }
 
 .sliderrow {
   display: flex;
   flex-direction: row;
-  justify-content: left;
+  justify-content: space-between;
   align-items: top;
   text-align: left;
-  padding: 5px;
+  border: 1px solid #d3d3d3;
 }
 
 .slider {
   -webkit-appearance: none;
-  width: 50%;
-  height: 15px;
-  border-radius: 15px;
+  width: 70px;
+  height: 10px;
+  border-radius: 8px;
   background: #8f8f8f;
   outline: none;
-  opacity: 0.8;
+  opacity: 1.0;
   -webkit-transition: .2s;
   transition: opacity 1s;
 }
@@ -81,10 +104,12 @@ canvas {
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 25px;
-  height: 25px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  background: #04AA6D;
+  outline: 1px solid #000;
+  outline-color: rgb(255, 255, 255);
+  background: #ffffff;
   cursor: pointer;
 }
 
@@ -94,7 +119,7 @@ canvas {
   border-radius: 50%;
   background: #ffffff;
   cursor: pointer;
-  border: rgb(91, 91, 91) 2px solid;
+  border: rgb(255, 0, 0) 2px solid;
 }
 
 .matrix {
