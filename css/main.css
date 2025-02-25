@@ -62,7 +62,9 @@ canvas {
 .deg:after {
   content: "°";
 }
-
+.rad:before {
+  content: "π/";
+}
 .sliderpanel {
   display: flex; 
   float: center;
@@ -73,6 +75,8 @@ canvas {
 }
 
 .sliderAndLabel {
+  border: 1px solid #d3d3d3;
+  width: 180px;
   display: flex;
   flex-direction: row;
   align-items: center;

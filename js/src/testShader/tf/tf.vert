@@ -31,79 +31,80 @@ out vec3 vPosition;
 out vec2 vTexCoord;
 out vec4 vParticle;
 
-// texelSize
+vec4 getInstanceOffset(int instanceID, vec4 offset) {
+    if(instanceID == 0)
+        return offset + vec4(0.0f, 0.1f, 0.0f, 1.0f);
+    if(instanceID == 1)
+        return offset + vec4(0.0f, -0.1f, 0.0f, 1.0f);
+    if(instanceID == 2)
+        return offset + vec4(0.1f, 0.0f, 0.0f, 1.0f);
+    return offset; // Default, no offset
+}
 
 vec2 randomize(vec2 vec) {
-    float random = fract(sin(uTime + 12397.1237) * cos(17263.0 + uTime));
+    float random = fract(sin(uTime + 12397.1237f) * cos(17263.0f + uTime));
     return vec2(random * vec.x, random * vec.y);
 }
 
 float random(float seed) {
-    return fract(sin(seed * 12397.1237) * cos(17263.0 + seed));
+    return fract(sin(seed * 12397.1237f) * cos(17263.0f + seed));
 }
 
 float randomSign(float seed) {
-    return random(seed) > 0.5 ? 1.0 : -1.0;
+    return random(seed) > 0.5f ? 1.0f : -1.0f;
 }
 
 void main() {
     bool simulationStage = uStage;
-    
-    gl_PointSize = 1.0;
-    vec2 texelSize = 1.0 / uResolution;
-    float bound = 0.99;
-    float deposition = 1.0;
+
+    gl_PointSize = 1.0f;
+    vec2 texelSize = 1.0f / uResolution;
+    float bound = 1.0f;
+    float deposition = 0.0f;
+
 
     vec2 pos = aParticle.xy;
     float heading = aParticle.z;
-    float seed = aParticle.w * 12397.1237;
-
+    float seed = aParticle.w * 12397.1237f;
 
     // normalize pos -1 to 1 -> (0, 0, 500, 583)
-    vec2 pixelPos = vec2((pos.x * 0.5 + 0.5), (pos.y * 0.5 + 0.5)) * uResolution;
+    vec2 pixelPos = vec2((pos.x * 0.5f + 0.5f), (pos.y * 0.5f + 0.5f)) * uResolution;
+
+    // radius of half the screen width: if frag is not within this radius, fragColor is black
+    // vec2 radius = uResolution * 0.5f;
+    // if(distance(pixelPos.xy, radius) >= radius.x) {
+    //     heading += PI;
+    // }
 
     /* MOTOR STAGE */
     // texel ahead
-    ivec2 lookAheadOffset = ivec2(
-            pixelPos.x + cos(heading),
-            pixelPos.y + sin(heading)
-        );
+    ivec2 lookAheadOffset = ivec2(pixelPos.x + cos(heading), pixelPos.y + sin(heading));
     vec2 lookAhead = vec2(cos(heading), sin(heading)) * uResolution;
     vec4 lookAheadTexel = texelFetch(uParticleSampler, lookAheadOffset, 0);
-    float lookAheadVal = lookAheadTexel.r + lookAheadTexel.g + lookAheadTexel.b;
+    float lookAheadVal = lookAheadTexel.r;
 
     // if texel ahead is occupied, choose random new heading
-    if (lookAheadVal != 3.0) {
-        pos += vec2(cos(heading), sin(heading)) * texelSize * 5.0;
-        deposition = 1.0;
+    if(lookAheadVal >= 0.8f) {
+        heading += randomSign(seed) * random(seed * 12376.1123f) * PI;
     } else {
-        heading += randomSign(seed) * random(seed * 12376.1236) * PI;
-        deposition = 0.0;
+        pos += vec2(cos(heading) * texelSize.x, sin(heading) * texelSize.y) * 5.0f;
+        deposition = 1.0f;
     }
 
     /* SENSORY STAGE */
     // Sensor Offsets
-    ivec2 F_Offset = ivec2(
-            pixelPos.x + uSensorDistance * cos(heading),
-            pixelPos.y + uSensorDistance * sin(heading)
-        );
-    ivec2 FL_Offset = ivec2(
-            pixelPos.x + uSensorDistance * cos(heading + uSensorAngle),
-            pixelPos.y + uSensorDistance * sin(heading + uSensorAngle)
-        );
-    ivec2 FR_Offset = ivec2(
-            pixelPos.x + uSensorDistance * cos(heading - uSensorAngle),
-            pixelPos.y + uSensorDistance * sin(heading - uSensorAngle)
-        );
+    ivec2 F_Offset = ivec2(pixelPos.x + uSensorDistance * cos(heading), pixelPos.y + uSensorDistance * sin(heading));
+    ivec2 FL_Offset = ivec2(pixelPos.x + uSensorDistance * cos(heading + uSensorAngle), pixelPos.y + uSensorDistance * sin(heading + uSensorAngle));
+    ivec2 FR_Offset = ivec2(pixelPos.x + uSensorDistance * cos(heading - uSensorAngle), pixelPos.y + uSensorDistance * sin(heading - uSensorAngle));
 
     // Sensors
     vec4 F = texelFetch(uParticleSampler, ivec2(F_Offset), 0);
     vec4 FL = texelFetch(uParticleSampler, ivec2(FL_Offset), 0);
     vec4 FR = texelFetch(uParticleSampler, ivec2(FR_Offset), 0);
 
-    float F_val = F.r + F.g + F.b;
-    float FL_val = FL.r + FL.g + FL.b;
-    float FR_val = FR.r + FR.g + FR.b;
+    float F_val = F.r;
+    float FL_val = FL.r;
+    float FR_val = FR.r;
 
     /*
         - [Movement]
@@ -130,35 +131,34 @@ void main() {
 
     // Attempt to move forward one pixel
     // (F > FL) && (F > FR)
-    if ((F_val > FL_val) && (F_val > FR_val)) {
+    if((F_val > FL_val) && (F_val > FR_val)) {
         // Stay facing same direction
-        // heading = aParticle.z;
+        heading = aParticle.z;
         // Return;
-    } else if ((F_val < FL_val) && (F_val < FR_val)) {
+    } else if((F_val < FL_val) && (F_val < FR_val)) {
         // Rotate randomly by RA
-        heading += randomSign(seed + 6.18728) * uRotationAngle;
-    } else if (FL_val < FR_val) {
+        heading += randomSign(seed + 12.1725f) * uRotationAngle;
+    } else if(FL_val < FR_val) {
         // Rotate right by RA
         heading -= uRotationAngle;
-    } else if (FR_val < FL_val) {
+    } else if(FR_val < FL_val) {
         // Rotate left by RA
         heading += uRotationAngle;
     } else {
         // Continue facing same direction
-        // heading = aParticle.z;
+        heading = aParticle.z;
     }
 
-    // keep in bounds
-    if (pos.x < -bound || pos.x > bound || pos.y < -bound || pos.y > bound) {
-        heading += PI;
-        deposition = 0.0;
-        pos.x = clamp(pos.x, -bound, bound);
-        pos.y = clamp(pos.y, -bound, bound);
+    if(pos.x > bound) {
+        pos.x = -bound;
+    } else if(pos.x < -bound) {
+        pos.x = bound;
     }
 
-    vParticle = vec4(pos, mod(heading, PI * 2.0), deposition);
-    gl_Position = vec4(pos, 0.0, 1.0);
-
-    vPosition = aPosition;
-    vTexCoord = aTexCoord;
+    if(gl_InstanceID == 0) {
+        vParticle = vec4(pos, mod(heading, PI * 2.0f), deposition);
+        gl_Position = vec4(pos, 0.0f, 1.0f);
+        vTexCoord = aTexCoord;
+        vPosition = aPosition;
+    }
 }

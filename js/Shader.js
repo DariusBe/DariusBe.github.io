@@ -455,7 +455,7 @@ export class Shader {
             gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
         }
 
-        //         // Define draw buffers to specify rendering outputs
+        // Define draw buffers to specify rendering outputs
         // gl.drawBuffers([
         //     gl.COLOR_ATTACHMENT0,  // Write to textureA
         //     gl.COLOR_ATTACHMENT1   // Write to textureB

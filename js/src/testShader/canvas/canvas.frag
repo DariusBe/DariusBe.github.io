@@ -54,7 +54,9 @@ void main() {
 
     vec4 trail = texture(uCanvasSampler1, vTexCoord);
     vec4 cost = texture(uCanvasSampler2, vTexCoord);
+    vec4 sensor = texture(uCanvasSampler3, vTexCoord);
     
     // fragColor = mix(trail, cost, 0.5);
     fragColor = mix(trail, cost, 0.0);
+    fragColor = mix(fragColor, sensor, 0.0);
 }

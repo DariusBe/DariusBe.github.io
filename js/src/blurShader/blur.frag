@@ -25,14 +25,14 @@ out vec4 fragColor;
 
 vec4 prepareCursor(float radius, vec4 color) {
     // normalize moues position
-    if (uShowCursor == 0.0) {
+    if(uShowCursor == 0.0f) {
         vec2 mouse = uMouse.xy;
         float mouseClick = uMouse.z;
 
-        vec4 cursor = vec4(0.0);
+        vec4 cursor = vec4(0.0f);
         // show the mouse position
-        if (distance(gl_FragCoord.xy, mouse * uResolution) < radius) {
-            if (mouseClick == 1.0) {
+        if(distance(gl_FragCoord.xy, mouse * uResolution) < radius) {
+            if(mouseClick == 1.0f) {
                 cursor = color;
             }
         }
@@ -54,6 +54,20 @@ vec4 applyKernel() {
     return sum;
 }
 
+vec4 applySimpleBoxFilter() {
+    vec4 sum = vec4(0.0f);
+    vec2 texelSize = 1.0f / uResolution;
+    int range = uKernelSize / 2;
+    for(int i = -range; i <= range; i++) {
+        vec2 offset = vec2(0.0f, float(i) * texelSize);
+        if(uIsHorizontal) {
+            offset = offset.yx;
+        }
+        sum += texture(uSampler, vTexCoord + offset);
+    }
+    return sum / float(uKernelSize);
+}
+
 void main() {
     // float decay = uDecay * 0.00001;
 
@@ -63,26 +77,27 @@ void main() {
         blurred = applyKernel();
     }
     // convolution fall-off via attenuation
-    blurred.rgb *= 1.0 - uAttenuation;
+    blurred.rgb *= (1.0 - (uAttenuation));
 
-    fragColor = vec4(blurred.rgb, 1.0);
+    fragColor = vec4(blurred.rgb, 1.0f);
 
-    if (true) {
-        vec2 mouse = uMouse.xy;
-        float mouseClick = uMouse.z;
+    // radius of half the screen width: if frag is not within this radius, fragColor is black
+    vec2 radius = uResolution * 0.5f;
+    if(distance(gl_FragCoord.xy, radius) > radius.x) {
+        fragColor = vec4(0.0f);
+    }
 
-        vec4 cursor = vec4(0.0);
-        // show the mouse position
-        float p1 = distance(vec2(0.5, 0.7) * uResolution, gl_FragCoord.xy);
-        float radius1 = 10.0;
-        float p2 = distance(vec2(0.5, 0.3) * uResolution, gl_FragCoord.xy);
-        float radius2 = 10.0;
+    if(true) {
+        float p1 = distance(vec2(0.5f, 0.7f) * uResolution, gl_FragCoord.xy);
+        float radius1 = 15.0f;
+        float p2 = distance(vec2(0.5f, 0.3f) * uResolution, gl_FragCoord.xy);
+        float radius2 = 15.0f;
 
-        float factor = 1.0;
-        if (p1 < radius1) {
-            fragColor = vec4(1.0f);
-        } else if (p2 < radius2) {
-            fragColor = vec4(1.0f);
+        float factor = 1.0f;
+        if(p1 < radius1) {
+            fragColor = vec4(1.0f)*factor;
+        } else if(p2 < radius2) {
+            fragColor = vec4(1.0f)*factor;
         }
     }
 }

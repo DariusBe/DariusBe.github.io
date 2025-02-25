@@ -39,9 +39,9 @@
                 </div>
 
                 <div class="sliderAndLabel">
-                    <label for="attenuation_slider" class="labeltext">Attenuat.</label>
-                    <input type="range" step="0.01" min="0" max="0.25" value="0.1" id="attenuation_slider" class="slider">
-                    <div id="attenuation_slider_label" class="labeltext">0.0</div>
+                    <label for="attenuation_slider" class="labeltext">attenuat.-exponent</label>
+                    <input type="range" step="0.01" min="0" max="3" value="1" id="attenuation_slider" class="slider">
+                    <div id="attenuation_slider_label" class="labeltext exp">0.0</div>
                 </div>
 
                 <div class="sliderAndLabel">
@@ -54,19 +54,19 @@
             <div class="sliderrow">
                 <div class="sliderAndLabel">
                     <label for="RA_slider" class="labeltext">Rotation Angle</label>
-                    <input type="range" step="0.5" min="0" max="180.0" value="0" id="RA_slider" class="slider">
+                    <input type="range" step="0.5" min="1" max="180" value="45" id="RA_slider" class="slider">
                     <div id="RA_slider_label" class="labeltext deg">0</div>
                 </div>
 
                 <div class="sliderAndLabel">
                     <label for="SA_slider_slider" class="labeltext">Sensor Angle</label>
-                    <input type="range" step="0.5" min="1" max="180" value="0" id="SA_slider" class="slider">
+                    <input type="range" step="0.5" min="0" max="180" value="45" id="SA_slider" class="slider">
                     <div id="SA_slider_label" class="labeltext deg">0</div>
                 </div>
 
                 <div class="sliderAndLabel">
                     <label for="SD_slider" class="labeltext">Sensor Distance</label>
-                    <input type="range" step="0.5" min="1" max="65" value="8" id="SD_slider" class="slider">
+                    <input type="range" step="1" min="0" max="50" value="8" id="SD_slider" class="slider">
                     <div id="SD_slider_label" class="labeltext">0</div>
                 </div>
             </div>
