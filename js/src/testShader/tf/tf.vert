@@ -87,7 +87,7 @@ void main() {
     if(lookAheadVal >= 0.8f) {
         heading += randomSign(seed) * random(seed * 12376.1123f) * PI;
     } else {
-        pos += vec2(cos(heading) * texelSize.x, sin(heading) * texelSize.y) * 5.0f;
+        pos += vec2(cos(heading) * texelSize.x, sin(heading) * texelSize.y) * 8.0f;
         deposition = 1.0f;
     }
 

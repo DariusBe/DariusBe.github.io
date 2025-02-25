@@ -92,11 +92,19 @@ void main() {
         float radius1 = 15.0f;
         float p2 = distance(vec2(0.5f, 0.3f) * uResolution, gl_FragCoord.xy);
         float radius2 = 15.0f;
+        float p3 = distance(vec2(0.25f, 0.5f) * uResolution, gl_FragCoord.xy);
+        float radius3 = 15.0f;
+        float p4 = distance(vec2(0.75f, 0.5f) * uResolution, gl_FragCoord.xy);
+        float radius4 = 15.0f;
 
         float factor = 1.0f;
         if(p1 < radius1) {
             fragColor = vec4(1.0f)*factor;
         } else if(p2 < radius2) {
+            fragColor = vec4(1.0f)*factor;
+        } else if(p3 < radius3) {
+            fragColor = vec4(1.0f)*factor;
+        } else if(p4 < radius4) {
             fragColor = vec4(1.0f)*factor;
         }
     }

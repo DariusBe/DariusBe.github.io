@@ -57,12 +57,12 @@ var hasAttenuationSliderChanged = false;
 var hasCheckboxChanged = checkbox.checked;
 
 /* Globals */
-var BOUNDS = 0.01;
+const BOUNDS = 0.01;
 const FILL_PERCENTAGE = 0.05;
 const SENSOR_ANGLE = Math.PI / 4;
 const ROTATION_ANGLE = Math.PI / 4;
-const SENSOR_DISTANCE = 21;
-const ATTENUATION = 0.05;
+const SENSOR_DISTANCE = 25;
+const ATTENUATION = 0.08;
 const KERNEL_SIZE = 5; // has to be odd
 
 const PARTICLE_COUNT = Math.round(canvas.width * canvas.height * FILL_PERCENTAGE); // 3% of the total number of pixels
