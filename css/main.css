@@ -65,6 +65,16 @@ canvas {
 .rad:before {
   content: "π/";
 }
+#iteration:after {
+  content: " cycles;";
+}
+#time:after {
+  content: "s;";
+}
+#fps:after {
+  content: " fps";
+}
+
 .sliderpanel {
   display: flex; 
   float: center;

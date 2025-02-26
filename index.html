@@ -72,7 +72,8 @@
             </div>
             <div class="textpanel">
                 <footer class="labeltext" id="iteration">0</footer>
-                <footer class="labeltext">cycles</footer>
+                <footer class="labeltext" id="time">0</footer>
+                <footer class="labeltext" id="fps">0</footer>
             </div>
             
         </div>
@@ -175,6 +176,22 @@
             matrixpanel.style.visibility = matrix_checkbox.checked ? 'visible' : 'hidden';
             sliderpanel.style.display = event.target.checked ? 'none' : 'block'; // hide slider when matrix is visible
         });
+
+        /* Time */
+        var timer = document.getElementById("time");
+        var iteration = document.getElementById("iteration");
+        var fps = document.getElementById("fps");
+        const now = performance.now();
+        timer.innerHTML = now;
+        // update over time
+        setInterval(() => {
+            const now = performance.now();
+            const seconds = (now/1000).toFixed(2);
+            const frames = iteration.innerHTML;
+            timer.innerHTML = seconds;
+            fps.innerHTML = (frames/seconds).toFixed(0);
+        }, 1);
+
 
     </script>
 
