@@ -57,12 +57,12 @@ var hasAttenuationSliderChanged = false;
 var hasCheckboxChanged = checkbox.checked;
 
 /* Globals */
-const BOUNDS = 1.0;
-const FILL_PERCENTAGE = 0.05;
+const BOUNDS = 0.01;
+const FILL_PERCENTAGE = 0.02;
 const SENSOR_ANGLE = Math.PI / 4;
 const ROTATION_ANGLE = Math.PI / 4;
-const SENSOR_DISTANCE = 20;
-const ATTENUATION = 0.05;
+const SENSOR_DISTANCE = 30;
+const ATTENUATION = 0.1;
 const KERNEL_SIZE = 9; // has to be odd
 
 const PARTICLE_COUNT = Math.round(canvas.width * canvas.height * FILL_PERCENTAGE); // 3% of the total number of pixels
@@ -93,7 +93,7 @@ var uKernelSize = KERNEL_SIZE;
 console.info('kernel size:', uKernelSize);
 var sigma = (uKernelSize-1) / 4;
 convSlider.value = Math.abs(2 * uKernelSize - 1);
-convSliderLabel.innerHTML = Math.abs(2 * uKernelSize - 1);
+convSliderLabel.innerHTML = uKernelSize;
 attenuationSlider.value = Math.log10(1/ATTENUATION);
 attenuation_slider_label.innerHTML = (ATTENUATION).toFixed(3);
 var uAttenuation = ATTENUATION;
