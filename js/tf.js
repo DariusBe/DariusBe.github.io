@@ -57,13 +57,13 @@ var hasAttenuationSliderChanged = false;
 var hasCheckboxChanged = checkbox.checked;
 
 /* Globals */
-const BOUNDS = 0.01;
+const BOUNDS = 1.0;
 const FILL_PERCENTAGE = 0.05;
 const SENSOR_ANGLE = Math.PI / 4;
 const ROTATION_ANGLE = Math.PI / 4;
-const SENSOR_DISTANCE = 25;
-const ATTENUATION = 0.08;
-const KERNEL_SIZE = 5; // has to be odd
+const SENSOR_DISTANCE = 20;
+const ATTENUATION = 0.05;
+const KERNEL_SIZE = 9; // has to be odd
 
 const PARTICLE_COUNT = Math.round(canvas.width * canvas.height * FILL_PERCENTAGE); // 3% of the total number of pixels
 console.info('Particle count:', PARTICLE_COUNT);
@@ -75,7 +75,6 @@ const SKIP_TOPO = true;
 if (!SKIP_TOPO) {
     topoMap = await Utils.readXYZMapToTexture('js/src/topoShader/maps/' + mapFile);
 }
-
 
 // Sensing Uniforms to sliders
 var uRotationAngle = ROTATION_ANGLE;
